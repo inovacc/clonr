@@ -3,9 +3,11 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/dyammarcano/clonr/internal/core"
 	"github.com/dyammarcano/clonr/internal/database"
+	"github.com/dyammarcano/clonr/internal/monitor"
 	"github.com/spf13/cobra"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +20,8 @@ func StartServer(cmd *cobra.Command, args []string) error {
 	}
 
 	r := gin.Default()
+
+	var wg sync.WaitGroup
 
 	r.GET("/repos", func(c *gin.Context) {
 		repos, err := initDB.GetAllRepos()
@@ -48,6 +52,8 @@ func StartServer(cmd *cobra.Command, args []string) error {
 
 		c.JSON(http.StatusOK, results)
 	})
+
+	wg.Go(monitor.Monitor(initDB))
 
 	return r.Run(":4000")
 }

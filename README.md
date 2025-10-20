@@ -74,6 +74,9 @@ Configuration options can be set via command-line flags or environment variables
 - `internal/params/`: Parameter and configuration handling.
 - `internal/server/`: Server logic.
 
+## Roadmap
+See the roadmap for planned features and milestones: [ROADMAP.md](ROADMAP.md)
+
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

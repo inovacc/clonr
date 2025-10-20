@@ -34,6 +34,21 @@ func CloneRepo(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid repository URL: %s", uri.String())
 	}
 
+	initDB, err := database.InitDB()
+	if err != nil {
+		return fmt.Errorf("starting server: %w", err)
+	}
+
+	// check for repo existence
+	ok, err := initDB.RepoExistsByURL(uri)
+	if err != nil {
+		return fmt.Errorf("error checking for repo existence: %w", err)
+	}
+
+	if ok {
+		return fmt.Errorf("repository already exists: %s", uri.String())
+	}
+
 	pathStr := "."
 
 	if len(args) > 1 {
@@ -55,11 +70,6 @@ func CloneRepo(_ *cobra.Command, args []string) error {
 		}
 	}
 
-	initDB, err := database.InitDB()
-	if err != nil {
-		return fmt.Errorf("starting server: %w", err)
-	}
-
 	absPath, err := filepath.Abs(pathStr)
 	if err != nil {
 		return fmt.Errorf("error determining absolute path: %w", err)
@@ -74,7 +84,7 @@ func CloneRepo(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("git clone error: %v - %s", err, string(output))
 	}
 
-	if err := initDB.SaveRepo(uri.String(), savePath); err != nil {
+	if err := initDB.SaveRepo(uri, savePath); err != nil {
 		return fmt.Errorf("error saving repo to database: %w", err)
 	}
 
