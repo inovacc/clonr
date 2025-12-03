@@ -1,12 +1,18 @@
 package core
 
-import "github.com/dyammarcano/clonr/internal/database"
+import (
+	"net/url"
 
-func RemoveRepo(url string) error {
-	initDB, err := database.InitDB()
+	"github.com/inovacc/clonr/internal/database"
+)
+
+func RemoveRepo(urlStr string) error {
+	db := database.GetDB()
+
+	u, err := url.Parse(urlStr)
 	if err != nil {
 		return err
 	}
 
-	return initDB.RemoveRepoByURL(url)
+	return db.RemoveRepoByURL(u)
 }

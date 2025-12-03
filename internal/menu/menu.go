@@ -1,4 +1,4 @@
-package main
+package menu
 
 import (
 	"fmt"
@@ -6,6 +6,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+func NewMenuModel(args []string) error {
+	return nil
+}
 
 // A MenuItem holds the text and its corresponding submenu choices.
 type MenuItem struct {
@@ -67,6 +71,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			if m.isSubMenu {
 				_, _ = fmt.Fprintf(os.Stdout, "You selected: %s from %s\n", m.currentChoices[m.cursor], m.selectedMenu)
+
 				return m, tea.Quit
 			}
 
@@ -114,23 +119,4 @@ func (m Model) View() string {
 	s += "\nPress 'q' to quit or 'esc' to go back.\n"
 
 	return s
-}
-
-func main() {
-	if len(os.Args) > 1 && os.Args[1] == "clonr" {
-		if len(os.Args) > 2 {
-			_, _ = fmt.Fprintf(os.Stdout, "URL mode detected. URL to clone: %s\n", os.Args[2])
-			_, _ = fmt.Fprintf(os.Stdout, "Logic to ask where to save the repository would go here.\n")
-			os.Exit(0)
-		}
-
-		p := tea.NewProgram(NewModel())
-		if _, err := p.Run(); err != nil {
-			_, _ = fmt.Fprintf(os.Stdout, "Error starting the program: %v\n", err)
-			os.Exit(1)
-		}
-	} else {
-		_, _ = fmt.Fprintln(os.Stdout, "Usage: clonr [optional_url]")
-		os.Exit(1)
-	}
 }

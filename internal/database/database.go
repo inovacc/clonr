@@ -1,52 +1,45 @@
 package database
 
 import (
-	"path/filepath"
-	"time"
+	"net/url"
+	"sync"
 
-	"github.com/dyammarcano/clonr/internal/model"
-	"github.com/dyammarcano/clonr/internal/params"
-
-	"github.com/google/uuid"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
+	"github.com/inovacc/clonr/internal/model"
 )
 
-type Database struct {
-	*gorm.DB
+// Store defines the database operations used by the app.
+type Store interface {
+	Ping() error
+	SaveRepo(u *url.URL, path string) error
+	RepoExistsByURL(u *url.URL) (bool, error)
+	RepoExistsByPath(path string) (bool, error)
+	InsertRepoIfNotExists(u *url.URL, path string) error
+	GetAllRepos() ([]model.Repository, error)
+	GetRepos(favoritesOnly bool) ([]model.Repository, error)
+	SetFavoriteByURL(urlStr string, fav bool) error
+	UpdateRepoTimestamp(urlStr string) error
+	RemoveRepoByURL(u *url.URL) error
+	GetConfig() (*model.Config, error)
+	SaveConfig(cfg *model.Config) error
 }
 
-func InitDB() (*Database, error) {
-	path := filepath.Join(params.AppdataDir, "clonr.db")
+var (
+	once sync.Once
+	db   Store
+)
 
-	db, err := gorm.Open(sqlite.Open(path), &gorm.Config{})
-	if err != nil {
-		return nil, err
-	}
+func init() {
+	once.Do(func() {
+		var err error
 
-	if err := db.AutoMigrate(&model.Repository{}); err != nil {
-		return nil, err
-	}
-
-	return &Database{DB: db}, nil
+		db, err = initDB()
+		if err != nil {
+			panic(err)
+		}
+	})
 }
 
-func (d *Database) SaveRepo(url, path string) error {
-	return d.Create(&model.Repository{
-		UID:       uuid.NewString(),
-		URL:       url,
-		Path:      path,
-		ClonedAt:  time.Now(),
-		UpdatedAt: time.Now(),
-	}).Error
-}
-
-func (d *Database) GetAllRepos() ([]model.Repository, error) {
-	var repos []model.Repository
-
-	return repos, d.Find(&repos).Error
-}
-
-func (d *Database) RemoveRepoByURL(url string) error {
-	return d.Where("url = ?", url).Delete(&model.Repository{}).Error
+// GetDB returns the initialized database store.
+func GetDB() Store {
+	return db
 }

@@ -1,28 +1,41 @@
 package server
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"time"
 
-	"github.com/dyammarcano/clonr/internal/core"
-	"github.com/dyammarcano/clonr/internal/database"
-	"github.com/spf13/cobra"
+	"github.com/inovacc/clonr/internal/core"
+	"github.com/inovacc/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/monitor"
 
 	"github.com/gin-gonic/gin"
 )
 
-func StartServer(cmd *cobra.Command, args []string) error {
-	initDB, err := database.InitDB()
+func StartServer(args []string) error {
+	db := database.GetDB()
+
+	cfg, err := db.GetConfig()
 	if err != nil {
-		return fmt.Errorf("starting server: %w", err)
+		return err
 	}
+
+	gin.SetMode(gin.ReleaseMode)
 
 	r := gin.Default()
 
+	var wg sync.WaitGroup
+
 	r.GET("/repos", func(c *gin.Context) {
-		repos, err := initDB.GetAllRepos()
+		repos, err := db.GetAllRepos()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
 			return
 		}
 
@@ -30,9 +43,10 @@ func StartServer(cmd *cobra.Command, args []string) error {
 	})
 
 	r.POST("/repos/update-all", func(c *gin.Context) {
-		repos, err := initDB.GetAllRepos()
+		repos, err := db.GetAllRepos()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
 			return
 		}
 
@@ -49,5 +63,38 @@ func StartServer(cmd *cobra.Command, args []string) error {
 		c.JSON(http.StatusOK, results)
 	})
 
-	return r.Run(":4000")
+	wg.Go(monitor.Monitor(db))
+
+	port := fmt.Sprintf(":%d", cfg.ServerPort)
+
+	srv := &http.Server{
+		Addr:    port,
+		Handler: r,
+	}
+
+	fmt.Printf("Listening and serving HTTP on %s\nctrl+c, shutting down server...\n", port)
+
+	// Start server in background
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			fmt.Printf("Server error: %v\n", err)
+		}
+	}()
+
+	// Handle Ctrl+C (SIGINT) to quit gracefully with a message
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+
+	<-quit
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		fmt.Printf("Server forced to shutdown: %v\n", err)
+
+		return err
+	}
+
+	return nil
 }
