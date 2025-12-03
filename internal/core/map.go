@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dyammarcano/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/database"
 )
 
 func MapRepos(args []string) error {

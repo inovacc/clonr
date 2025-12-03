@@ -3,8 +3,8 @@ package core
 import (
 	"fmt"
 
-	"github.com/dyammarcano/clonr/internal/database"
-	"github.com/dyammarcano/clonr/internal/model"
+	"github.com/inovacc/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/model"
 )
 
 // ShowConfig displays the current configuration

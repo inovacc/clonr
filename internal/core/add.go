@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/dyammarcano/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/database"
 )
 
 // AddOptions holds optional parameters for adding a repo.

@@ -1,4 +1,4 @@
-module github.com/dyammarcano/clonr
+module github.com/inovacc/clonr
 
 go 1.25
 

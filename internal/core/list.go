@@ -1,8 +1,8 @@
 package core
 
 import (
-	"github.com/dyammarcano/clonr/internal/database"
-	"github.com/dyammarcano/clonr/internal/model"
+	"github.com/inovacc/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/model"
 )
 
 func ListRepos() ([]model.Repository, error) {

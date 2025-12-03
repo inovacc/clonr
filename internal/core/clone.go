@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dyammarcano/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/database"
 )
 
 // if dest dir is a dot clones into the current dir, if not,

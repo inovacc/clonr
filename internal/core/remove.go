@@ -3,7 +3,7 @@ package core
 import (
 	"net/url"
 
-	"github.com/dyammarcano/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/database"
 )
 
 func RemoveRepo(urlStr string) error {

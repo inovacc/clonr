@@ -6,8 +6,8 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/dyammarcano/clonr/internal/core"
-	"github.com/dyammarcano/clonr/internal/model"
+	"github.com/inovacc/clonr/internal/core"
+	"github.com/inovacc/clonr/internal/model"
 )
 
 var (
@@ -23,6 +23,7 @@ func (i repoItem) Title() string {
 	if i.repo.Favorite {
 		fav = "⭐ "
 	}
+
 	return fmt.Sprintf("%s%s", fav, i.repo.URL)
 }
 
@@ -51,12 +52,14 @@ func (m RepoListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
 		m.list.SetSize(msg.Width-h, msg.Height-v)
+
 		return m, nil
 
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q", "esc":
 			m.quitting = true
+
 			return m, tea.Quit
 
 		case "enter":
@@ -65,12 +68,14 @@ func (m RepoListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selectedRepo = &i.repo
 				m.action = "selected"
 			}
+
 			return m, tea.Quit
 		}
 	}
 
 	var cmd tea.Cmd
 	m.list, cmd = m.list.Update(msg)
+
 	return m, cmd
 }
 
@@ -78,9 +83,11 @@ func (m RepoListModel) View() string {
 	if m.quitting {
 		return ""
 	}
+
 	if m.err != nil {
 		return fmt.Sprintf("Error: %v\n", m.err)
 	}
+
 	return docStyle.Render(m.list.View())
 }
 
@@ -105,6 +112,7 @@ func NewRepoList(favoritesOnly bool) (RepoListModel, error) {
 	} else {
 		l.Title = "All Repositories"
 	}
+
 	l.SetShowStatusBar(true)
 	l.SetFilteringEnabled(true)
 

@@ -1,6 +1,6 @@
 package monitor
 
-import "github.com/dyammarcano/clonr/internal/database"
+import "github.com/inovacc/clonr/internal/database"
 
 func Monitor(db database.Store) func() {
 	return func() {

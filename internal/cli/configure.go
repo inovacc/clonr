@@ -7,9 +7,11 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/dyammarcano/clonr/internal/database"
-	"github.com/dyammarcano/clonr/internal/model"
+	"github.com/inovacc/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/model"
 )
+
+const fmtV1 = " %s\n %s\n\n"
 
 var (
 	focusedStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
@@ -175,31 +177,11 @@ func (m ConfigureModel) View() string {
 
 	s := headerStyle.Render("Configure Clonr Settings") + "\n"
 	s += blurredStyle.Render("Edit the fields below and press Tab to navigate") + "\n\n"
-	s += fmt.Sprintf(
-		" %s\n %s\n\n",
-		blurredStyle.Render("Default Clone Directory:"),
-		m.inputs[0].View(),
-	)
-	s += fmt.Sprintf(
-		" %s\n %s\n\n",
-		blurredStyle.Render("Default Editor:"),
-		m.inputs[1].View(),
-	)
-	s += fmt.Sprintf(
-		" %s\n %s\n\n",
-		blurredStyle.Render("Default Terminal:"),
-		m.inputs[2].View(),
-	)
-	s += fmt.Sprintf(
-		" %s\n %s\n\n",
-		blurredStyle.Render("Monitor Interval (seconds):"),
-		m.inputs[3].View(),
-	)
-	s += fmt.Sprintf(
-		" %s\n %s\n\n",
-		blurredStyle.Render("Server Port:"),
-		m.inputs[4].View(),
-	)
+	s += fmt.Sprintf(fmtV1, blurredStyle.Render("Default Clone Directory:"), m.inputs[0].View())
+	s += fmt.Sprintf(fmtV1, blurredStyle.Render("Default Editor:"), m.inputs[1].View())
+	s += fmt.Sprintf(fmtV1, blurredStyle.Render("Default Terminal:"), m.inputs[2].View())
+	s += fmt.Sprintf(fmtV1, blurredStyle.Render("Monitor Interval (seconds):"), m.inputs[3].View())
+	s += fmt.Sprintf(fmtV1, blurredStyle.Render("Server Port:"), m.inputs[4].View())
 
 	button := &blurredButton
 	if m.focusIndex == len(m.inputs) {

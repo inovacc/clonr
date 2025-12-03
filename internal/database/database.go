@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/dyammarcano/clonr/internal/model"
+	"github.com/inovacc/clonr/internal/model"
 )
 
 // Store defines the database operations used by the app.

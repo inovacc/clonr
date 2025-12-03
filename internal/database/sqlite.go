@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dyammarcano/clonr/internal/model"
-	"github.com/dyammarcano/clonr/internal/params"
+	"github.com/inovacc/clonr/internal/model"
+	"github.com/inovacc/clonr/internal/params"
 
 	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"

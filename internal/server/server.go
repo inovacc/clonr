@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/dyammarcano/clonr/internal/core"
-	"github.com/dyammarcano/clonr/internal/database"
-	"github.com/dyammarcano/clonr/internal/monitor"
+	"github.com/inovacc/clonr/internal/core"
+	"github.com/inovacc/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/monitor"
 
 	"github.com/gin-gonic/gin"
 )

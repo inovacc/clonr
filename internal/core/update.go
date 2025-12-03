@@ -4,7 +4,7 @@ import (
 	"log"
 	"os/exec"
 
-	"github.com/dyammarcano/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/database"
 )
 
 // UpdateAllRepos pulls the latest changes for all repositories in the clonr database.

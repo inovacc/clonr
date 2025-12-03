@@ -1,4 +1,4 @@
-# Clonr [![Test](https://github.com/dyammarcano/clonr/actions/workflows/test.yml/badge.svg)](https://github.com/dyammarcano/clonr/actions/workflows/test.yml)
+# Clonr [![Test](https://github.com/inovacc/clonr/actions/workflows/test.yml/badge.svg)](https://github.com/inovacc/clonr/actions/workflows/test.yml)
 
 Clonr is a command-line tool and server for managing Git repositories efficiently. It provides an interactive interface for cloning, organizing, and working with multiple repositories from the CLI or
 via API.
@@ -23,7 +23,7 @@ via API.
 Install directly using Go (requires Go 1.24+):
 
 ```sh
-go install github.com/dyammarcano/clonr@latest
+go install github.com/inovacc/clonr@latest
 ```
 
 This will place the `clonr` binary in your `$GOPATH/bin` or `$HOME/go/bin` directory. Make sure this directory is in your `PATH`.
@@ -149,9 +149,9 @@ Server Port:             4000
   clonr https://github.com/user/repo  # Clones to configured directory
   clonr https://github.com/user/repo ./custom  # Overrides with ./custom
   ```
-- **Open Command**: Opens repositories in configured editor
-- **Server**: Runs on configured port
-- **Monitor**: Uses configured interval for status checks
+- **Open Command**: Opens repositories in the configured editor
+- **Server**: Runs on a configured port
+- **Monitor**: Uses a configured interval for status checks
 
 ## Development
 

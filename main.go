@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/dyammarcano/clonr/internal/cli"
-	"github.com/dyammarcano/clonr/internal/core"
-	"github.com/dyammarcano/clonr/internal/server"
+	"github.com/inovacc/clonr/internal/cli"
+	"github.com/inovacc/clonr/internal/core"
+	"github.com/inovacc/clonr/internal/server"
 )
 
 var (
@@ -342,5 +342,5 @@ Examples:
   clonr favorite https://github.com/user/repo
   clonr remove                               # Interactive selection
 
-For more information, visit: https://github.com/dyammarcano/clonr`)
+For more information, visit: https://github.com/inovacc/clonr`)
 }

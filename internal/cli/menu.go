@@ -45,7 +45,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 		}
 	}
 
-	fmt.Fprint(w, fn(str))
+	_, _ = fmt.Fprint(w, fn(str))
 }
 
 type MainMenuModel struct {
@@ -63,12 +63,14 @@ func (m MainMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.list.SetWidth(msg.Width)
+
 		return m, nil
 
 	case tea.KeyMsg:
 		switch keypress := msg.String(); keypress {
 		case "ctrl+c", "q":
 			m.quitting = true
+
 			return m, tea.Quit
 
 		case "enter":
@@ -77,12 +79,14 @@ func (m MainMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selectedItem = i
 				m.choice = i.action
 			}
+
 			return m, tea.Quit
 		}
 	}
 
 	var cmd tea.Cmd
 	m.list, cmd = m.list.Update(msg)
+
 	return m, cmd
 }
 
@@ -93,6 +97,7 @@ func (m MainMenuModel) View() string {
 	if m.quitting {
 		return "Goodbye!\n"
 	}
+
 	return "\n" + m.list.View()
 }
 
