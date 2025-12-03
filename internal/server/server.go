@@ -1,30 +1,25 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 	"sync"
 
 	"github.com/dyammarcano/clonr/internal/core"
 	"github.com/dyammarcano/clonr/internal/database"
 	"github.com/dyammarcano/clonr/internal/monitor"
-	"github.com/spf13/cobra"
 
 	"github.com/gin-gonic/gin"
 )
 
-func StartServer(cmd *cobra.Command, args []string) error {
-	initDB, err := database.InitDB()
-	if err != nil {
-		return fmt.Errorf("starting server: %w", err)
-	}
+func StartServer(args []string) error {
+	db := database.GetDB()
 
 	r := gin.Default()
 
 	var wg sync.WaitGroup
 
 	r.GET("/repos", func(c *gin.Context) {
-		repos, err := initDB.GetAllRepos()
+		repos, err := db.GetAllRepos()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -34,7 +29,7 @@ func StartServer(cmd *cobra.Command, args []string) error {
 	})
 
 	r.POST("/repos/update-all", func(c *gin.Context) {
-		repos, err := initDB.GetAllRepos()
+		repos, err := db.GetAllRepos()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -53,7 +48,7 @@ func StartServer(cmd *cobra.Command, args []string) error {
 		c.JSON(http.StatusOK, results)
 	})
 
-	wg.Go(monitor.Monitor(initDB))
+	wg.Go(monitor.Monitor(db))
 
 	return r.Run(":4000")
 }

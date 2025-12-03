@@ -9,15 +9,12 @@ import (
 
 // UpdateAllRepos pulls the latest changes for all repositories in the clonr database.
 func UpdateAllRepos() {
-	dbConn, err := database.InitDB()
-	if err != nil {
-		log.Printf("Failed to open database: %v\n", err)
-		return
-	}
+	db := database.GetDB()
 
-	repos, err := dbConn.GetAllRepos()
+	repos, err := db.GetAllRepos()
 	if err != nil {
 		log.Printf("Failed to get repositories: %v\n", err)
+
 		return
 	}
 
@@ -35,6 +32,7 @@ func UpdateRepo(path string) error {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("[pull error] %v: %s\n", err, string(output))
+
 		return err
 	}
 

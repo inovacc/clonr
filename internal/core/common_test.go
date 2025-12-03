@@ -3,6 +3,7 @@ package core
 import (
 	"archive/zip"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,7 +12,6 @@ import (
 )
 
 func TestDotGit(t *testing.T) {
-
 	dest, err := unzipHelper("testdata/repofake.zip", t.TempDir())
 	require.NoError(t, err)
 
@@ -26,7 +26,11 @@ func unzipHelper(zipFile, destDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer archive.Close()
+	defer func(archive *zip.ReadCloser) {
+		if err := archive.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}(archive)
 
 	destPath := filepath.Join(destDir, archive.File[0].Name)
 
@@ -56,8 +60,13 @@ func unzipHelper(zipFile, destDir string) (string, error) {
 			return "", err
 		}
 
-		dstFile.Close()
-		fileInArchive.Close()
+		if err := dstFile.Close(); err != nil {
+			return "", err
+		}
+
+		if err := fileInArchive.Close(); err != nil {
+			return "", err
+		}
 	}
 
 	return destPath, nil

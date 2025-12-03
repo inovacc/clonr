@@ -10,13 +10,12 @@ import (
 	"strings"
 
 	"github.com/dyammarcano/clonr/internal/database"
-	"github.com/spf13/cobra"
 )
 
 // if dest dir is a dot clones into the current dir, if not,
 // then clone into specified dir when dest dir not exists use default dir, saved in db
 
-func CloneRepo(_ *cobra.Command, args []string) error {
+func CloneRepo(args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("repository URL is required")
 	}
@@ -34,13 +33,10 @@ func CloneRepo(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid repository URL: %s", uri.String())
 	}
 
-	initDB, err := database.InitDB()
-	if err != nil {
-		return fmt.Errorf("starting server: %w", err)
-	}
+	db := database.GetDB()
 
 	// check for repo existence
-	ok, err := initDB.RepoExistsByURL(uri)
+	ok, err := db.RepoExistsByURL(uri)
 	if err != nil {
 		return fmt.Errorf("error checking for repo existence: %w", err)
 	}
@@ -49,8 +45,15 @@ func CloneRepo(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("repository already exists: %s", uri.String())
 	}
 
-	pathStr := "."
+	// Get config to determine default clone directory
+	cfg, err := db.GetConfig()
+	if err != nil {
+		return fmt.Errorf("error getting config: %w", err)
+	}
 
+	pathStr := cfg.DefaultCloneDir
+
+	// Allow override via command-line argument
 	if len(args) > 1 {
 		pathStr = args[1]
 	}
@@ -84,7 +87,7 @@ func CloneRepo(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("git clone error: %v - %s", err, string(output))
 	}
 
-	if err := initDB.SaveRepo(uri, savePath); err != nil {
+	if err := db.SaveRepo(uri, savePath); err != nil {
 		return fmt.Errorf("error saving repo to database: %w", err)
 	}
 

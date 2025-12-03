@@ -49,7 +49,9 @@ func newGitConfig(path string) (*GitConfig, error) {
 	for _, sec := range cfg.Sections() {
 		if sec.HasKey("url") && sec.HasKey("fetch") {
 			name := sec.Name()[len(`remote "`) : len(sec.Name())-1] // extraer "origin"
+
 			var remote RemoteSection
+
 			if err := sec.MapTo(&remote); err != nil {
 				return nil, err
 			}
@@ -61,7 +63,9 @@ func newGitConfig(path string) (*GitConfig, error) {
 	for _, sec := range cfg.Sections() {
 		if sec.HasKey("remote") && sec.HasKey("merge") {
 			name := sec.Name()[len(`branch "`) : len(sec.Name())-1] // extraer "main"
+
 			var branch BranchSection
+
 			if err := sec.MapTo(&branch); err != nil {
 				return nil, err
 			}
@@ -124,7 +128,9 @@ func gitHubURL(repoPath string) (*url.URL, error) {
 	// e.g., git@github.com:owner/repo.git
 	if isSCPLike(s) {
 		userHost, repo, _ := strings.Cut(s, ":")
+
 		user, host, ok := strings.Cut(userHost, "@")
+
 		if !ok || user == "" || host == "" || repo == "" {
 			return nil, fmt.Errorf("invalid SSH repository URL: %s", repoPath)
 		}
@@ -186,8 +192,7 @@ func gitHubURL(repoPath string) (*url.URL, error) {
 func isSCPLike(s string) bool {
 	// Must contain a single '@' before the first ':' and not start with a scheme.
 	if i := strings.IndexByte(s, ':'); i > 0 {
-		at := strings.IndexByte(s[:i], '@')
-		if at > 0 && !hasSchemePrefix(s) {
+		if strings.IndexByte(s[:i], '@') > 0 && !hasSchemePrefix(s) {
 			return true
 		}
 	}
@@ -197,6 +202,7 @@ func isSCPLike(s string) bool {
 
 func hasSchemePrefix(s string) bool {
 	l := strings.ToLower(s)
+
 	return strings.HasPrefix(l, "http://") ||
 		strings.HasPrefix(l, "https://") ||
 		strings.HasPrefix(l, "ssh://") ||

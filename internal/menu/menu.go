@@ -1,4 +1,4 @@
-package main
+package menu
 
 import (
 	"fmt"
@@ -6,6 +6,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+func NewMenuModel(args []string) error {
+	return nil
+}
 
 // A MenuItem holds the text and its corresponding submenu choices.
 type MenuItem struct {
