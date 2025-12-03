@@ -72,6 +72,7 @@ Clonr uses [Bubbletea](https://github.com/charmbracelet/bubbletea) for beautiful
 - **Open**: Select from favorite repositories to open in your editor
 
 All interactive UIs support:
+
 - ↑/↓ or j/k for navigation
 - Tab/Shift+Tab for form navigation
 - Enter to select/submit
@@ -115,6 +116,7 @@ clonr configure --show
 ```
 
 Output example:
+
 ```
 Current Configuration:
 =====================
@@ -132,6 +134,7 @@ clonr configure --reset
 ```
 
 This will reset all configuration values to their defaults:
+
 ```
 ✓ Configuration reset to defaults:
 ==================================
@@ -173,6 +176,7 @@ go build -tags sqlite -o clonr .
 ### Task Automation
 
 Task automation is available via [Taskfile](https://taskfile.dev/):
+
 ```sh
 task build    # Build the binary
 task test     # Run tests

@@ -31,10 +31,8 @@ func DefaultConfig() Config {
 		homeDir = "."
 	}
 
-	defaultCloneDir := filepath.Join(homeDir, "clonr")
-
 	return Config{
-		DefaultCloneDir: defaultCloneDir,
+		DefaultCloneDir: filepath.Join(homeDir, "clonr"),
 		Editor:          "code", // VS Code as default
 		Terminal:        "",
 		MonitorInterval: 300, // 5 minutes

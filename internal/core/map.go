@@ -35,9 +35,14 @@ func MapRepos(args []string) error {
 			switch {
 			case err != nil:
 				log.Printf("DB check failed for %s: %v\n", dotGit.Path, err)
+
+				return nil
 			case exists:
 				already++
+
 				log.Printf("Already tracked: %s\n", dotGit.Path)
+
+				return nil
 			default:
 				if err := db.SaveRepo(dotGit.URL, dotGit.Path); err == nil {
 					log.Printf("Added: %s\n", dotGit.Path)

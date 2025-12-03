@@ -17,6 +17,7 @@ type Store interface {
 	GetAllRepos() ([]model.Repository, error)
 	GetRepos(favoritesOnly bool) ([]model.Repository, error)
 	SetFavoriteByURL(urlStr string, fav bool) error
+	UpdateRepoTimestamp(urlStr string) error
 	RemoveRepoByURL(u *url.URL) error
 	GetConfig() (*model.Config, error)
 	SaveConfig(cfg *model.Config) error

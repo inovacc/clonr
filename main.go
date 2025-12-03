@@ -4,11 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/inovacc/clonr/internal/cli"
 	"github.com/inovacc/clonr/internal/core"
+	"github.com/inovacc/clonr/internal/database"
 	"github.com/inovacc/clonr/internal/server"
 )
 
@@ -23,6 +25,8 @@ var (
 
 	// List command flags
 	favoritesOnly = flag.Bool("favorites", false, "Show only favorite repositories (list command)")
+
+	versionStr = "0.2.0"
 )
 
 func main() {
@@ -33,11 +37,13 @@ func main() {
 
 	if *helpFlag {
 		printUsage()
+
 		os.Exit(0)
 	}
 
 	if *version {
-		fmt.Println("clonr version 0.2.0")
+		fmt.Println("clonr version " + versionStr)
+
 		os.Exit(0)
 	}
 
@@ -55,15 +61,18 @@ func main() {
 	// If the first arg looks like a URL, treat it as a clone command
 	if isURL(command) {
 		if err := cmdClone(args); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err)
+
 			os.Exit(1)
 		}
+
 		return
 	}
 
 	// Execute command
 	if err := executeCommand(command, commandArgs); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err)
+
 		os.Exit(1)
 	}
 }
@@ -76,6 +85,7 @@ func runInteractiveMenu() {
 		finalModel, err := p.Run()
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+
 			os.Exit(1)
 		}
 
@@ -84,6 +94,7 @@ func runInteractiveMenu() {
 
 		if choice == "" || choice == "exit" {
 			fmt.Println("Goodbye!")
+
 			return
 		}
 
@@ -91,12 +102,12 @@ func runInteractiveMenu() {
 		if err := executeCommand(choice, []string{}); err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			fmt.Println("\nPress Enter to continue...")
+
 			_, _ = fmt.Scanln()
-		} else {
-			if choice != "remove" && choice != "list" && choice != "open" {
-				fmt.Println("\nPress Enter to continue...")
-				_, _ = fmt.Scanln()
-			}
+		} else if choice != "remove" && choice != "list" && choice != "open" {
+			fmt.Println("\nPress Enter to continue...")
+
+			_, _ = fmt.Scanln()
 		}
 	}
 }
@@ -154,10 +165,13 @@ func cmdAdd(args []string) error {
 
 	if !*addYes {
 		fmt.Printf("Add '%s' to repositories? [y/N]: ", path)
+
 		var response string
+
 		_, _ = fmt.Scanln(&response)
 		if response != "y" && response != "Y" {
 			fmt.Println("Cancelled.")
+
 			return nil
 		}
 	}
@@ -166,12 +180,14 @@ func cmdAdd(args []string) error {
 	if err != nil {
 		return err
 	}
+
 	fmt.Printf("Added: %s\n", id)
+
 	return nil
 }
 
-func cmdList(args []string) error {
-	// Interactive mode - show list with actions
+func cmdList(_ []string) error {
+	// Interactive mode - show a list with actions
 	m, err := cli.NewRepoList(*favoritesOnly)
 	if err != nil {
 		return err
@@ -179,24 +195,65 @@ func cmdList(args []string) error {
 
 	p := tea.NewProgram(m)
 	_, err = p.Run()
+
 	return err
 }
 
-func cmdFavorite(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("favorite command requires a URL argument\nUsage: clonr favorite <url>")
+func cmdFavorite(_ []string) error {
+	// Show interactive list to select repository to favorite
+	m, err := cli.NewRepoList(false)
+	if err != nil {
+		return err
 	}
-	return core.SetFavoriteByURL(args[0], true)
+
+	p := tea.NewProgram(m)
+
+	finalModel, err := p.Run()
+	if err != nil {
+		return err
+	}
+
+	repoModel := finalModel.(cli.RepoListModel)
+	selected := repoModel.GetSelectedRepo()
+
+	if selected != nil {
+		if err := core.SetFavoriteByURL(selected.URL, true); err != nil {
+			return err
+		}
+		fmt.Printf("✓ Marked %s as favorite\n", selected.URL)
+	}
+
+	return nil
 }
 
-func cmdUnfavorite(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("unfavorite command requires a URL argument\nUsage: clonr unfavorite <url>")
+func cmdUnfavorite(_ []string) error {
+	// Show interactive list of favorites to unfavorite
+	m, err := cli.NewRepoList(true)
+	if err != nil {
+		return err
 	}
-	return core.SetFavoriteByURL(args[0], false)
+
+	p := tea.NewProgram(m)
+
+	finalModel, err := p.Run()
+	if err != nil {
+		return err
+	}
+
+	repoModel := finalModel.(cli.RepoListModel)
+	selected := repoModel.GetSelectedRepo()
+
+	if selected != nil {
+		if err := core.SetFavoriteByURL(selected.URL, false); err != nil {
+			return err
+		}
+		fmt.Printf("✓ Removed favorite from %s\n", selected.URL)
+	}
+
+	return nil
 }
 
-func cmdRemove(args []string) error {
+func cmdRemove(_ []string) error {
 	// Use interactive bubbles UI
 	m, err := cli.NewRepoList(false)
 	if err != nil {
@@ -204,6 +261,7 @@ func cmdRemove(args []string) error {
 	}
 
 	p := tea.NewProgram(m)
+
 	finalModel, err := p.Run()
 	if err != nil {
 		return err
@@ -214,6 +272,7 @@ func cmdRemove(args []string) error {
 
 	if selected != nil {
 		fmt.Printf("Removing repository: %s\n", selected.URL)
+
 		return core.RemoveRepo(selected.URL)
 	}
 
@@ -224,23 +283,67 @@ func cmdMap(args []string) error {
 	return core.MapRepos(args)
 }
 
-func cmdOpen(args []string) error {
-	fmt.Println("Open command - to be implemented with favorite selection")
+func cmdOpen(_ []string) error {
+	// Show interactive list to select repository to open
+	m, err := cli.NewRepoList(false)
+	if err != nil {
+		return err
+	}
+
+	p := tea.NewProgram(m)
+
+	finalModel, err := p.Run()
+	if err != nil {
+		return err
+	}
+
+	repoModel := finalModel.(cli.RepoListModel)
+	selected := repoModel.GetSelectedRepo()
+
+	if selected == nil {
+		return nil
+	}
+
+	// Get editor from config
+	db := database.GetDB()
+
+	cfg, err := db.GetConfig()
+	if err != nil {
+		return fmt.Errorf("failed to get config: %w", err)
+	}
+
+	if cfg.Editor == "" {
+		return fmt.Errorf("no editor configured. Run 'clonr configure' to set an editor")
+	}
+
+	// Open the repository in the configured editor
+	fmt.Printf("Opening %s in %s...\n", selected.Path, cfg.Editor)
+	cmd := exec.Command(cfg.Editor, selected.Path)
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to open editor: %w", err)
+	}
+
+	fmt.Printf("✓ Opened %s\n", selected.URL)
+
 	return nil
 }
 
-func cmdUpdate(args []string) error {
+func cmdUpdate(_ []string) error {
 	fmt.Println("Update command - to be implemented")
+
 	return nil
 }
 
-func cmdStatus(args []string) error {
+func cmdStatus(_ []string) error {
 	fmt.Println("Status command - to be implemented")
+
 	return nil
 }
 
-func cmdNerds(args []string) error {
+func cmdNerds(_ []string) error {
 	fmt.Println("Nerds command - to be implemented")
+
 	return nil
 }
 
@@ -267,7 +370,8 @@ func cmdConfigure(args []string) error {
 		return err
 	}
 
-	p := tea.NewProgram(m)
+	p := tea.NewProgram(&m)
+
 	finalModel, err := p.Run()
 	if err != nil {
 		return err
@@ -287,7 +391,28 @@ func cmdServer(args []string) error {
 }
 
 func cmdClone(args []string) error {
-	return core.CloneRepo(args)
+	// Prepare a clone operation
+	repoURL, targetPath, err := core.PrepareClonePath(args)
+	if err != nil {
+		return err
+	}
+
+	// Run clone with progress UI
+	m := cli.NewCloneModel(repoURL.String(), targetPath)
+	p := tea.NewProgram(m)
+
+	finalModel, err := p.Run()
+	if err != nil {
+		return err
+	}
+
+	cloneModel := finalModel.(cli.CloneModel)
+	if cloneModel.Error() != nil {
+		return cloneModel.Error()
+	}
+
+	// Save to a database after a successful clone
+	return core.SaveClonedRepo(repoURL, targetPath)
 }
 
 func printUsage() {
@@ -303,8 +428,8 @@ Available Commands:
   <url> [dest]         Clone a repository (supports https, http, git, ssh, ftp, sftp, git@)
   add <path>           Register an existing local Git repository
   list                 Interactively list all repositories
-  favorite <url>       Mark a repository as favorite
-  unfavorite <url>     Remove favorite mark from a repository
+  favorite             Mark a repository as favorite (interactive)
+  unfavorite           Remove favorite mark from a repository (interactive)
   remove               Remove repository from management (interactive)
   open                 Open a favorite repository in your configured editor
   map [directory]      Scan directory for existing Git repositories
@@ -339,8 +464,9 @@ Examples:
   clonr configure --reset                    # Reset to default configuration
   clonr add /path/to/repo -y
   clonr list --favorites
-  clonr favorite https://github.com/user/repo
-  clonr remove                               # Interactive selection
+  clonr favorite                             # Interactive selection to mark as favorite
+  clonr unfavorite                           # Interactive selection to unmark favorite
+  clonr remove                               # Interactive selection to remove
 
 For more information, visit: https://github.com/inovacc/clonr`)
 }

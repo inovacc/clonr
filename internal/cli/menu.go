@@ -85,6 +85,7 @@ func (m MainMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	var cmd tea.Cmd
+
 	m.list, cmd = m.list.Update(msg)
 
 	return m, cmd
@@ -94,6 +95,7 @@ func (m MainMenuModel) View() string {
 	if m.choice != "" {
 		return ""
 	}
+
 	if m.quitting {
 		return "Goodbye!\n"
 	}

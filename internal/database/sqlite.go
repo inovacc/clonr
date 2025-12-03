@@ -70,11 +70,10 @@ func (s *sqliteStore) SaveRepo(u *url.URL, path string) error {
 	}
 
 	return s.Create(&model.Repository{
-		UID:       uuid.New().String(),
-		URL:       u.String(),
-		Path:      path,
-		ClonedAt:  time.Now(),
-		UpdatedAt: time.Now(),
+		UID:      uuid.New().String(),
+		URL:      u.String(),
+		Path:     path,
+		ClonedAt: time.Now(),
 	}).Error
 }
 
@@ -140,6 +139,10 @@ func (s *sqliteStore) GetRepos(favoritesOnly bool) ([]model.Repository, error) {
 
 func (s *sqliteStore) SetFavoriteByURL(urlStr string, fav bool) error {
 	return s.Model(&model.Repository{}).Where("url = ?", urlStr).Update("favorite", fav).Error
+}
+
+func (s *sqliteStore) UpdateRepoTimestamp(urlStr string) error {
+	return s.Model(&model.Repository{}).Where("url = ?", urlStr).Update("updated_at", time.Now()).Error
 }
 
 func (s *sqliteStore) RemoveRepoByURL(u *url.URL) error {

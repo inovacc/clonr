@@ -14,14 +14,13 @@ import (
 const fmtV1 = " %s\n %s\n\n"
 
 var (
-	focusedStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	blurredStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	cursorStyle         = focusedStyle.Copy()
-	noStyle             = lipgloss.NewStyle()
-	helpStyleConfigure  = blurredStyle.Copy()
-	cursorModeHelpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
+	focusedStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	blurredStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	cursorStyle        = focusedStyle
+	noStyle            = lipgloss.NewStyle()
+	helpStyleConfigure = blurredStyle
 
-	focusedButton = focusedStyle.Copy().Render("[ Submit ]")
+	focusedButton = focusedStyle.Render("[ Submit ]")
 	blurredButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Submit"))
 )
 
@@ -127,6 +126,7 @@ func (m ConfigureModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds[i] = m.inputs[i].Focus()
 					m.inputs[i].PromptStyle = focusedStyle
 					m.inputs[i].TextStyle = focusedStyle
+
 					continue
 				}
 				// Remove the focused state
@@ -187,14 +187,14 @@ func (m ConfigureModel) View() string {
 	if m.focusIndex == len(m.inputs) {
 		button = &focusedButton
 	}
-	s += fmt.Sprintf("\n\n %s\n\n", *button)
 
+	s += fmt.Sprintf("\n\n %s\n\n", *button)
 	s += helpStyleConfigure.Render(" tab/shift+tab: navigate • enter: submit • esc: quit")
 
 	return s
 }
 
-func (m ConfigureModel) saveConfig() tea.Msg {
+func (m *ConfigureModel) saveConfig() tea.Msg {
 	// Parse monitor interval
 	monitorInterval, err := strconv.Atoi(m.inputs[3].Value())
 	if err != nil {

@@ -28,7 +28,19 @@ func (i repoItem) Title() string {
 }
 
 func (i repoItem) Description() string {
-	return i.repo.Path
+	desc := i.repo.Path
+
+	if !i.repo.ClonedAt.IsZero() {
+		clonedAt := i.repo.ClonedAt.Format("2006-01-02 15:04")
+		desc = fmt.Sprintf("%s | Cloned: %s", desc, clonedAt)
+
+		if !i.repo.UpdatedAt.IsZero() {
+			updatedAt := i.repo.UpdatedAt.Format("2006-01-02 15:04")
+			desc = fmt.Sprintf("%s | Updated: %s", desc, updatedAt)
+		}
+	}
+
+	return desc
 }
 
 func (i repoItem) FilterValue() string {
@@ -74,6 +86,7 @@ func (m RepoListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	var cmd tea.Cmd
+
 	m.list, cmd = m.list.Update(msg)
 
 	return m, cmd

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/inovacc/clonr/internal/model"
 	"github.com/inovacc/clonr/internal/params"
 	"go.etcd.io/bbolt"
@@ -65,10 +66,10 @@ func (b *Bolt) SaveRepo(u *url.URL, path string) error {
 	}
 
 	repo := model.Repository{
-		URL:       u.String(),
-		Path:      path,
-		ClonedAt:  time.Now(),
-		UpdatedAt: time.Now(),
+		UID:      uuid.New().String(),
+		URL:      u.String(),
+		Path:     path,
+		ClonedAt: time.Now(),
 	}
 
 	data, err := json.Marshal(&repo)
@@ -219,6 +220,32 @@ func (b *Bolt) SetFavoriteByURL(urlStr string, fav bool) error {
 		}
 
 		r.Favorite = fav
+
+		data, err := json.Marshal(&r)
+		if err != nil {
+			return err
+		}
+
+		return repos.Put([]byte(urlStr), data)
+	})
+}
+
+func (b *Bolt) UpdateRepoTimestamp(urlStr string) error {
+	return b.db.Update(func(tx *bbolt.Tx) error {
+		repos := tx.Bucket([]byte(boltBucketRepos))
+
+		v := repos.Get([]byte(urlStr))
+
+		if v == nil {
+			return nil
+		}
+
+		var r model.Repository
+
+		if err := json.Unmarshal(v, &r); err != nil {
+			return err
+		}
+
 		r.UpdatedAt = time.Now()
 
 		data, err := json.Marshal(&r)
@@ -269,6 +296,7 @@ func (b *Bolt) GetConfig() (*model.Config, error) {
 			// Return default config if not found
 			defaultCfg := model.DefaultConfig()
 			cfg = &defaultCfg
+
 			return nil
 		}
 
@@ -278,6 +306,7 @@ func (b *Bolt) GetConfig() (*model.Config, error) {
 		}
 
 		cfg = &c
+
 		return nil
 	})
 
@@ -296,6 +325,7 @@ func (b *Bolt) SaveConfig(cfg *model.Config) error {
 
 	return b.db.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(boltBucketConfig))
+
 		return bucket.Put([]byte("config"), data)
 	})
 }
