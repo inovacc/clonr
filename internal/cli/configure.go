@@ -100,7 +100,7 @@ func (m ConfigureModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "tab", "shift+tab", "enter", "up", "down":
 			s := msg.String()
 
-			// Submit on enter when on submit button
+			// Submit on enter when on submitted button
 			if s == "enter" && m.focusIndex == len(m.inputs) {
 				return m, m.saveConfig
 			}
@@ -127,7 +127,7 @@ func (m ConfigureModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.inputs[i].TextStyle = focusedStyle
 					continue
 				}
-				// Remove focused state
+				// Remove the focused state
 				m.inputs[i].Blur()
 				m.inputs[i].PromptStyle = noStyle
 				m.inputs[i].TextStyle = noStyle
@@ -168,11 +168,13 @@ func (m ConfigureModel) View() string {
 			Render(fmt.Sprintf("\n  ✗ Error: %v\n\n", m.Err))
 	}
 
-	var b lipgloss.Style
+	// Show header and current values info
+	headerStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("205"))
 
-	b = lipgloss.NewStyle().Width(80)
-
-	s := b.Render("Configure Clonr Settings\n\n")
+	s := headerStyle.Render("Configure Clonr Settings") + "\n"
+	s += blurredStyle.Render("Edit the fields below and press Tab to navigate") + "\n\n"
 	s += fmt.Sprintf(
 		" %s\n %s\n\n",
 		blurredStyle.Render("Default Clone Directory:"),

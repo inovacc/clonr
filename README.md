@@ -52,6 +52,7 @@ clonr                          # Interactive menu
 - `clonr update [repo-name]`: Pull latest changes for all or a specific repository.
 - `clonr configure`: Interactive configuration wizard for all settings.
 - `clonr configure --show` or `-s`: Display current configuration.
+- `clonr configure --reset` or `-r`: Reset configuration to default values.
 - `clonr map`: Map a local directory to search and register existing Git repositories.
 - `clonr status`: Show the Git status of all managed repositories.
 - `clonr nerds`: Display nerd statistics and metrics for all repositories.
@@ -101,10 +102,10 @@ clonr configure
 
 This opens a beautiful terminal UI where you can configure:
 
-- **Default Clone Directory**: Where repositories are cloned by default (e.g., `~/repos`, `./projects`)
-- **Editor**: Your preferred editor for opening repositories (e.g., `code`, `goland`, `vim`)
+- **Default Clone Directory**: Where repositories are cloned by default (default: `~/clonr`)
+- **Editor**: Your preferred editor for opening repositories (default: `code`)
 - **Terminal**: Terminal application (optional)
-- **Monitor Interval**: Seconds between repository status checks (default: 300)
+- **Monitor Interval**: Seconds between repository status checks (default: 300 seconds)
 - **Server Port**: Port for the API server (default: 4000)
 
 ### View Current Configuration
@@ -117,7 +118,24 @@ Output example:
 ```
 Current Configuration:
 =====================
-Default Clone Directory: ~/repos
+Default Clone Directory: ~/clonr
+Editor:                  code
+Terminal:
+Monitor Interval:        300 seconds
+Server Port:             4000
+```
+
+### Reset Configuration to Defaults
+
+```sh
+clonr configure --reset
+```
+
+This will reset all configuration values to their defaults:
+```
+✓ Configuration reset to defaults:
+==================================
+Default Clone Directory: ~/clonr
 Editor:                  code
 Terminal:
 Monitor Interval:        300 seconds
@@ -205,11 +223,11 @@ clonr remove
 ### Workflow Example
 
 ```sh
-# 1. Configure clonr for your environment
+# 1. Configure clonr for your environment (optional, sensible defaults provided)
 clonr configure
-# Set default directory to ~/repos, editor to code
+# Defaults: directory ~/clonr, editor code, port 4000
 
-# 2. Clone repositories (they go to ~/repos by default)
+# 2. Clone repositories (they go to ~/clonr by default)
 clonr https://github.com/golang/go
 clonr https://github.com/torvalds/linux
 
@@ -229,6 +247,9 @@ clonr open  # Opens interactive menu of favorites
 
 # 7. Check current config
 clonr configure --show
+
+# 8. Reset config if needed
+clonr configure --reset
 ```
 
 ## Project Structure

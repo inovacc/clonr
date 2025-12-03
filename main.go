@@ -245,10 +245,22 @@ func cmdNerds(args []string) error {
 }
 
 func cmdConfigure(args []string) error {
-	// If --show flag is provided, just show the current config
-	if len(args) > 0 && (args[0] == "--show" || args[0] == "-s") {
-		return core.ShowConfig()
+	// Handle flags
+	if len(args) > 0 {
+		switch args[0] {
+		case "--show", "-s":
+			return core.ShowConfig()
+		case "--reset", "-r":
+			return core.ResetConfig()
+		}
 	}
+
+	// Show current config before interactive form
+	if err := core.ShowConfig(); err != nil {
+		// If there's an error showing config, continue anyway with defaults
+		fmt.Println("No configuration found, using defaults.")
+	}
+	fmt.Println("\nStarting interactive configuration...\n")
 
 	m, err := cli.NewConfigureModel()
 	if err != nil {
@@ -316,6 +328,7 @@ Command-Specific Flags:
 
   configure:
     --show, -s         Show current configuration
+    --reset, -r        Reset configuration to defaults
 
 Examples:
   clonr                                      # Start interactive menu
@@ -323,6 +336,7 @@ Examples:
   clonr https://github.com/user/repo ./code  # Clone to specific directory
   clonr configure                            # Configure settings interactively
   clonr configure --show                     # Show current configuration
+  clonr configure --reset                    # Reset to default configuration
   clonr add /path/to/repo -y
   clonr list --favorites
   clonr favorite https://github.com/user/repo
