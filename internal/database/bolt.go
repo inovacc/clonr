@@ -28,30 +28,32 @@ type Bolt struct {
 func initDB() (Store, error) {
 	path := filepath.Join(params.AppdataDir, "clonr.bolt")
 
-	db, err := bbolt.Open(path, 0600, &bbolt.Options{Timeout: 1 * time.Second})
+	instance, err := bbolt.Open(path, 0600, &bbolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return nil, err
 	}
 
-	if err := db.Update(func(tx *bbolt.Tx) error {
+	if err := instance.Update(func(tx *bbolt.Tx) error {
 		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketRepos)); err != nil {
 			return err
 		}
+
 		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketPaths)); err != nil {
 			return err
 		}
+
 		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketConfig)); err != nil {
 			return err
 		}
 
 		return nil
 	}); err != nil {
-		_ = db.Close()
+		_ = instance.Close()
 
 		return nil, err
 	}
 
-	return &Bolt{db: db}, nil
+	return &Bolt{db: instance}, nil
 }
 
 func (b *Bolt) Ping() error {

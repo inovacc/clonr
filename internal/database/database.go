@@ -28,18 +28,19 @@ var (
 	db   Store
 )
 
-func init() {
-	once.Do(func() {
-		var err error
-
-		db, err = initDB()
-		if err != nil {
-			panic(err)
-		}
-	})
-}
-
 // GetDB returns the initialized database store.
 func GetDB() Store {
+	once.Do(lazyInit)
+
 	return db
+}
+
+func lazyInit() {
+	instance, err := initDB()
+	if err != nil {
+		panic(err)
+	}
+
+	_ = instance.Ping()
+	db = instance
 }

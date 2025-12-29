@@ -3,15 +3,18 @@ package core
 import (
 	"fmt"
 
-	"github.com/inovacc/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/grpcclient"
 	"github.com/inovacc/clonr/internal/model"
 )
 
 // ShowConfig displays the current configuration
 func ShowConfig() error {
-	db := database.GetDB()
+	client, err := grpcclient.GetClient()
+	if err != nil {
+		return fmt.Errorf("failed to connect to server: %w", err)
+	}
 
-	cfg, err := db.GetConfig()
+	cfg, err := client.GetConfig()
 	if err != nil {
 		return err
 	}
@@ -29,11 +32,14 @@ func ShowConfig() error {
 
 // ResetConfig resets the configuration to default values
 func ResetConfig() error {
-	db := database.GetDB()
+	client, err := grpcclient.GetClient()
+	if err != nil {
+		return fmt.Errorf("failed to connect to server: %w", err)
+	}
 
 	defaultCfg := model.DefaultConfig()
 
-	if err := db.SaveConfig(&defaultCfg); err != nil {
+	if err := client.SaveConfig(&defaultCfg); err != nil {
 		return fmt.Errorf("failed to reset configuration: %w", err)
 	}
 

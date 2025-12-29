@@ -1,18 +1,22 @@
 package core
 
 import (
+	"fmt"
 	"net/url"
 
-	"github.com/inovacc/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/grpcclient"
 )
 
 func RemoveRepo(urlStr string) error {
-	db := database.GetDB()
+	client, err := grpcclient.GetClient()
+	if err != nil {
+		return fmt.Errorf("failed to connect to server: %w", err)
+	}
 
 	u, err := url.Parse(urlStr)
 	if err != nil {
 		return err
 	}
 
-	return db.RemoveRepoByURL(u)
+	return client.RemoveRepoByURL(u)
 }

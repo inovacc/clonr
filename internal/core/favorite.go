@@ -1,9 +1,16 @@
 package core
 
-import "github.com/inovacc/clonr/internal/database"
+import (
+	"fmt"
+
+	"github.com/inovacc/clonr/internal/grpcclient"
+)
 
 func SetFavoriteByURL(url string, fav bool) error {
-	db := database.GetDB()
+	client, err := grpcclient.GetClient()
+	if err != nil {
+		return fmt.Errorf("failed to connect to server: %w", err)
+	}
 
-	return db.SetFavoriteByURL(url, fav)
+	return client.SetFavoriteByURL(url, fav)
 }

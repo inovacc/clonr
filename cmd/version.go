@@ -5,6 +5,12 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/spf13/cobra"
+)
+
+var (
+	jsonOutput bool
 )
 
 // Version information embedded at build time
@@ -13,13 +19,13 @@ const (
 	Version = "v0.1.0"
 
 	// GitHash is the git commit hash
-	GitHash = "e6d7bd99a35e55dca678d011fa62fb33ae993c75"
+	GitHash = "48f78999bdb4852f3bf1f9b7bd662a553f52fa0d"
 
 	// BuildTime is when the binary was built
-	BuildTime = "2025-12-29T13:27:44Z"
+	BuildTime = "2025-12-29T14:53:35Z"
 
 	// BuildHash is a unique hash for this build
-	BuildHash = "795f7e17747992eaff5c56283708f2d6ac48c6c6689e85fb315fa99770cc8ec2"
+	BuildHash = "1068a470709e79626d7341b8c3609033798f0072164b3fa6556ad9e77ed25294"
 
 	// GoVersion is the Go version used to build
 	GoVersion = "go1.25.5"
@@ -40,6 +46,33 @@ type VersionInfo struct {
 	GitHash   string `json:"git_hash"`
 	BuildTime string `json:"build_time"`
 	BuildHash string `json:"build_hash"`
+}
+
+// versionCmd represents the version command.
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print version information",
+	Long: `Display version information including:
+	- Application version
+	- Git commit hash
+	- Build time
+	- Build hash
+	- Go version
+	- OS/Architecture`,
+	Run: runVersion,
+}
+
+func init() {
+	rootCmd.AddCommand(versionCmd)
+	versionCmd.Flags().BoolVarP(&jsonOutput, "json", "j", false, "Output version info as JSON")
+}
+
+func runVersion(cmd *cobra.Command, args []string) {
+	if jsonOutput {
+		fmt.Println(GetVersionJSON())
+	} else {
+		printVersion()
+	}
 }
 
 // GetVersionInfo returns the version information.

@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/inovacc/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/grpcclient"
 )
 
 // if dest dir is a dot clones into the current dir, if not,
@@ -34,10 +34,13 @@ func PrepareClonePath(args []string) (*url.URL, string, error) {
 		return nil, "", fmt.Errorf("invalid repository URL: %s", uri.String())
 	}
 
-	db := database.GetDB()
+	client, err := grpcclient.GetClient()
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to connect to server: %w", err)
+	}
 
 	// check for repo existence
-	ok, err := db.RepoExistsByURL(uri)
+	ok, err := client.RepoExistsByURL(uri)
 	if err != nil {
 		return nil, "", fmt.Errorf("error checking for repo existence: %w", err)
 	}
@@ -47,7 +50,7 @@ func PrepareClonePath(args []string) (*url.URL, string, error) {
 	}
 
 	// Get config to determine default clone directory
-	cfg, err := db.GetConfig()
+	cfg, err := client.GetConfig()
 	if err != nil {
 		return nil, "", fmt.Errorf("error getting config: %w", err)
 	}
@@ -86,9 +89,12 @@ func PrepareClonePath(args []string) (*url.URL, string, error) {
 
 // SaveClonedRepo saves the successfully cloned repository to the database
 func SaveClonedRepo(uri *url.URL, savePath string) error {
-	db := database.GetDB()
+	client, err := grpcclient.GetClient()
+	if err != nil {
+		return fmt.Errorf("failed to connect to server: %w", err)
+	}
 
-	if err := db.SaveRepo(uri, savePath); err != nil {
+	if err := client.SaveRepo(uri, savePath); err != nil {
 		return fmt.Errorf("error saving repo to database: %w", err)
 	}
 

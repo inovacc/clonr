@@ -9,7 +9,7 @@ import (
 func main() {
 	opts := genversioninfo.Options{
 		GoVersionPath:    ".go-version",
-		PlainVersionPath: "internal/version/version.go",
+		CobraVersionPath: "cmd/version.go",
 	}
 
 	if err := genversioninfo.GenVersionInfo(opts); err != nil {

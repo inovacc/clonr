@@ -1,19 +1,27 @@
 package core
 
 import (
-	"github.com/inovacc/clonr/internal/database"
+	"fmt"
+
+	"github.com/inovacc/clonr/internal/grpcclient"
 	"github.com/inovacc/clonr/internal/model"
 )
 
 func ListRepos() ([]model.Repository, error) {
-	db := database.GetDB()
+	client, err := grpcclient.GetClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to server: %w", err)
+	}
 
-	return db.GetAllRepos()
+	return client.GetAllRepos()
 }
 
 // ListReposFiltered returns repos optionally filtered by favoritesOnly.
 func ListReposFiltered(favoritesOnly bool) ([]model.Repository, error) {
-	db := database.GetDB()
+	client, err := grpcclient.GetClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to server: %w", err)
+	}
 
-	return db.GetRepos(favoritesOnly)
+	return client.GetRepos(favoritesOnly)
 }

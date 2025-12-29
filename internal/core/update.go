@@ -1,17 +1,22 @@
 package core
 
 import (
+	"fmt"
 	"log"
 	"os/exec"
 
-	"github.com/inovacc/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/grpcclient"
 )
 
 // UpdateAllRepos pulls the latest changes for all repositories in the clonr database.
 func UpdateAllRepos() {
-	db := database.GetDB()
+	client, err := grpcclient.GetClient()
+	if err != nil {
+		log.Printf("Failed to connect to server: %v\n", err)
+		return
+	}
 
-	repos, err := db.GetAllRepos()
+	repos, err := client.GetAllRepos()
 	if err != nil {
 		log.Printf("Failed to get repositories: %v\n", err)
 
@@ -39,8 +44,12 @@ func UpdateRepo(url, path string) error {
 	log.Printf("[updated] %s\n", output)
 
 	// Update the timestamp in the database
-	db := database.GetDB()
-	if err := db.UpdateRepoTimestamp(url); err != nil {
+	client, err := grpcclient.GetClient()
+	if err != nil {
+		return fmt.Errorf("failed to connect to server: %w", err)
+	}
+
+	if err := client.UpdateRepoTimestamp(url); err != nil {
 		log.Printf("Failed to update timestamp for %s: %v\n", url, err)
 	}
 
