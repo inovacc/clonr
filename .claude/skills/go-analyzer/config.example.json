@@ -1,0 +1,103 @@
+{
+  "analysis": {
+    "go_version": {
+      "required": "1.25.5",
+      "check_go_mod": true,
+      "check_go_version_file": true
+    },
+    "scope": {
+      "directories": [
+        "apps/",
+        "shared/"
+      ],
+      "exclude": [
+        "vendor/",
+        "node_modules/",
+        "*.pb.go",
+        "*_mock.go"
+      ]
+    },
+    "severity_levels": {
+      "critical": [
+        "wrong_go_version",
+        "panic_in_library",
+        "race_condition",
+        "goroutine_leak"
+      ],
+      "high": [
+        "improper_error_handling",
+        "missing_context",
+        "tight_coupling"
+      ],
+      "medium": [
+        "interface_naming",
+        "constant_naming",
+        "package_naming"
+      ],
+      "low": [
+        "comment_language",
+        "file_naming",
+        "documentation"
+      ]
+    },
+    "rules": {
+      "go_version": {
+        "enabled": true,
+        "required_version": "1.25.5",
+        "check_all_go_mod_files": true,
+        "flag_deprecated_features": true,
+        "suggest_new_features": true
+      },
+      "package_naming": {
+        "enabled": true,
+        "allow_underscore": true,
+        "disallow_kebab_case": true,
+        "disallow_camel_case": true
+      },
+      "interface_naming": {
+        "enabled": true,
+        "disallow_interface_suffix": true,
+        "require_er_suffix_for_single_method": false
+      },
+      "error_handling": {
+        "enabled": true,
+        "disallow_panic_in_library": true,
+        "require_error_wrapping": true,
+        "require_context_usage": true
+      },
+      "constants": {
+        "enabled": true,
+        "disallow_screaming_snake_case": true,
+        "require_typed_constants": true,
+        "suggest_iota": true
+      },
+      "dependency_injection": {
+        "enabled": true,
+        "prefer_constructor_injection": true,
+        "disallow_global_state": false
+      },
+      "concurrency": {
+        "enabled": true,
+        "require_errgroup": true,
+        "check_goroutine_cleanup": true
+      },
+      "documentation": {
+        "enabled": true,
+        "require_english": true,
+        "require_godoc_for_exported": true
+      }
+    },
+    "output": {
+      "format": "markdown",
+      "include_examples": true,
+      "include_stats": true,
+      "group_by": "severity",
+      "max_issues_per_category": 50
+    }
+  },
+  "fix_suggestions": {
+    "include_code_examples": true,
+    "include_file_references": true,
+    "suggest_automated_fixes": true
+  }
+}

@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package clonr.v1;
+
+option go_package = "github.com/inovacc/clonr/pkg/api/v1";
+
+// Config represents application configuration
+message Config {
+  string default_clone_dir = 1;
+  string editor = 2;
+  string terminal = 3;
+  int32 monitor_interval = 4;
+  int32 server_port = 5;
+}
+
+// GetConfig RPC messages
+message GetConfigRequest {}
+
+message GetConfigResponse {
+  Config config = 1;
+}
+
+// SaveConfig RPC messages
+message SaveConfigRequest {
+  Config config = 1;
+}
+
+message SaveConfigResponse {
+  bool success = 1;
+}

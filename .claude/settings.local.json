@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./scripts/new-skill.sh:*)",
+      "WebSearch",
+      "Bash(go test:*)",
+      "Bash(task test:cover:*)",
+      "Bash(go tool cover:*)",
+      "Bash(go clean:*)"
+    ]
+  }
+}

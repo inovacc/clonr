@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package clonr.v1;
+
+option go_package = "github.com/inovacc/clonr/pkg/api/v1";
+
+// Empty message for RPCs that don't need a request/response body
+message Empty {}

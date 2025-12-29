@@ -1,0 +1,184 @@
+# EditorConfig helps maintain consistent coding styles across different editors and IDEs
+# More information: https://editorconfig.org
+# Supported by: VS Code, IntelliJ, Sublime, Vim, Emacs, and more
+
+# This is the top-most EditorConfig file (don't search parent directories)
+root = true
+
+# ========================================
+# DEFAULT SETTINGS (all files)
+# ========================================
+[*]
+
+# Character encoding: UTF-8 (universal support, multilingual)
+charset = utf-8
+
+# Line endings: LF (Unix-style \n)
+# - LF: Linux, macOS, Git default
+# - CRLF: Windows default (not used here for consistency)
+end_of_line = lf
+
+# Indentation: Spaces (not tabs)
+# Most languages prefer spaces for consistent rendering across editors
+indent_style = space
+
+# Indentation size: 4 spaces per level
+# Common default for many languages (Java, C#, Python, etc.)
+indent_size = 4
+
+# Tab width: 4 characters (how tabs are displayed if present)
+tab_width = 4
+
+# Final newline: Not enforced by default
+# Some files (like shell scripts) need it, others don't
+insert_final_newline = false
+
+# Maximum line length: 120 characters
+# Balance between readability and modern widescreen displays
+# Traditional 80 chars is too restrictive for modern code
+max_line_length = 120
+
+# ========================================
+# GO FILES
+# ========================================
+# Go has strong opinions about formatting
+[*.{go,go2}]
+
+# Use TABS for indentation (enforced by gofmt)
+# Go convention: tabs for indentation, spaces for alignment
+# Reason: Allows developers to set their preferred tab width
+indent_style = tab
+
+# Note: tab_width and indent_size are not set here
+# Each developer can configure their editor to display tabs as they prefer
+
+# ========================================
+# SHELL SCRIPTS
+# ========================================
+# Bash, Zsh, and other shell scripts
+[*.{sh,bash,zsh}]
+
+# 2-space indentation (Google Shell Style Guide)
+# Reason: Shell scripts tend to have deep nesting, 2 spaces saves horizontal space
+indent_size = 2
+tab_width = 2
+
+# ========================================
+# INFRASTRUCTURE & CONFIG FILES
+# ========================================
+# HashiCorp HCL, Nomad, Terraform
+[*.{conf,hcl,nomad,tf,tfvars}]
+
+# 2-space indentation (HashiCorp style guide)
+# Reason: Consistent with Terraform/Nomad examples and documentation
+indent_size = 2
+tab_width = 2
+
+# ========================================
+# PROTOCOL BUFFERS
+# ========================================
+# Google's data interchange format
+[*.proto]
+
+# 2-space indentation (Google Protocol Buffers Style Guide)
+# Reason: Official Google style for .proto files
+indent_size = 2
+tab_width = 2
+
+# ========================================
+# JSON FILES
+# ========================================
+# JSON, JSONC (JSON with comments), config files, Postman collections
+[*.{har,jsb2,jsb3,json,jsonc,postman_collection,postman_collection.json,postman_environment,postman_environment.json,babelrc,eslintrc,prettierrc,stylelintrc,ws-context,jest.config}]
+
+# 2-space indentation (de facto standard for JSON)
+# Reason: Most JSON formatters and tools use 2 spaces
+# Reduces file size and improves readability for nested structures
+indent_size = 2
+
+# Note: JSON doesn't allow comments, but JSONC does (VS Code config files)
+
+# ========================================
+# MARKDOWN FILES
+# ========================================
+# Documentation, README, CONTRIBUTING, etc.
+[*.md]
+
+# 2-space indentation for nested lists
+# Reason: Markdown parsers expect 2-4 spaces for list nesting
+indent_size = 2
+tab_width = 2
+
+# Remove trailing whitespace (except 2 spaces for hard line breaks)
+# Reason: Trailing spaces in Markdown create <br> tags, usually unintended
+trim_trailing_whitespace = true
+
+# Maximum line length: 200 characters
+# Reason: Documentation can have long sentences, code blocks, and links
+# More relaxed than code files (120 chars)
+max_line_length = 200
+
+# ========================================
+# YAML FILES
+# ========================================
+# GitHub Actions, Docker Compose, Kubernetes, OpenAPI, etc.
+[*.{yml,yaml}]
+
+# 2-space indentation (YAML specification requirement)
+# Reason: YAML is whitespace-sensitive, 2 spaces is the standard
+# Tabs are NOT allowed in YAML
+indent_size = 2
+tab_width = 2
+
+# Ensure file ends with newline (POSIX standard)
+# Reason: Required by some YAML parsers, prevents git diff issues
+insert_final_newline = true
+
+# Remove trailing whitespace
+# Reason: Trailing spaces can cause YAML parsing errors
+trim_trailing_whitespace = true
+
+# Maximum line length: 200 characters
+# Reason: YAML often contains long strings (URLs, base64, descriptions)
+max_line_length = 200
+
+# ========================================
+# LANGUAGE-SPECIFIC ADDITIONS (Optional)
+# ========================================
+# Uncomment sections as needed for your project
+
+# Python
+# [*.py]
+# indent_size = 4          # PEP 8 standard
+# max_line_length = 88     # Black formatter default (or 79 for strict PEP 8)
+
+# JavaScript/TypeScript
+# [*.{js,jsx,ts,tsx}]
+# indent_size = 2          # Airbnb/Prettier default
+# quote_type = single      # Use single quotes (if supported by editor)
+
+# HTML/CSS/SCSS
+# [*.{html,css,scss,sass,less}]
+# indent_size = 2          # Common web development standard
+
+# Rust
+# [*.rs]
+# indent_size = 4          # rustfmt default
+# max_line_length = 100    # rustfmt default
+
+# C/C++
+# [*.{c,cpp,h,hpp}]
+# indent_size = 4          # K&R/Google style
+# max_line_length = 80     # Google C++ Style Guide
+
+# Ruby
+# [*.rb]
+# indent_size = 2          # Ruby community standard
+
+# Makefiles (MUST use tabs)
+# [Makefile]
+# indent_style = tab       # Make requires actual tab characters
+
+# SQL
+# [*.sql]
+# indent_size = 2          # Common for nested queries

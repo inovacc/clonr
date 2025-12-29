@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package clonr.v1;
+
+option go_package = "github.com/inovacc/clonr/pkg/api/v1";
+
+import "google/protobuf/timestamp.proto";
+
+// Repository represents a managed Git repository
+message Repository {
+  uint32 id = 1;
+  string uid = 2;
+  string url = 3;
+  string path = 4;
+  bool favorite = 5;
+  google.protobuf.Timestamp cloned_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+  google.protobuf.Timestamp last_checked = 8;
+}
+
+// SaveRepo RPC messages
+message SaveRepoRequest {
+  string url = 1;
+  string path = 2;
+}
+
+message SaveRepoResponse {
+  bool success = 1;
+}
+
+// RepoExistsByURL RPC messages
+message RepoExistsByURLRequest {
+  string url = 1;
+}
+
+message RepoExistsByURLResponse {
+  bool exists = 1;
+}
+
+// RepoExistsByPath RPC messages
+message RepoExistsByPathRequest {
+  string path = 1;
+}
+
+message RepoExistsByPathResponse {
+  bool exists = 1;
+}
+
+// InsertRepoIfNotExists RPC messages
+message InsertRepoIfNotExistsRequest {
+  string url = 1;
+  string path = 2;
+}
+
+message InsertRepoIfNotExistsResponse {
+  bool inserted = 1;
+}
+
+// GetAllRepos RPC messages
+message GetAllReposRequest {}
+
+message GetAllReposResponse {
+  repeated Repository repositories = 1;
+}
+
+// GetRepos RPC messages
+message GetReposRequest {
+  bool favorites_only = 1;
+}
+
+message GetReposResponse {
+  repeated Repository repositories = 1;
+}
+
+// SetFavorite RPC messages
+message SetFavoriteRequest {
+  string url = 1;
+  bool favorite = 2;
+}
+
+message SetFavoriteResponse {
+  bool success = 1;
+}
+
+// UpdateRepoTimestamp RPC messages
+message UpdateRepoTimestampRequest {
+  string url = 1;
+}
+
+message UpdateRepoTimestampResponse {
+  bool success = 1;
+}
+
+// RemoveRepoByURL RPC messages
+message RemoveRepoByURLRequest {
+  string url = 1;
+}
+
+message RemoveRepoByURLResponse {
+  bool success = 1;
+}

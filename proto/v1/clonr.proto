@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package clonr.v1;
+
+option go_package = "github.com/inovacc/clonr/pkg/api/v1";
+
+import "proto/v1/common.proto";
+import "proto/v1/repository.proto";
+import "proto/v1/config.proto";
+
+// ClonrService defines all database operations for Clonr
+service ClonrService {
+  // Health check - corresponds to Ping()
+  rpc Ping(Empty) returns (Empty);
+
+  // Repository operations
+  rpc SaveRepo(SaveRepoRequest) returns (SaveRepoResponse);
+  rpc RepoExistsByURL(RepoExistsByURLRequest) returns (RepoExistsByURLResponse);
+  rpc RepoExistsByPath(RepoExistsByPathRequest) returns (RepoExistsByPathResponse);
+  rpc InsertRepoIfNotExists(InsertRepoIfNotExistsRequest) returns (InsertRepoIfNotExistsResponse);
+  rpc GetAllRepos(GetAllReposRequest) returns (GetAllReposResponse);
+  rpc GetRepos(GetReposRequest) returns (GetReposResponse);
+  rpc SetFavoriteByURL(SetFavoriteRequest) returns (SetFavoriteResponse);
+  rpc UpdateRepoTimestamp(UpdateRepoTimestampRequest) returns (UpdateRepoTimestampResponse);
+  rpc RemoveRepoByURL(RemoveRepoByURLRequest) returns (RemoveRepoByURLResponse);
+
+  // Configuration operations
+  rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
+  rpc SaveConfig(SaveConfigRequest) returns (SaveConfigResponse);
+}

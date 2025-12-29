@@ -1,0 +1,226 @@
+# golangci-lint configuration
+# Documentation: https://golangci-lint.run/usage/configuration/
+# Install: https://golangci-lint.run/welcome/install/
+
+version: "2"
+
+run:
+  timeout: 2m  # Maximum time for linting
+
+linters:
+  # Start with all linters, then disable specific ones
+  default: all
+
+  disable:
+    # ========================================
+    # STYLE & FORMATTING (Opinionated)
+    # ========================================
+
+    - tagliatelle         # Enforces struct tag naming conventions (e.g., camelCase, snake_case)
+                          # Disabled: Too restrictive for mixed codebases
+
+    - varnamelen          # Checks minimum length of variable names
+                          # Disabled: Short names like 'i', 'err' are idiomatic in Go
+
+    - funlen              # Enforces maximum function length
+                          # Disabled: Context matters more than raw line count
+
+    - gocognit            # Calculates cognitive complexity of functions
+                          # Disabled: Cyclomatic complexity (gocyclo) is sufficient
+
+    - godot               # Checks if comments end in a period
+                          # Disabled: Too pedantic for code comments
+
+    - nlreturn            # Requires newline before return/break/continue
+                          # Disabled: Reduces code density unnecessarily
+
+    - wsl                 # Enforces whitespace rules (old version)
+                          # Disabled: Using wsl_v5 instead
+
+    - whitespace          # Checks for unnecessary whitespace
+                          # Disabled: Editors handle this automatically
+
+    - lll                 # Enforces line length limit
+                          # Disabled: EditorConfig handles this (120 chars)
+
+    - gosmopolitan        # Checks for non-portable code (timezones, locales)
+                          # Disabled: Most projects are locale-aware
+
+    # ========================================
+    # CODE ORGANIZATION
+    # ========================================
+
+    - funcorder           # Enforces order of functions (type methods together)
+                          # Disabled: Logical grouping varies by context
+
+    - testpackage         # Requires tests in separate _test package
+                          # Disabled: White-box testing often needed
+
+    - gochecknoinits      # Disallows init() functions
+                          # Disabled: init() is sometimes necessary (flags, registration)
+
+    # ========================================
+    # STRICTNESS & VERBOSITY
+    # ========================================
+
+    - exhaustruct         # Requires all struct fields to be initialized
+                          # Disabled: Zero values are a Go feature
+
+    - forcetypeassert     # Forbids type assertions without checking
+                          # Disabled: Sometimes you know the type is safe
+
+    - err113              # Enforces wrapped sentinel errors (Go 1.13+ style)
+                          # Disabled: Too strict, string errors are often fine
+
+    - wrapcheck           # Requires errors from external packages to be wrapped
+                          # Disabled: Not always necessary, adds verbosity
+
+    - nonamedreturns      # Disallows named return values
+                          # Disabled: Named returns improve readability in some cases
+
+    - noinlineerr         # Disallows inline error definitions
+                          # Disabled: `if err := foo(); err != nil` is idiomatic
+
+    # ========================================
+    # PERFORMANCE & OPTIMIZATION
+    # ========================================
+
+    - perfsprint          # Suggests faster alternatives to fmt.Sprintf
+                          # Disabled: Premature optimization, readability > micro-optimizations
+
+    # ========================================
+    # TESTING
+    # ========================================
+
+    - paralleltest        # Requires t.Parallel() in all tests
+                          # Disabled: Not all tests can/should run in parallel
+
+    - testifylint         # Enforces testify best practices
+                          # Disabled: Not using testify library
+
+    - thelper             # Requires t.Helper() in test helper functions
+                          # Disabled: Auto-detectable, not critical
+
+    - usetesting          # Ensures testing package is used correctly
+                          # Disabled: False positives on custom test frameworks
+
+    # ========================================
+    # COMPLEXITY & METRICS
+    # ========================================
+
+    - cyclop              # Calculates cyclomatic complexity (alternative to gocyclo)
+                          # Disabled: Using gocyclo instead, one complexity checker is enough
+
+    - nestif              # Reports deeply nested if statements
+                          # Disabled: Cyclomatic complexity already catches this
+
+    - gocyclo             # Calculates cyclomatic complexity
+                          # Disabled: Can be noisy, enable when refactoring legacy code
+
+    # ========================================
+    # SECURITY & SAFETY
+    # ========================================
+
+    - gosec               # Security-focused linter (SQL injection, file traversal, etc.)
+                          # Disabled: Many false positives, run separately for security audits
+
+    - godox               # Detects TODO/FIXME/BUG comments
+                          # Disabled: TODOs are useful during development
+
+    # ========================================
+    # DEPENDENCY & IMPORT MANAGEMENT
+    # ========================================
+
+    - depguard            # Allows whitelisting/blacklisting of imports
+                          # Disabled: No import restrictions needed currently
+
+    # ========================================
+    # DUPLICATION & CONSTANTS
+    # ========================================
+
+    - dupl                # Detects code duplication
+                          # Disabled: Sometimes duplication is better than wrong abstraction
+
+    - goconst             # Finds repeated strings that could be constants
+                          # Disabled: Not all repeated strings should be constants
+
+    - mnd                 # Magic Number Detector - finds unnamed numeric constants
+                          # Disabled: Too strict, 0, 1, 2 are self-documenting
+
+    # ========================================
+    # ERROR HANDLING
+    # ========================================
+
+    - errorlint           # Finds code that will cause problems with Go 1.13+ error wrapping
+                          # Disabled: Project may not use error wrapping everywhere
+
+    - noctx               # Requires context.Context in HTTP handlers and database calls
+                          # Disabled: Not all functions need context
+
+    # ========================================
+    # MISC
+    # ========================================
+
+    - gochecknoglobals    # Disallows global variables
+                          # Disabled: Some globals are acceptable (config, loggers)
+
+    - ireturn             # Disallows returning interfaces
+                          # Disabled: "Accept interfaces, return structs" is a guideline, not a rule
+
+    - tagalign            # Aligns struct tags vertically
+                          # Disabled: Aesthetic preference, not a bug
+
+    - revive              # Comprehensive replacement for golint
+                          # Disabled: Too many overlapping rules with other linters
+
+    - intrange            # Checks for integer range loop issues
+                          # Disabled: Covered by copyloopvar in modern Go
+
+# ========================================
+# ENABLED LINTERS (via default: all)
+# ========================================
+# These are automatically enabled and NOT in the disable list above:
+#
+# - govet                  # Official Go static analyzer (nil dereference, unreachable code)
+# - errcheck               # Checks for unchecked errors
+# - bodyclose              # Ensures HTTP response bodies are closed
+# - copyloopvar            # Detects loop variable capture issues (Go 1.22+)
+# - dogsled                # Finds assignments with too many blank identifiers
+# - gocheckcompilerdirectives  # Validates go:directive comments
+# - gocritic               # Meta-linter with 100+ checks (performance, style, diagnostics)
+# - goprintffuncname       # Checks that printf-like functions end in 'f'
+# - ineffassign            # Detects ineffectual assignments
+# - misspell               # Finds commonly misspelled English words
+# - nakedret               # Finds naked returns in long functions
+# - nolintlint             # Ensures //nolint directives are properly formatted
+# - staticcheck            # Comprehensive static analysis (SA, S, ST checks)
+# - unconvert              # Removes unnecessary type conversions
+# - unparam                # Reports unused function parameters
+# - unused                 # Finds unused constants, variables, functions
+# - wsl_v5                 # Whitespace linter v5 (improved version)
+
+# ========================================
+# LINTER SETTINGS (Optional)
+# ========================================
+# Uncomment and configure as needed:
+
+# linters-settings:
+#   govet:
+#     enable-all: true
+#     disable:
+#       - shadow  # Often too strict
+#
+#   errcheck:
+#     check-blank: true  # Report `_ = foo()` that ignores errors
+#
+#   staticcheck:
+#     checks: ["all"]
+#
+#   gocritic:
+#     enabled-tags:
+#       - diagnostic
+#       - performance
+#       - style
+#     disabled-checks:
+#       - unnamedResult
+#       - hugeParam
