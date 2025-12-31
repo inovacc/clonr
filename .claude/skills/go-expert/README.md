@@ -16,6 +16,7 @@ This skill is automatically invoked by Claude Code when relevant. You can also r
 ## Development
 
 To validate this skill:
+
 ```bash
 ../scripts/validate-skill.sh skills/go-expert
 ```

@@ -5,9 +5,11 @@ This directory contains specialized Claude Code skills for Android development a
 ## Available Skills
 
 ### 1. **android-forensic**
+
 Expert forensic analysis of Android applications with defensive and ethical approach.
 
 **Activates when you ask about:**
+
 - APK/DEX analysis
 - Frida instrumentation
 - Root detection bypass
@@ -17,9 +19,11 @@ Expert forensic analysis of Android applications with defensive and ethical appr
 - Reverse engineering
 
 ### 2. **android-senior-dev**
+
 Senior/Staff-level Android development guidance for production-ready applications.
 
 **Activates when you ask about:**
+
 - Architecture patterns (MVVM, MVI, Clean Architecture)
 - Jetpack Compose implementation
 - Kotlin coroutines and Flow
@@ -54,6 +58,7 @@ touch skills/android-forensic/advanced-topics.md
 ```
 
 Reference other files in `SKILL.md`:
+
 ```markdown
 See [advanced-topics.md](advanced-topics.md) for more details.
 ```
@@ -152,11 +157,13 @@ description: What it does (triggers) + when to use it (use cases)
 ```
 
 **Good descriptions:**
+
 ```yaml
 description: Analyze Android crash dumps, ANRs, and tombstones. Use for debugging production crashes, investigating memory issues, or analyzing native crashes.
 ```
 
 **Bad descriptions:**
+
 ```yaml
 description: A skill for crashes
 ```
@@ -164,16 +171,19 @@ description: A skill for crashes
 ## Skill Best Practices
 
 ### 1. Keep SKILL.md Focused
+
 - Core concepts and patterns
 - Common use cases
 - Quick reference
 
 ### 2. Use Supporting Files for Detail
+
 - `reference.md` for comprehensive documentation
 - `examples.md` for complete implementations
 - `scripts/` for automation tools
 
 ### 3. Include Practical Examples
+
 ```kotlin
 // BAD: Abstract explanation
 "Use dependency injection"
@@ -191,6 +201,7 @@ object NetworkModule {
 ```
 
 ### 4. Add Troubleshooting Sections
+
 ```markdown
 ## Common Issues
 
@@ -204,6 +215,7 @@ configurations.all {
 ```
 
 ### 5. Version-Specific Notes
+
 ```markdown
 ## Version Compatibility
 

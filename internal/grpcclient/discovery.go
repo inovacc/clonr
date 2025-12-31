@@ -1,10 +1,17 @@
 package grpcclient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
+	"time"
+
+	v1 "github.com/inovacc/clonr/pkg/api/v1"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // ClientConfig holds client configuration for connecting to the server
@@ -13,31 +20,102 @@ type ClientConfig struct {
 	TimeoutSeconds int    `json:"timeout_seconds"`
 }
 
+// ServerInfo contains information about a running server (matches grpcserver.ServerInfo)
+type ServerInfo struct {
+	Address   string    `json:"address"`
+	Port      int       `json:"port"`
+	PID       int       `json:"pid"`
+	StartedAt time.Time `json:"started_at"`
+}
+
 // discoverServerAddress determines the server address to connect to
 // Priority:
-// 1. CLONR_SERVER environment variable
-// 2. ~/clonr/config.json config file
-// 3. Default: localhost: 50051
+// 1. CLONR_SERVER environment variable (if set, use it directly)
+// 2. ~/.config/clonr/server.json (written by running server)
+// 3. Probe common ports for a running server (50051-50055)
+// 4. ~/.config/clonr/client.json config file
+// 5. Default: localhost:50051
 func discoverServerAddress() (string, error) {
-	// 1. Check environment variable
+	// 1. Check environment variable - if explicitly set, trust it
 	if addr := os.Getenv("CLONR_SERVER"); addr != "" {
 		return addr, nil
 	}
 
-	// 2. Check the config file
-	homeDir, err := os.UserConfigDir()
+	// 2. Check server info file (written by server when it starts)
+	// Location: AppData\Local\clonr on Windows, ~/.local/share/clonr on Linux, ~/Library/Application Support/clonr on macOS
+	dataDir, err := os.UserCacheDir()
 	if err == nil {
-		configPath := filepath.Join(homeDir, "clonr", "config.json")
-		if data, err := os.ReadFile(configPath); err == nil {
-			var cfg ClientConfig
-			if err := json.Unmarshal(data, &cfg); err == nil && cfg.ServerAddress != "" {
-				return cfg.ServerAddress, nil
+		serverInfoPath := filepath.Join(dataDir, "clonr", "server.json")
+		if data, err := os.ReadFile(serverInfoPath); err == nil {
+			var info ServerInfo
+			if err := json.Unmarshal(data, &info); err == nil {
+				// Verify the server is actually running
+				if isServerRunning(info.Address) {
+					return info.Address, nil
+				}
+				// Server info exists but server not running - clean up stale file
+				_ = os.Remove(serverInfoPath)
 			}
 		}
 	}
 
-	// 3. Default
+	// 3. Probe common ports to find a running server
+	commonPorts := []int{50051, 50052, 50053, 50054, 50055}
+	for _, port := range commonPorts {
+		addr := fmt.Sprintf("localhost:%d", port)
+		if isServerRunning(addr) {
+			return addr, nil
+		}
+	}
+
+	// 4. Check client config file (still in .config for backwards compatibility)
+	homeDir, homeErr := os.UserHomeDir()
+	if homeErr == nil {
+		configPath := filepath.Join(homeDir, ".config", "clonr", "client.json")
+		if data, err := os.ReadFile(configPath); err == nil {
+			var cfg ClientConfig
+			if err := json.Unmarshal(data, &cfg); err == nil && cfg.ServerAddress != "" {
+				// Verify the configured server is actually running
+				if isServerRunning(cfg.ServerAddress) {
+					return cfg.ServerAddress, nil
+				}
+			}
+		}
+	}
+
+	// 5. Default fallback
 	return "localhost:50051", nil
+}
+
+// isServerRunning checks if a gRPC server is running at the given address
+func isServerRunning(address string) bool {
+	// First, quick TCP port check
+	conn, err := net.DialTimeout("tcp", address, 500*time.Millisecond)
+	if err != nil {
+		return false
+	}
+	conn.Close()
+
+	// Port is open, now verify it's actually our gRPC server with a Ping
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	grpcConn, err := grpc.DialContext(ctx, address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock(),
+	)
+	if err != nil {
+		return false
+	}
+	defer grpcConn.Close()
+
+	// Try to ping the server
+	client := v1.NewClonrServiceClient(grpcConn)
+	pingCtx, pingCancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer pingCancel()
+
+	_, err = client.Ping(pingCtx, &v1.Empty{})
+	return err == nil
 }
 
 // SaveServerAddress saves the server address to the config file

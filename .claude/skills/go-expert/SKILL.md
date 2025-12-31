@@ -34,6 +34,7 @@ This skill should be used when:
 Expert guidance on Go 1.25.5 features and modern Go idioms.
 
 **Key Areas:**
+
 - **Generics**: Type parameters, constraints, and type inference
 - **Enhanced standard library**: `log/slog`, improved `testing`, `slices`, `maps` packages
 - **Range over functions**: Iterator patterns with `range` keyword
@@ -41,6 +42,7 @@ Expert guidance on Go 1.25.5 features and modern Go idioms.
 - **Context patterns**: Proper context propagation and cancellation
 
 **Example - Range over functions (Go 1.23+):**
+
 ```go
 // Iterator function that yields values
 func Fibonacci(max int) func(func(int) bool) {
@@ -66,6 +68,7 @@ for n := range Fibonacci(100) {
 Designing scalable, maintainable Go applications.
 
 **Architectural Patterns:**
+
 - **Clean Architecture**: Domain-driven design with Go
 - **Hexagonal Architecture**: Ports and adapters pattern
 - **CQRS**: Command Query Responsibility Segregation
@@ -73,6 +76,7 @@ Designing scalable, maintainable Go applications.
 - **Microservices**: Service communication, API design
 
 **Example - Clean Architecture structure:**
+
 ```
 project/
 ├── cmd/                    # Application entrypoints
@@ -98,6 +102,7 @@ project/
 Expert implementation of Go's concurrency primitives.
 
 **Patterns:**
+
 - **Worker Pools**: Bounded concurrency with channels
 - **Pipeline**: Multi-stage concurrent processing
 - **Fan-out/Fan-in**: Parallel processing with result aggregation
@@ -105,6 +110,7 @@ Expert implementation of Go's concurrency primitives.
 - **Errgroup**: Coordinated goroutine error handling
 
 **Example - Worker pool with errgroup:**
+
 ```go
 import "golang.org/x/sync/errgroup"
 
@@ -128,6 +134,7 @@ func ProcessItems(ctx context.Context, items []Item) error {
 Identifying and resolving performance bottlenecks.
 
 **Techniques:**
+
 - **Profiling**: CPU, memory, goroutine, and mutex profiling
 - **Benchmarking**: Writing effective benchmarks
 - **Memory optimization**: Reducing allocations, pooling
@@ -135,6 +142,7 @@ Identifying and resolving performance bottlenecks.
 - **Caching strategies**: In-memory, distributed caching
 
 **Example - Memory pooling with sync.Pool:**
+
 ```go
 var bufferPool = sync.Pool{
     New: func() interface{} {
@@ -160,6 +168,7 @@ func ProcessData(data []byte) ([]byte, error) {
 Writing comprehensive, maintainable tests.
 
 **Testing Types:**
+
 - **Unit tests**: Table-driven tests, mocking, test fixtures
 - **Integration tests**: Database, HTTP, external service testing
 - **Benchmark tests**: Performance regression detection
@@ -167,6 +176,7 @@ Writing comprehensive, maintainable tests.
 - **E2E tests**: Full application flow testing
 
 **Example - Table-driven test:**
+
 ```go
 func TestValidateEmail(t *testing.T) {
     tests := []struct {
@@ -200,13 +210,16 @@ func TestValidateEmail(t *testing.T) {
 Production-ready configuration files are available in the **go-analyzer** skill:
 
 ### `.editorconfig` and `.golangci.yml`
+
 Located at `skills/go-analyzer/`
 
 These comprehensive configuration files provide:
+
 - **`.editorconfig`**: Consistent formatting (tabs for Go, proper line endings, 120-char limit)
 - **`.golangci.yml`**: 40+ linters with detailed documentation and rationale
 
 **Usage:**
+
 ```bash
 # Copy configuration files from go-analyzer
 cp skills/go-analyzer/.editorconfig /path/to/your/project/
@@ -222,6 +235,7 @@ These configs are primarily for code analysis and quality checking, so they're m
 ## Best Practices
 
 ### 1. Error Handling
+
 - Always handle errors explicitly
 - Use `%w` for error wrapping
 - Return errors, don't panic in libraries
@@ -240,6 +254,7 @@ if err := doSomething(); err != nil {
 ```
 
 ### 2. Interface Design
+
 - Keep interfaces small (1-3 methods)
 - Accept interfaces, return structs
 - Define interfaces where they're used, not where they're implemented
@@ -263,6 +278,7 @@ type UserService interface {
 ```
 
 ### 3. Dependency Injection
+
 - Use constructor functions
 - Inject dependencies explicitly
 - Avoid global state
@@ -282,6 +298,7 @@ func NewService(db Database, cache Cache, logger *slog.Logger) *Service {
 ```
 
 ### 4. Context Usage
+
 - Pass context as first parameter
 - Don't store context in structs
 - Use context for cancellation, deadlines, and request-scoped values
@@ -300,6 +317,7 @@ func (s *Service) FetchData(ctx context.Context, id string) (*Data, error) {
 ```
 
 ### 5. Structured Logging
+
 - Use `log/slog` (Go 1.21+) for structured logging
 - Include context (request ID, user ID, etc.)
 - Use appropriate log levels
@@ -317,6 +335,7 @@ logger.InfoContext(ctx, "user created",
 ## Anti-Patterns to Avoid
 
 ### ❌ Goroutine Leaks
+
 ```go
 // Bad - goroutine never stops
 func StartWorker() {
@@ -344,6 +363,7 @@ func StartWorker(ctx context.Context) {
 ```
 
 ### ❌ Premature Optimization
+
 ```go
 // Bad - complex optimization before measuring
 func (s *Service) Get(id string) *User {
@@ -357,6 +377,7 @@ func (s *Service) Get(ctx context.Context, id string) (*User, error) {
 ```
 
 ### ❌ Naked Returns
+
 ```go
 // Bad - unclear what's being returned
 func calculate(a, b int) (result int, err error) {
@@ -376,17 +397,20 @@ func calculate(a, b int) (int, error) {
 ### Recommended Versions (December 2025)
 
 **Core Tools:**
+
 - **Go**: 1.25.5 (current stable)
 - **golangci-lint**: v1.62+
 - **staticcheck**: v0.6+
 - **govulncheck**: latest
 
 **Development:**
+
 - **gopls**: Language server (latest)
 - **delve**: Debugger (latest)
 - **air**: Live reload (v1.52+)
 
 **Installation:**
+
 ```bash
 # Install Go 1.25.5
 go install golang.org/dl/go1.25.5@latest
@@ -402,20 +426,24 @@ go install github.com/go-delve/delve/cmd/dlv@latest
 ### Useful Packages
 
 **HTTP/Web:**
+
 - `net/http` - Standard library HTTP server
 - `chi` - Lightweight router
 - `fiber` - High-performance web framework
 
 **Database:**
+
 - `database/sql` - Standard database interface
 - `pgx` - PostgreSQL driver and toolkit
 - `sqlc` - Generate type-safe code from SQL
 
 **Configuration:**
+
 - `viper` - Configuration management
 - `envconfig` - Environment variable parsing
 
 **Observability:**
+
 - `opentelemetry-go` - Distributed tracing
 - `prometheus/client_golang` - Metrics
 

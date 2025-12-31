@@ -40,6 +40,7 @@ func Get() *Config {
 ```
 
 ✅ **Solution**:
+
 ```go
 func Get() (*Config, error) {
     if cfg == nil {
@@ -57,10 +58,12 @@ func Get() (*Config, error) {
 ### 🟠 High Priority Issues
 
 #### 2. Missing Error Context
+
 **Location**: `internal/api/handlers.go:78`
 **Severity**: High
 
 ❌ **Problem**:
+
 ```go
 func (h *Handler) CreateUser(ctx context.Context, req *CreateUserRequest) error {
     if err := h.validator.Validate(req); err != nil {
@@ -71,6 +74,7 @@ func (h *Handler) CreateUser(ctx context.Context, req *CreateUserRequest) error 
 ```
 
 ✅ **Solution**:
+
 ```go
 func (h *Handler) CreateUser(ctx context.Context, req *CreateUserRequest) error {
     if err := h.validator.Validate(req); err != nil {
@@ -84,10 +88,12 @@ func (h *Handler) CreateUser(ctx context.Context, req *CreateUserRequest) error 
 **Effort**: Low - Add error wrapping throughout
 
 #### 3. Goroutine Without Error Handling
+
 **Location**: `internal/worker/processor.go:34`
 **Severity**: High
 
 ❌ **Problem**:
+
 ```go
 func (p *Processor) Start() {
     go func() {
@@ -101,6 +107,7 @@ func (p *Processor) Start() {
 ```
 
 ✅ **Solution**:
+
 ```go
 func (p *Processor) Start(ctx context.Context) error {
     g, ctx := errgroup.WithContext(ctx)
@@ -126,10 +133,12 @@ func (p *Processor) Start(ctx context.Context) error {
 ### 🟡 Medium Priority Issues
 
 #### 4. Interface Naming with "Interface" Suffix
+
 **Location**: `internal/storage/interfaces.go:12`
 **Severity**: Medium
 
 ❌ **Problem**:
+
 ```go
 type StorageInterface interface {
     Save(ctx context.Context, data []byte) error
@@ -138,6 +147,7 @@ type StorageInterface interface {
 ```
 
 ✅ **Solution**:
+
 ```go
 type Storage interface {
     Save(ctx context.Context, data []byte) error
@@ -149,10 +159,12 @@ type Storage interface {
 **Effort**: Low - Find and replace, update references
 
 #### 5. SCREAMING_SNAKE_CASE Constants
+
 **Location**: `internal/constants/status.go:8-12`
 **Severity**: Medium
 
 ❌ **Problem**:
+
 ```go
 const (
     STATUS_PENDING = "pending"
@@ -162,6 +174,7 @@ const (
 ```
 
 ✅ **Solution**:
+
 ```go
 type Status string
 
@@ -176,10 +189,12 @@ const (
 **Effort**: Low - Rename and add type safety
 
 #### 6. Anonymous Nested Struct
+
 **Location**: `internal/config/config.go:15-20`
 **Severity**: Medium
 
 ❌ **Problem**:
+
 ```go
 type Config struct {
     Server struct {
@@ -193,6 +208,7 @@ type Config struct {
 ```
 
 ✅ **Solution**:
+
 ```go
 type ServerConfig struct {
     Host string
@@ -217,16 +233,19 @@ type Config struct {
 ### 🟢 Low Priority Issues
 
 #### 7. Non-English Comments
+
 **Location**: `internal/api/handlers.go:25`
 **Severity**: Low
 
 ❌ **Problem**:
+
 ```go
 // CreateUser crea un nuevo usuario en el sistema
 func CreateUser(ctx context.Context, req *CreateUserRequest) error {
 ```
 
 ✅ **Solution**:
+
 ```go
 // CreateUser creates a new user in the system
 func CreateUser(ctx context.Context, req *CreateUserRequest) error {
@@ -240,6 +259,7 @@ func CreateUser(ctx context.Context, req *CreateUserRequest) error {
 ## ✅ Positive Patterns
 
 Things already following Go best practices:
+
 - ✅ Proper use of context.Context throughout
 - ✅ Structured logging with slog
 - ✅ Clear package organization
@@ -248,19 +268,23 @@ Things already following Go best practices:
 ## 📋 Prioritized Action Plan
 
 ### Quick Wins (Low effort, High impact)
+
 1. Remove "Interface" suffix from interface names (4 occurrences)
 2. Fix constant naming to PascalCase (12 constants)
 3. Add error wrapping with %w (23 locations)
 
 ### Critical Fixes (Must do before production)
+
 1. Replace panic with error returns in config.Get()
 2. Implement errgroup for worker goroutines
 3. Add proper error context throughout
 
 ### Long-term Improvements
+
 1. Extract anonymous structs in Config
 2. Translate all Spanish comments to English
 3. Add godoc comments for all exported functions
+
 ```
 
 ---
@@ -325,6 +349,7 @@ func (c *Cache) Set(key string, item *Item) {
 ```
 
 ✅ **Solution**:
+
 ```go
 type Cache struct {
     items map[string]*Item
@@ -350,10 +375,12 @@ func (c *Cache) Set(key string, item *Item) {
 **Testing**: Run with `go test -race`
 
 ### 2. os.Exit in Goroutine
+
 **Location**: `apps/worker/internal/runner/runner.go:56`
 **Severity**: Critical
 
 ❌ **Problem**:
+
 ```go
 func (r *Runner) Start() {
     go func() {
@@ -366,6 +393,7 @@ func (r *Runner) Start() {
 ```
 
 ✅ **Solution**:
+
 ```go
 func (r *Runner) Start(ctx context.Context) error {
     g, ctx := errgroup.WithContext(ctx)
@@ -404,25 +432,30 @@ shared/logging/          8 issues (🟠 2, 🟡 4, 🟢 2)
 ## 📋 Recommended Refactoring Strategy
 
 ### Phase 1: Critical Fixes (Week 1)
+
 1. Fix race condition in shared/cache
 2. Remove os.Exit from goroutines
 3. Upgrade legacy-service to Go 1.25.5
 
 ### Phase 2: High Priority (Week 2-3)
+
 1. Standardize on slog for all logging
 2. Implement proper error wrapping
 3. Add errgroup for all goroutine management
 
 ### Phase 3: Code Quality (Week 4-6)
+
 1. Fix all interface naming
 2. Standardize constant naming
 3. Extract anonymous structs
 4. Improve package organization
 
 ### Phase 4: Documentation (Ongoing)
+
 1. Add godoc for all exported symbols
 2. Translate non-English comments
 3. Add examples to complex packages
+
 ```
 
 ---
@@ -527,6 +560,7 @@ Since this codebase is already excellent, focus on:
 4. **Monitoring**: Ensure good observability with metrics and traces
 
 **Verdict**: This is a great template for other services! ⭐
+
 ```
 
 ---

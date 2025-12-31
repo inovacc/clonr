@@ -8,214 +8,187 @@
     "go_version": {
       // Required Go version for the project (current stable as of Dec 2025)
       "required": "1.25.5",
-
       // Check all go.mod files in the project
       "check_go_mod": true,
-
       // Check for .go-version file in project root
       "check_go_version_file": true,
-
       // Flag usage of features deprecated in current Go version
       "flag_deprecated_features": true,
-
       // Suggest adopting new Go 1.25.5 features when applicable
       "suggest_new_features": true
     },
-
     // Analysis scope configuration
     "scope": {
       // Directories to scan (relative to project root)
       // Default: common Go project structure
       "directories": [
-        "apps/",      // Application entry points
-        "shared/"     // Shared/common packages
+        "apps/",
+        // Application entry points
+        "shared/"
+        // Shared/common packages
       ],
-
       // Patterns to exclude from analysis
       "exclude": [
-        "vendor/",       // Third-party dependencies
-        "node_modules/", // JavaScript dependencies (if monorepo)
-        "*.pb.go",      // Protocol buffer generated files
-        "*_mock.go"     // Mock files from mockgen/gomock
+        "vendor/",
+        // Third-party dependencies
+        "node_modules/",
+        // JavaScript dependencies (if monorepo)
+        "*.pb.go",
+        // Protocol buffer generated files
+        "*_mock.go"
+        // Mock files from mockgen/gomock
       ]
     },
-
     // Severity level definitions
     // Issues are categorized to help prioritize fixes
     "severity_levels": {
       // 🔴 Critical: Must fix before production
       // These can cause crashes, data corruption, or security issues
       "critical": [
-        "wrong_go_version",     // Using wrong/outdated Go version
-        "panic_in_library",     // panic() in library code (should return errors)
-        "race_condition",       // Data race that can cause crashes
-        "goroutine_leak"        // Goroutines that never terminate
+        "wrong_go_version",
+        // Using wrong/outdated Go version
+        "panic_in_library",
+        // panic() in library code (should return errors)
+        "race_condition",
+        // Data race that can cause crashes
+        "goroutine_leak"
+        // Goroutines that never terminate
       ],
-
       // 🟠 High: Should fix soon
       // Impact code reliability and maintainability
       "high": [
-        "improper_error_handling",  // Errors not properly wrapped or handled
-        "missing_context",          // context.Context not used for cancellation
-        "tight_coupling"            // Hard dependencies instead of DI
+        "improper_error_handling",
+        // Errors not properly wrapped or handled
+        "missing_context",
+        // context.Context not used for cancellation
+        "tight_coupling"
+        // Hard dependencies instead of DI
       ],
-
       // 🟡 Medium: Fix when refactoring
       // Style and convention issues
       "medium": [
-        "interface_naming",    // Interfaces with "Interface" suffix
-        "constant_naming",     // SCREAMING_SNAKE_CASE constants
-        "package_naming"       // Non-lowercase or kebab-case packages
+        "interface_naming",
+        // Interfaces with "Interface" suffix
+        "constant_naming",
+        // SCREAMING_SNAKE_CASE constants
+        "package_naming"
+        // Non-lowercase or kebab-case packages
       ],
-
       // 🟢 Low: Nice to have
       // Documentation and minor style issues
       "low": [
-        "comment_language",    // Non-English comments
-        "file_naming",         // Non-standard file names
-        "documentation"        // Missing godoc comments
+        "comment_language",
+        // Non-English comments
+        "file_naming",
+        // Non-standard file names
+        "documentation"
+        // Missing godoc comments
       ]
     },
-
     // Detailed rule configuration
     "rules": {
       // Go version verification
       "go_version": {
         "enabled": true,
         "required_version": "1.25.5",
-
         // Scan all go.mod files in monorepo
         "check_all_go_mod_files": true,
-
         // Identify patterns from older Go versions
         "flag_deprecated_features": true,
-
         // Recommend Go 1.25.5 features (ranges over func, improved generics, etc.)
         "suggest_new_features": true
       },
-
       // Package naming conventions
       "package_naming": {
         "enabled": true,
-
         // Allow underscores in package names (snake_case)
         // Generally discouraged, but sometimes necessary
         "allow_underscore": true,
-
         // Disallow kebab-case (my-package)
         "disallow_kebab_case": true,
-
         // Disallow PascalCase or camelCase
         "disallow_camel_case": true
       },
-
       // Interface naming patterns
       "interface_naming": {
         "enabled": true,
-
         // Flag interfaces with "Interface" suffix
         // Example: StorageInterface → Storage
         "disallow_interface_suffix": true,
-
         // Don't require -er suffix for single-method interfaces
         // Some prefer Reader/Writer, others prefer Read/Write interface
         "require_er_suffix_for_single_method": false
       },
-
       // Error handling best practices
       "error_handling": {
         "enabled": true,
-
         // Library code should return errors, not panic
         "disallow_panic_in_library": true,
-
         // Errors should be wrapped with fmt.Errorf("context: %w", err)
         "require_error_wrapping": true,
-
         // Functions should accept context.Context for cancellation
         "require_context_usage": true
       },
-
       // Constant naming and definition
       "constants": {
         "enabled": true,
-
         // Flag SCREAMING_SNAKE_CASE (use PascalCase instead)
         "disallow_screaming_snake_case": true,
-
         // Constants should have explicit types
         // const MaxSize int = 100  (not just: const MaxSize = 100)
         "require_typed_constants": true,
-
         // Suggest iota for enumeration-style constants
         "suggest_iota": true
       },
-
       // Dependency injection patterns
       "dependency_injection": {
         "enabled": true,
-
         // Prefer passing dependencies to constructors
         // func NewService(db Database) vs func NewService() (creates own DB)
         "prefer_constructor_injection": true,
-
         // Don't strictly disallow global state (sometimes necessary)
         // But flag it for review
         "disallow_global_state": false
       },
-
       // Concurrency and goroutine management
       "concurrency": {
         "enabled": true,
-
         // Recommend golang.org/x/sync/errgroup for goroutines with errors
         "require_errgroup": true,
-
         // Check that goroutines are properly cleaned up
         // Look for context cancellation, WaitGroups, etc.
         "check_goroutine_cleanup": true
       },
-
       // Documentation standards
       "documentation": {
         "enabled": true,
-
         // All comments and documentation should be in English
         "require_english": true,
-
         // Exported symbols must have godoc comments
         // "ExportedFunc does X" format
         "require_godoc_for_exported": true
       }
     },
-
     // Report output configuration
     "output": {
       // Output format: markdown, json, html
       "format": "markdown",
-
       // Include code examples in report (before/after)
       "include_examples": true,
-
       // Include summary statistics
       "include_stats": true,
-
       // Group findings by: "severity", "package", "type"
       "group_by": "severity",
-
       // Maximum issues to show per category (prevent overwhelming reports)
       "max_issues_per_category": 50
     }
   },
-
   // Automated fix suggestions
   "fix_suggestions": {
     // Show before/after code examples for each issue
     "include_code_examples": true,
-
     // Include file paths and line numbers
     "include_file_references": true,
-
     // Suggest fixes that can be automated (e.g., renaming)
     "suggest_automated_fixes": true
   }

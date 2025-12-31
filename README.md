@@ -1,7 +1,6 @@
 # Clonr [![Test](https://github.com/inovacc/clonr/actions/workflows/test.yml/badge.svg)](https://github.com/inovacc/clonr/actions/workflows/test.yml)
 
-Clonr is a command-line tool and server for managing Git repositories efficiently. It provides an interactive interface for cloning, organizing, and working with multiple repositories from the CLI or
-via API.
+Clonr is a client-server tool for managing Git repositories efficiently. It uses a gRPC architecture where a persistent server manages repository metadata via BoltDB/SQLite, while the CLI client provides an interactive interface for cloning, organizing, and working with multiple repositories.
 
 ## Features
 
@@ -16,7 +15,7 @@ via API.
 - **Map**: Map local directories to search for existing repositories.
 - **Status**: Show git status of all managed repositories.
 - **Nerds**: Display statistics and metrics for all repositories.
-- **Server**: Run as a server to expose repository management via an API.
+- **Client-Server Architecture**: Persistent gRPC server with centralized database, lightweight CLI client performs git operations locally.
 
 ## Installation
 
@@ -27,6 +26,79 @@ go install github.com/inovacc/clonr@latest
 ```
 
 This will place the `clonr` binary in your `$GOPATH/bin` or `$HOME/go/bin` directory. Make sure this directory is in your `PATH`.
+
+## Running Clonr
+
+Clonr uses a client-server architecture. You need to start the server before using the client.
+
+### Option 1: Run Server Directly
+
+```sh
+clonr-server start
+```
+
+The server runs on port 50051 by default and manages the repository database. You can configure a different port:
+
+```sh
+clonr-server start --port 50052
+```
+
+The server will continue running until you stop it with Ctrl+C.
+
+### Option 2: Run Server as a Service (Recommended)
+
+For production use, install clonr-server as a system service:
+
+```sh
+# Install the service
+clonr service --install
+
+# Start the service
+clonr service --start
+
+# Check service status
+clonr service --status
+
+# Stop the service
+clonr service --stop
+
+# Uninstall the service
+clonr service --uninstall
+```
+
+**Platform Support:**
+- **Windows**: Creates a Windows Service
+- **Linux**: Creates a systemd service
+- **macOS**: Creates a launchd service
+
+The service will automatically start on system boot and run in the background.
+
+### 2. Use the Client
+
+Once the server is running, use the `clonr` client commands:
+
+```sh
+clonr list
+clonr clone https://github.com/user/repo
+```
+
+All client commands automatically connect to the server.
+
+### Automatic Server Discovery
+
+The client **automatically discovers** running servers without any configuration needed!
+
+Discovery process:
+1. **Environment variable**: `CLONR_SERVER` (e.g., `export CLONR_SERVER=localhost:50052`)
+2. **Server info file**: Reads `AppData\Local\clonr\server.json` (written by running server)
+   - Windows: `C:\Users\<user>\AppData\Local\clonr\server.json`
+   - Linux: `~/.local/share/clonr/server.json`
+   - macOS: `~/Library/Application Support/clonr/server.json`
+3. **Auto-probe**: Searches common ports (50051-50055) for a running server
+4. **Config file**: Checks `~/.config/clonr/client.json` if configured
+5. **Default fallback**: `localhost:50051`
+
+**No configuration needed** - the server automatically writes its connection info when it starts!
 
 ## Usage
 
@@ -56,7 +128,7 @@ clonr                          # Interactive menu
 - `clonr map`: Map a local directory to search and register existing Git repositories.
 - `clonr status`: Show the Git status of all managed repositories.
 - `clonr nerds`: Display nerd statistics and metrics for all repositories.
-- `clonr server`: Start the API server for remote management.
+- `clonr service`: Manage clonr-server as a system service (install, uninstall, start, stop, status).
 - `clonr help`: Display help information.
 
 Use `clonr [command] --help` for more details on each command.
@@ -78,16 +150,6 @@ All interactive UIs support:
 - Enter to select/submit
 - Esc or Ctrl+C to quit
 - Type to search/filter (where applicable)
-
-### Server Mode
-
-Start the server:
-
-```sh
-clonr server
-```
-
-The server exposes an API for repository management (see API documentation if available).
 
 ## Configuration
 
@@ -162,24 +224,57 @@ Server Port:             4000
 
 - Go 1.24 or newer
 - Git (for cloning operations)
+- Protocol Buffers compiler (protoc)
 
 ### Building
 
-```sh
-# Build with BoltDB (default)
-go build -o clonr .
+Clonr provides multiple build methods:
 
-# Build with SQLite
-go build -tags sqlite -o clonr .
+#### Using Make (recommended)
+
+```sh
+make build         # Build both client and server binaries
+make build-server  # Build server only
+make build-client  # Build client only
+make proto         # Generate protobuf code
+make clean         # Clean generated files
+make test          # Run tests
+make install       # Install to GOPATH/bin
 ```
 
-### Task Automation
+#### Using Build Scripts
 
-Task automation is available via [Taskfile](https://taskfile.dev/):
+**Windows (Batch):**
+```batch
+build.bat          # Build both binaries
+build.bat server   # Build server only
+build.bat client   # Build client only
+build.bat clean    # Clean generated files
+```
+
+**Windows (PowerShell):**
+```powershell
+.\build.ps1 -Target all     # Build both binaries
+.\build.ps1 -Target server  # Build server only
+.\build.ps1 -Target client  # Build client only
+.\build.ps1 -Target clean   # Clean generated files
+```
+
+#### Manual Build
 
 ```sh
-task build    # Build the binary
-task test     # Run tests
+# Generate protobuf code first
+go run scripts/proto/generate.go
+
+# Build server with BoltDB (default)
+go build -o bin/clonr-server.exe ./cmd/clonr-server
+
+# Build client with BoltDB (default)
+go build -o bin/clonr.exe .
+
+# Build with SQLite instead
+go build -tags sqlite -o bin/clonr-server.exe ./cmd/clonr-server
+go build -tags sqlite -o bin/clonr.exe .
 ```
 
 ### Dependencies
@@ -187,15 +282,25 @@ task test     # Run tests
 - [Bubbletea](https://github.com/charmbracelet/bubbletea) - Terminal UI framework
 - [Bubbles](https://github.com/charmbracelet/bubbles) - TUI components
 - [Lipgloss](https://github.com/charmbracelet/lipgloss) - Styling for terminal UIs
+- [Cobra](https://github.com/spf13/cobra) - CLI framework
+- [gRPC](https://grpc.io) - RPC framework for client-server communication
+- [Protocol Buffers](https://protobuf.dev) - Data serialization
 - [BoltDB](https://github.com/etcd-io/bbolt) - Embedded key-value database
 - [GORM](https://gorm.io) - ORM for SQLite support
-- [Gin](https://github.com/gin-gonic/gin) - HTTP framework for API server
 
 ## Examples
 
 ### Quick Start
 
 ```sh
+# 1. Install and start the server as a service (recommended)
+clonr service --install
+clonr service --start
+
+# Or run server directly in a separate terminal
+# clonr-server start
+
+# 2. Use the client (all commands below)
 # Start with interactive menu
 clonr
 
@@ -227,9 +332,14 @@ clonr remove
 ### Workflow Example
 
 ```sh
-# 1. Configure clonr for your environment (optional, sensible defaults provided)
+# 1. Install and start the server as a service
+clonr service --install
+clonr service --start
+# Server is now running in the background
+
+# 2. Configure clonr for your environment (optional, sensible defaults provided)
 clonr configure
-# Defaults: directory ~/clonr, editor code, port 4000
+# Defaults: directory ~/clonr, editor code, port 50051
 
 # 2. Clone repositories (they go to ~/clonr by default)
 clonr https://github.com/golang/go
@@ -258,20 +368,52 @@ clonr configure --reset
 
 ## Project Structure
 
-- `main.go`: CLI entry point with flag parsing and command routing
-- `internal/cli/`: Bubbletea UI components (menu, configure, repository list)
-- `internal/core/`: Core business logic (clone, add, map, config, etc.)
-- `internal/database/`: Database abstraction with Bolt and SQLite implementations
-- `internal/model/`: Data models (Repository, Config)
-- `internal/server/`: Gin-based API server
-- `internal/monitor/`: Repository monitoring functionality
+```
+clonr/
+├── main.go                           # Client CLI entry point
+├── cmd/                              # Client commands (Cobra)
+│   ├── root.go                       # Root command
+│   ├── clone.go, list.go, etc.      # Individual commands
+│   └── clonr-server/                 # Server binary
+│       ├── main.go                   # Server entry point
+│       └── cmd/                      # Server commands
+│           ├── root.go               # Server root
+│           └── start.go              # Start command
+├── internal/
+│   ├── cli/                          # Bubbletea UI components
+│   ├── core/                         # Core business logic (uses gRPC client)
+│   ├── database/                     # Database abstraction (BoltDB/SQLite)
+│   ├── model/                        # Data models (Repository, Config)
+│   ├── grpcserver/                   # gRPC server implementation
+│   │   ├── server.go                 # Server setup
+│   │   ├── service.go                # RPC method implementations
+│   │   ├── mapper.go                 # Proto ↔ Model conversions
+│   │   └── interceptors.go           # Logging, recovery, timeout
+│   ├── grpcclient/                   # gRPC client wrapper
+│   │   ├── client.go                 # Client methods (mirrors Store interface)
+│   │   └── discovery.go              # Server address discovery
+│   └── monitor/                      # Repository monitoring
+├── api/proto/v1/                     # Protocol Buffer definitions
+│   ├── common.proto                  # Common messages
+│   ├── repository.proto              # Repository messages
+│   ├── config.proto                  # Config messages
+│   └── clonr.proto                   # Service definition
+├── pkg/api/v1/                       # Generated protobuf code
+├── scripts/proto/                    # Proto generation scripts
+└── build scripts (Makefile, build.bat, build.ps1)
+```
 
 ### Architecture Highlights
 
-- **Database Singleton**: Uses `database.GetDB()` for consistent database access
+- **Client-Server Architecture**: Persistent gRPC server manages database, CLI client performs git operations locally
+- **gRPC Communication**: Unary RPCs with 30-second timeouts for all operations
+- **Server Discovery**: Environment variable → config file → default (localhost:50051)
+- **Database Singleton**: Server uses `database.GetDB()` for BoltDB/SQLite access
+- **Client Singleton**: Client uses `grpcclient.GetClient()` to connect to server
 - **Bubbletea UIs**: Beautiful, interactive terminal interfaces
-- **Flag-based CLI**: Standard library `flag` package (no external CLI framework)
+- **Cobra CLI**: Modern command-line interface with subcommands
 - **Dual Database Support**: Choose BoltDB (default) or SQLite at build time
+- **Protocol Buffers**: Type-safe API contracts between client and server
 
 ## Roadmap
 

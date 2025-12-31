@@ -89,5 +89,6 @@ This file contains practical examples demonstrating the use of this skill.
 ## More Examples
 
 For additional examples and use cases, refer to:
+
 - [Official documentation examples](https://example.com)
 - [Community examples](https://example.com)

@@ -17,16 +17,16 @@ command3 arg1 arg2
 
 ## Common Patterns
 
-| Pattern | Usage | Example |
-|---------|-------|---------|
+| Pattern     | Usage         | Example   |
+|-------------|---------------|-----------|
 | [Pattern 1] | [When to use] | `example` |
 | [Pattern 2] | [When to use] | `example` |
 | [Pattern 3] | [When to use] | `example` |
 
 ## Comparison Table
 
-| Feature | Option A | Option B | Recommendation |
-|---------|----------|----------|----------------|
+| Feature     | Option A       | Option B       | Recommendation     |
+|-------------|----------------|----------------|--------------------|
 | [Feature 1] | [A's approach] | [B's approach] | [When to use each] |
 | [Feature 2] | [A's approach] | [B's approach] | [When to use each] |
 
@@ -35,10 +35,12 @@ command3 arg1 arg2
 ### Issue 1: [Problem Description]
 
 **Symptoms:**
+
 - Symptom 1
 - Symptom 2
 
 **Solution:**
+
 ```
 [Quick fix]
 ```
@@ -46,10 +48,12 @@ command3 arg1 arg2
 ### Issue 2: [Problem Description]
 
 **Symptoms:**
+
 - Symptom 1
 - Symptom 2
 
 **Solution:**
+
 ```
 [Quick fix]
 ```
@@ -58,16 +62,16 @@ command3 arg1 arg2
 
 ### Category 1
 
-| What | How |
-|------|-----|
+| What     | How        |
+|----------|------------|
 | [Task 1] | `command1` |
 | [Task 2] | `command2` |
 | [Task 3] | `command3` |
 
 ### Category 2
 
-| What | How |
-|------|-----|
+| What     | How        |
+|----------|------------|
 | [Task 1] | `command1` |
 | [Task 2] | `command2` |
 

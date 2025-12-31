@@ -41,6 +41,7 @@ This skill provides comprehensive code analysis that complements automated tools
 ### Recommended Tools (December 2025)
 
 **Static Analysis:**
+
 - **golangci-lint** (v1.62+): Meta-linter aggregating multiple linters
   ```bash
   # Install
@@ -60,6 +61,7 @@ This skill provides comprehensive code analysis that complements automated tools
   ```
 
 **Security & Vulnerabilities:**
+
 - **govulncheck** (latest): Check for known vulnerabilities
   ```bash
   # Install
@@ -70,6 +72,7 @@ This skill provides comprehensive code analysis that complements automated tools
   ```
 
 **Built-in Tools:**
+
 - **go vet**: Official Go static analyzer
 - **go test -race**: Race condition detector
 - **gofmt/goimports**: Code formatting
@@ -79,9 +82,11 @@ This skill provides comprehensive code analysis that complements automated tools
 This skill includes production-ready configuration files that you can copy to your Go projects:
 
 #### `.editorconfig`
+
 Ensures consistent code formatting across editors and IDEs. Located at `skills/go-analyzer/.editorconfig`.
 
 **Key settings:**
+
 - **Go files**: Uses tabs (gofmt standard)
 - **YAML/JSON**: 2-space indentation
 - **Shell scripts**: 2-space indentation (Google style)
@@ -89,6 +94,7 @@ Ensures consistent code formatting across editors and IDEs. Located at `skills/g
 - **Line endings**: LF (Unix-style)
 
 **Usage:**
+
 ```bash
 # Copy to your project root
 cp skills/go-analyzer/.editorconfig /path/to/your/project/
@@ -98,15 +104,18 @@ cp skills/go-analyzer/.editorconfig /path/to/your/project/
 ```
 
 #### `.golangci.yml`
+
 Comprehensive golangci-lint configuration with 40+ linters enabled. Located at `skills/go-analyzer/.golangci.yml`.
 
 **Features:**
+
 - **Organized by category**: Style, Security, Performance, Testing, etc.
 - **Detailed comments**: Every linter explained with rationale
 - **Balanced approach**: Strict on bugs/security, flexible on style
 - **Production-ready**: Based on industry best practices
 
 **Enabled linters include:**
+
 - `govet`, `errcheck`, `staticcheck` - Core static analysis
 - `bodyclose` - Ensures HTTP response bodies are closed
 - `copyloopvar` - Detects loop variable capture (Go 1.22+)
@@ -115,12 +124,14 @@ Comprehensive golangci-lint configuration with 40+ linters enabled. Located at `
 - `unused` - Detects unused code
 
 **Disabled (with explanations):**
+
 - `gosec` - Run separately for security audits (many false positives)
 - `lll` - Line length handled by EditorConfig
 - `dupl` - Code duplication isn't always bad
 - `godox` - TODOs are useful during development
 
 **Usage:**
+
 ```bash
 # Copy to your project root
 cp skills/go-analyzer/.golangci.yml /path/to/your/project/
@@ -133,6 +144,7 @@ golangci-lint run ./...
 ```
 
 **Integration with this skill:**
+
 1. Copy configuration files to your project
 2. Run `golangci-lint run ./...` for automated checks
 3. Use this skill for in-depth architectural analysis
@@ -164,6 +176,7 @@ While automated tools catch syntax and pattern issues, this skill provides:
 5. **Custom Pattern Detection**: Identifies project-specific anti-patterns
 
 **Workflow:**
+
 1. Run automated tools (golangci-lint, staticcheck) for quick wins
 2. Use this skill for in-depth architectural and pattern analysis
 3. Combine results for comprehensive code quality improvements
@@ -356,10 +369,11 @@ When performing analysis:
 2. **Scan directories**: Focus on apps/ and shared/ by default (or as specified)
 3. **Identify violations**: Look for patterns listed above
 4. **Categorize severity**:
-  - 🔴 **Critical**: panic in library, race conditions, goroutine leaks, wrong Go version
-  - 🟠 **High**: improper error handling, missing context, tight coupling
-  - 🟡 **Medium**: naming conventions, interface design
-  - 🟢 **Low**: documentation, file naming
+
+- 🔴 **Critical**: panic in library, race conditions, goroutine leaks, wrong Go version
+- 🟠 **High**: improper error handling, missing context, tight coupling
+- 🟡 **Medium**: naming conventions, interface design
+- 🟢 **Low**: documentation, file naming
 
 5. **Provide locations**: Use `file_path:line_number` format
 6. **Suggest fixes**: Show before/after code examples using Go 1.25.5 features

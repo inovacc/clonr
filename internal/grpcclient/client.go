@@ -54,7 +54,7 @@ func lazyLoad() {
 		grpc.WithBlock(),
 	)
 	if err != nil {
-		clientErr = fmt.Errorf("failed to connect to server at %s: %w\nIs the server running? Start it with: clonr-server start", addr, err)
+		clientErr = fmt.Errorf("failed to connect to server at %s: %w\n\nNo clonr-server found running on common ports.\nStart the server with:\n  clonr service --start    (recommended)\n  clonr-server start", addr, err)
 		return
 	}
 
@@ -70,7 +70,7 @@ func lazyLoad() {
 
 	if _, err := client.service.Ping(pingCtx, &v1.Empty{}); err != nil {
 		_ = conn.Close()
-		clientErr = fmt.Errorf("server not responding: %w\nIs the server running? Start it with: clonr-server start", err)
+		clientErr = fmt.Errorf("server not responding: %w\n\nThe server may be starting up or not fully initialized.\nStart the server with:\n  clonr service --start    (recommended)\n  clonr-server start", err)
 		client = nil
 
 		return

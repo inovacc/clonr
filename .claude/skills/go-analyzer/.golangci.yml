@@ -17,164 +17,164 @@ linters:
     # ========================================
 
     - tagliatelle         # Enforces struct tag naming conventions (e.g., camelCase, snake_case)
-                          # Disabled: Too restrictive for mixed codebases
+    # Disabled: Too restrictive for mixed codebases
 
     - varnamelen          # Checks minimum length of variable names
-                          # Disabled: Short names like 'i', 'err' are idiomatic in Go
+    # Disabled: Short names like 'i', 'err' are idiomatic in Go
 
     - funlen              # Enforces maximum function length
-                          # Disabled: Context matters more than raw line count
+    # Disabled: Context matters more than raw line count
 
     - gocognit            # Calculates cognitive complexity of functions
-                          # Disabled: Cyclomatic complexity (gocyclo) is sufficient
+    # Disabled: Cyclomatic complexity (gocyclo) is sufficient
 
     - godot               # Checks if comments end in a period
-                          # Disabled: Too pedantic for code comments
+    # Disabled: Too pedantic for code comments
 
     - nlreturn            # Requires newline before return/break/continue
-                          # Disabled: Reduces code density unnecessarily
+    # Disabled: Reduces code density unnecessarily
 
     - wsl                 # Enforces whitespace rules (old version)
-                          # Disabled: Using wsl_v5 instead
+    # Disabled: Using wsl_v5 instead
 
     - whitespace          # Checks for unnecessary whitespace
-                          # Disabled: Editors handle this automatically
+    # Disabled: Editors handle this automatically
 
     - lll                 # Enforces line length limit
-                          # Disabled: EditorConfig handles this (120 chars)
+    # Disabled: EditorConfig handles this (120 chars)
 
     - gosmopolitan        # Checks for non-portable code (timezones, locales)
-                          # Disabled: Most projects are locale-aware
+    # Disabled: Most projects are locale-aware
 
     # ========================================
     # CODE ORGANIZATION
     # ========================================
 
     - funcorder           # Enforces order of functions (type methods together)
-                          # Disabled: Logical grouping varies by context
+    # Disabled: Logical grouping varies by context
 
     - testpackage         # Requires tests in separate _test package
-                          # Disabled: White-box testing often needed
+    # Disabled: White-box testing often needed
 
     - gochecknoinits      # Disallows init() functions
-                          # Disabled: init() is sometimes necessary (flags, registration)
+    # Disabled: init() is sometimes necessary (flags, registration)
 
     # ========================================
     # STRICTNESS & VERBOSITY
     # ========================================
 
     - exhaustruct         # Requires all struct fields to be initialized
-                          # Disabled: Zero values are a Go feature
+    # Disabled: Zero values are a Go feature
 
     - forcetypeassert     # Forbids type assertions without checking
-                          # Disabled: Sometimes you know the type is safe
+    # Disabled: Sometimes you know the type is safe
 
     - err113              # Enforces wrapped sentinel errors (Go 1.13+ style)
-                          # Disabled: Too strict, string errors are often fine
+    # Disabled: Too strict, string errors are often fine
 
     - wrapcheck           # Requires errors from external packages to be wrapped
-                          # Disabled: Not always necessary, adds verbosity
+    # Disabled: Not always necessary, adds verbosity
 
     - nonamedreturns      # Disallows named return values
-                          # Disabled: Named returns improve readability in some cases
+    # Disabled: Named returns improve readability in some cases
 
     - noinlineerr         # Disallows inline error definitions
-                          # Disabled: `if err := foo(); err != nil` is idiomatic
+    # Disabled: `if err := foo(); err != nil` is idiomatic
 
     # ========================================
     # PERFORMANCE & OPTIMIZATION
     # ========================================
 
     - perfsprint          # Suggests faster alternatives to fmt.Sprintf
-                          # Disabled: Premature optimization, readability > micro-optimizations
+    # Disabled: Premature optimization, readability > micro-optimizations
 
     # ========================================
     # TESTING
     # ========================================
 
     - paralleltest        # Requires t.Parallel() in all tests
-                          # Disabled: Not all tests can/should run in parallel
+    # Disabled: Not all tests can/should run in parallel
 
     - testifylint         # Enforces testify best practices
-                          # Disabled: Not using testify library
+    # Disabled: Not using testify library
 
     - thelper             # Requires t.Helper() in test helper functions
-                          # Disabled: Auto-detectable, not critical
+    # Disabled: Auto-detectable, not critical
 
     - usetesting          # Ensures testing package is used correctly
-                          # Disabled: False positives on custom test frameworks
+    # Disabled: False positives on custom test frameworks
 
     # ========================================
     # COMPLEXITY & METRICS
     # ========================================
 
     - cyclop              # Calculates cyclomatic complexity (alternative to gocyclo)
-                          # Disabled: Using gocyclo instead, one complexity checker is enough
+    # Disabled: Using gocyclo instead, one complexity checker is enough
 
     - nestif              # Reports deeply nested if statements
-                          # Disabled: Cyclomatic complexity already catches this
+    # Disabled: Cyclomatic complexity already catches this
 
     - gocyclo             # Calculates cyclomatic complexity
-                          # Disabled: Can be noisy, enable when refactoring legacy code
+    # Disabled: Can be noisy, enable when refactoring legacy code
 
     # ========================================
     # SECURITY & SAFETY
     # ========================================
 
     - gosec               # Security-focused linter (SQL injection, file traversal, etc.)
-                          # Disabled: Many false positives, run separately for security audits
+    # Disabled: Many false positives, run separately for security audits
 
     - godox               # Detects TODO/FIXME/BUG comments
-                          # Disabled: TODOs are useful during development
+    # Disabled: TODOs are useful during development
 
     # ========================================
     # DEPENDENCY & IMPORT MANAGEMENT
     # ========================================
 
     - depguard            # Allows whitelisting/blacklisting of imports
-                          # Disabled: No import restrictions needed currently
+    # Disabled: No import restrictions needed currently
 
     # ========================================
     # DUPLICATION & CONSTANTS
     # ========================================
 
     - dupl                # Detects code duplication
-                          # Disabled: Sometimes duplication is better than wrong abstraction
+    # Disabled: Sometimes duplication is better than wrong abstraction
 
     - goconst             # Finds repeated strings that could be constants
-                          # Disabled: Not all repeated strings should be constants
+    # Disabled: Not all repeated strings should be constants
 
     - mnd                 # Magic Number Detector - finds unnamed numeric constants
-                          # Disabled: Too strict, 0, 1, 2 are self-documenting
+    # Disabled: Too strict, 0, 1, 2 are self-documenting
 
     # ========================================
     # ERROR HANDLING
     # ========================================
 
     - errorlint           # Finds code that will cause problems with Go 1.13+ error wrapping
-                          # Disabled: Project may not use error wrapping everywhere
+    # Disabled: Project may not use error wrapping everywhere
 
     - noctx               # Requires context.Context in HTTP handlers and database calls
-                          # Disabled: Not all functions need context
+    # Disabled: Not all functions need context
 
     # ========================================
     # MISC
     # ========================================
 
     - gochecknoglobals    # Disallows global variables
-                          # Disabled: Some globals are acceptable (config, loggers)
+    # Disabled: Some globals are acceptable (config, loggers)
 
     - ireturn             # Disallows returning interfaces
-                          # Disabled: "Accept interfaces, return structs" is a guideline, not a rule
+    # Disabled: "Accept interfaces, return structs" is a guideline, not a rule
 
     - tagalign            # Aligns struct tags vertically
-                          # Disabled: Aesthetic preference, not a bug
+    # Disabled: Aesthetic preference, not a bug
 
     - revive              # Comprehensive replacement for golint
-                          # Disabled: Too many overlapping rules with other linters
+    # Disabled: Too many overlapping rules with other linters
 
     - intrange            # Checks for integer range loop issues
-                          # Disabled: Covered by copyloopvar in modern Go
+    # Disabled: Covered by copyloopvar in modern Go
 
 # ========================================
 # ENABLED LINTERS (via default: all)

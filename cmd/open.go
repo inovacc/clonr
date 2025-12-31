@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"os/exec"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/inovacc/clonr/internal/cli"
 	"github.com/inovacc/clonr/internal/database"
 	"github.com/spf13/cobra"
-	"os/exec"
 )
 
 var openCmd = &cobra.Command{

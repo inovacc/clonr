@@ -19,13 +19,13 @@ const (
 	Version = "v0.1.0"
 
 	// GitHash is the git commit hash
-	GitHash = "48f78999bdb4852f3bf1f9b7bd662a553f52fa0d"
+	GitHash = "de64456825c8e06c2719db46692516ccaaed093f"
 
 	// BuildTime is when the binary was built
-	BuildTime = "2025-12-29T14:53:35Z"
+	BuildTime = "2025-12-30T02:23:10Z"
 
 	// BuildHash is a unique hash for this build
-	BuildHash = "1068a470709e79626d7341b8c3609033798f0072164b3fa6556ad9e77ed25294"
+	BuildHash = "64b3052785d919d22f324a1f7656d55500e8835f45f31d22d9bf1bfe2bae1bd8"
 
 	// GoVersion is the Go version used to build
 	GoVersion = "go1.25.5"
