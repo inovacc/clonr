@@ -4,28 +4,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Clonr is a **client-server tool** for managing Git repositories using **gRPC** architecture. The persistent server manages repository metadata via BoltDB/SQLite, while the CLI client provides an interactive TUI and executes git operations locally.
+Clonr is a **unified client-server tool** for managing Git repositories using **gRPC** architecture. A single `clonr` binary provides both client commands and server functionality. The persistent server manages repository metadata via BoltDB/SQLite, while client commands provide an interactive TUI and execute git operations locally.
 
 ## Build Commands
 
 ### Quick Build
 
 ```sh
-# Build both client and server (recommended)
+# Build unified binary (recommended)
 make build
 
 # Build manually
 go run scripts/proto/generate.go  # Generate protobuf code
-go build -o bin/clonr-server.exe ./cmd/clonr-server
 go build -o bin/clonr.exe .
 ```
 
 ### Using Make (Recommended)
 
 ```sh
-make build         # Build both client and server binaries
-make build-server  # Build server only
-make build-client  # Build client only
+make build         # Build clonr binary
 make proto         # Generate protobuf code
 make clean         # Clean generated files
 make test          # Run tests
@@ -36,15 +33,12 @@ make install       # Install to GOPATH/bin
 
 ```batch
 # Batch script
-build.bat          # Build both binaries
-build.bat server   # Build server only
-build.bat client   # Build client only
+build.bat          # Build clonr binary
 build.bat clean    # Clean
 
 # PowerShell script
-.\build.ps1 -Target all     # Build both
-.\build.ps1 -Target server  # Server only
-.\build.ps1 -Target client  # Client only
+.\build.ps1 -Target all     # Build binary
+.\build.ps1 -Target clean   # Clean
 ```
 
 ### Build with SQLite (instead of BoltDB)
@@ -52,7 +46,6 @@ build.bat clean    # Clean
 ```sh
 make build-sqlite
 # Or manually:
-go build -tags sqlite -o bin/clonr-server.exe ./cmd/clonr-server
 go build -tags sqlite -o bin/clonr.exe .
 ```
 
@@ -74,17 +67,18 @@ golangci-lint run
 
 ### Client-Server Architecture
 
-Clonr uses a **gRPC client-server architecture**:
+Clonr uses a **unified binary** with **gRPC client-server architecture**:
 
-#### Server Side (`clonr-server`)
+#### Server Side (`clonr server`)
 - **Persistent process** that manages the repository database
 - Exposes 12 RPC methods via gRPC (mirrors `Store` interface exactly)
 - Uses `database.GetDB()` singleton to access BoltDB/SQLite
 - Runs on port 50051 by default (configurable)
-- Located in `cmd/clonr-server/` and `internal/grpcserver/`
+- Started with `clonr server start`
+- Located in `cmd/server.go` and `internal/grpcserver/`
 
-#### Client Side (`clonr`)
-- **Lightweight CLI** that connects to server via gRPC for database operations
+#### Client Side (`clonr <command>`)
+- **Lightweight commands** that connect to server via gRPC for database operations
 - Executes git operations (clone, pull) **locally** on the client machine
 - Uses `grpcclient.GetClient()` singleton to connect to server
 - Cobra-based CLI with subcommands (located in `cmd/`)
@@ -112,11 +106,13 @@ The **client** uses a singleton gRPC client pattern:
 
 ### CLI Architecture
 
-The CLI uses **Cobra framework** for command structure:
+The CLI uses **Cobra framework** for command structure in a **unified binary**:
 
 - `main.go` initializes the root command
-- `cmd/*.go` contains individual command implementations (clone, list, add, etc.)
-- `cmd/clonr-server/cmd/*.go` contains server commands (start)
+- `cmd/*.go` contains command implementations:
+  - Client commands: `clone.go`, `list.go`, `add.go`, etc.
+  - Server commands: `server.go` (contains `clonr server start`)
+  - Service management: `service.go` (contains `clonr service --install/--start/--stop`)
 - Commands can be invoked directly or through an interactive menu
 - URL detection: If first arg matches URL patterns (http://, https://, git@, etc.), it's treated as a clone operation
 - Interactive mode is triggered when no arguments are provided
@@ -150,15 +146,12 @@ All Bubbletea models follow the standard Init/Update/View pattern. When implemen
 
 ```
 clonr/
-├── main.go                           # Client CLI entry point
-├── cmd/                              # Client commands (Cobra)
+├── main.go                           # CLI entry point
+├── cmd/                              # Commands (Cobra)
 │   ├── root.go                       # Root command
-│   ├── clone.go, list.go, etc.      # Individual commands
-│   └── clonr-server/                 # Server binary
-│       ├── main.go                   # Server entry point
-│       └── cmd/                      # Server commands
-│           ├── root.go               # Server root
-│           └── start.go              # Start command
+│   ├── clone.go, list.go, etc.      # Client commands
+│   ├── server.go                     # Server commands (clonr server start)
+│   └── service.go                    # Service management (clonr service --install)
 ├── internal/
 │   ├── cli/                          # Bubbletea TUI components
 │   ├── core/                         # Business logic (uses gRPC client)
@@ -328,22 +321,22 @@ If you need to add a new database operation:
 
 ### Start the Server
 
-The server must be running before using the client. You can run it directly or as a service.
+The server must be running before using client commands. You can run it directly or as a service.
 
 #### Option 1: Run Directly
 
 ```sh
 # Start on default port (50051)
-clonr-server start
+clonr server start
 
 # Start on custom port
-clonr-server start --port 50052
+clonr server start --port 50052
 ```
 
 #### Option 2: Run as a System Service (Recommended)
 
 ```sh
-# Install the service
+# Install the service (runs 'clonr server start' as a service)
 clonr service --install
 
 # Start the service
@@ -363,7 +356,9 @@ clonr service --uninstall
 - Cross-platform: Windows Service, systemd (Linux), launchd (macOS)
 - Auto-start on system boot
 - Runs in background
-- Uses `github.com/kardianos/service` library
+- Uses `github.com/kardianos/service` library (v1.2.4)
+- Service executes `clonr server start --port <port>` internally
+- Automatically finds clonr executable using `findClonrExecutable()` in `cmd/service.go`
 
 **Server Features:**
 - Graceful shutdown (SIGINT/SIGTERM handling)
@@ -371,8 +366,10 @@ clonr service --uninstall
 - Recovery interceptor (catches panics)
 - Timeout interceptor (30s per request)
 - Uses configured port from database or flag
+- Writes `server.json` for client discovery on startup
+- Cleans up `server.json` on shutdown
 
-### Use the Client
+### Use Client Commands
 
 Once server is running:
 
@@ -385,7 +382,7 @@ clonr configure
 If server is not running, client commands will fail with a helpful error:
 ```
 Error: Server not running
-Start the server with: clonr-server start
+Start the server with: clonr server start
 ```
 
 ## gRPC Service Definition

@@ -34,20 +34,20 @@ Clonr uses a client-server architecture. You need to start the server before usi
 ### Option 1: Run Server Directly
 
 ```sh
-clonr-server start
+clonr server start
 ```
 
 The server runs on port 50051 by default and manages the repository database. You can configure a different port:
 
 ```sh
-clonr-server start --port 50052
+clonr server start --port 50052
 ```
 
 The server will continue running until you stop it with Ctrl+C.
 
 ### Option 2: Run Server as a Service (Recommended)
 
-For production use, install clonr-server as a system service:
+For production use, install the clonr server as a system service:
 
 ```sh
 # Install the service
@@ -128,7 +128,8 @@ clonr                          # Interactive menu
 - `clonr map`: Map a local directory to search and register existing Git repositories.
 - `clonr status`: Show the Git status of all managed repositories.
 - `clonr nerds`: Display nerd statistics and metrics for all repositories.
-- `clonr service`: Manage clonr-server as a system service (install, uninstall, start, stop, status).
+- `clonr server start`: Start the gRPC server.
+- `clonr service`: Manage the server as a system service (install, uninstall, start, stop, status).
 - `clonr help`: Display help information.
 
 Use `clonr [command] --help` for more details on each command.
@@ -233,9 +234,7 @@ Clonr provides multiple build methods:
 #### Using Make (recommended)
 
 ```sh
-make build         # Build both client and server binaries
-make build-server  # Build server only
-make build-client  # Build client only
+make build         # Build clonr binary
 make proto         # Generate protobuf code
 make clean         # Clean generated files
 make test          # Run tests
@@ -246,17 +245,13 @@ make install       # Install to GOPATH/bin
 
 **Windows (Batch):**
 ```batch
-build.bat          # Build both binaries
-build.bat server   # Build server only
-build.bat client   # Build client only
+build.bat          # Build clonr binary
 build.bat clean    # Clean generated files
 ```
 
 **Windows (PowerShell):**
 ```powershell
-.\build.ps1 -Target all     # Build both binaries
-.\build.ps1 -Target server  # Build server only
-.\build.ps1 -Target client  # Build client only
+.\build.ps1 -Target all     # Build clonr binary
 .\build.ps1 -Target clean   # Clean generated files
 ```
 
@@ -266,14 +261,10 @@ build.bat clean    # Clean generated files
 # Generate protobuf code first
 go run scripts/proto/generate.go
 
-# Build server with BoltDB (default)
-go build -o bin/clonr-server.exe ./cmd/clonr-server
-
-# Build client with BoltDB (default)
+# Build with BoltDB (default)
 go build -o bin/clonr.exe .
 
 # Build with SQLite instead
-go build -tags sqlite -o bin/clonr-server.exe ./cmd/clonr-server
 go build -tags sqlite -o bin/clonr.exe .
 ```
 
@@ -298,7 +289,7 @@ clonr service --install
 clonr service --start
 
 # Or run server directly in a separate terminal
-# clonr-server start
+# clonr server start
 
 # 2. Use the client (all commands below)
 # Start with interactive menu
@@ -370,15 +361,12 @@ clonr configure --reset
 
 ```
 clonr/
-├── main.go                           # Client CLI entry point
-├── cmd/                              # Client commands (Cobra)
+├── main.go                           # CLI entry point
+├── cmd/                              # Commands (Cobra)
 │   ├── root.go                       # Root command
-│   ├── clone.go, list.go, etc.      # Individual commands
-│   └── clonr-server/                 # Server binary
-│       ├── main.go                   # Server entry point
-│       └── cmd/                      # Server commands
-│           ├── root.go               # Server root
-│           └── start.go              # Start command
+│   ├── clone.go, list.go, etc.      # Client commands
+│   ├── server.go                     # Server commands
+│   └── service.go                    # Service management commands
 ├── internal/
 │   ├── cli/                          # Bubbletea UI components
 │   ├── core/                         # Core business logic (uses gRPC client)

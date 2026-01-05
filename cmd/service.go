@@ -21,8 +21,8 @@ var (
 
 var serviceCmd = &cobra.Command{
 	Use:   "service",
-	Short: "Manage clonr-server as a system service",
-	Long: `Install, uninstall, start, stop, or check the status of clonr-server as a system service.
+	Short: "Manage clonr server as a system service",
+	Long: `Install, uninstall, start, stop, or check the status of clonr server as a system service.
 
 On Windows, this creates/manages a Windows Service.
 On Linux/macOS, this creates/manages a systemd/launchd service.`,
@@ -31,11 +31,11 @@ On Linux/macOS, this creates/manages a systemd/launchd service.`,
 
 func init() {
 	rootCmd.AddCommand(serviceCmd)
-	serviceCmd.Flags().BoolVar(&serviceStart, "start", false, "Start the clonr-server service")
-	serviceCmd.Flags().BoolVar(&serviceStop, "stop", false, "Stop the clonr-server service")
-	serviceCmd.Flags().BoolVar(&serviceInstall, "install", false, "Install clonr-server as a system service")
-	serviceCmd.Flags().BoolVar(&serviceUninstall, "uninstall", false, "Uninstall clonr-server system service")
-	serviceCmd.Flags().BoolVar(&serviceStatus, "status", false, "Check clonr-server service status")
+	serviceCmd.Flags().BoolVar(&serviceStart, "start", false, "Start the clonr server service")
+	serviceCmd.Flags().BoolVar(&serviceStop, "stop", false, "Stop the clonr server service")
+	serviceCmd.Flags().BoolVar(&serviceInstall, "install", false, "Install clonr server as a system service")
+	serviceCmd.Flags().BoolVar(&serviceUninstall, "uninstall", false, "Uninstall clonr server system service")
+	serviceCmd.Flags().BoolVar(&serviceStatus, "status", false, "Check clonr server service status")
 	serviceCmd.Flags().IntVarP(&servicePort, "port", "p", 50051, "Port for the server to listen on")
 }
 
@@ -52,15 +52,15 @@ func (p *program) Start(s service.Service) error {
 
 func (p *program) run() {
 	// This is where the actual service work happens
-	// In our case, we just exec clonr-server
-	serverPath, err := findServerExecutable()
+	// Execute: clonr server start --port <port>
+	clonrPath, err := findClonrExecutable()
 	if err != nil {
-		_ = service.ConsoleLogger.Errorf("Failed to find clonr-server: %v", err)
+		_ = service.ConsoleLogger.Errorf("Failed to find clonr: %v", err)
 		return
 	}
 
-	args := []string{"start", "--port", fmt.Sprintf("%d", p.port)}
-	cmd := exec.Command(serverPath, args...)
+	args := []string{"server", "start", "--port", fmt.Sprintf("%d", p.port)}
+	cmd := exec.Command(clonrPath, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -74,7 +74,7 @@ func (p *program) Stop(s service.Service) error {
 	return nil
 }
 
-func runService(cmd *cobra.Command, args []string) error {
+func runService(_ *cobra.Command, _ []string) error {
 	// Count how many flags are set
 	flagCount := 0
 	if serviceStart {
@@ -106,7 +106,7 @@ func runService(cmd *cobra.Command, args []string) error {
 		Name:        "ClonrServer",
 		DisplayName: "Clonr Repository Server",
 		Description: "Clonr gRPC server for managing Git repository metadata",
-		Arguments:   []string{"start", "--port", fmt.Sprintf("%d", servicePort)},
+		Arguments:   []string{"server", "start", "--port", fmt.Sprintf("%d", servicePort)},
 	}
 
 	prg := &program{port: servicePort}
@@ -133,15 +133,15 @@ func runService(cmd *cobra.Command, args []string) error {
 }
 
 func installService(s service.Service) error {
-	// First, find the clonr-server executable
-	serverPath, err := findServerExecutable()
+	// First, find the clonr executable
+	clonrPath, err := findClonrExecutable()
 	if err != nil {
-		return fmt.Errorf("cannot find clonr-server executable: %w\n\nPlease ensure clonr-server is installed or in your PATH", err)
+		return fmt.Errorf("cannot find clonr executable: %w\n\nPlease ensure clonr is installed or in your PATH", err)
 	}
 
-	fmt.Printf("Installing clonr-server service...\n")
-	fmt.Printf("Server executable: %s\n", serverPath)
-	fmt.Printf("Port: %d\n", servicePort)
+	fmt.Printf("Installing clonr server service...\n")
+	fmt.Printf("Executable: %s\n", clonrPath)
+	fmt.Printf("Command: clonr server start --port %d\n", servicePort)
 
 	err = s.Install()
 	if err != nil {
@@ -153,13 +153,13 @@ func installService(s service.Service) error {
 	fmt.Println("  clonr service --start")
 	fmt.Println("\nOr use your system's service manager:")
 	fmt.Printf("  Windows: sc start ClonrServer\n")
-	fmt.Printf("  Linux:   sudo systemctl start clonr-server\n")
+	fmt.Printf("  Linux:   sudo systemctl start clonr\n")
 
 	return nil
 }
 
 func uninstallService(s service.Service) error {
-	fmt.Println("Uninstalling clonr-server service...")
+	fmt.Println("Uninstalling clonr server service...")
 
 	// Try to stop first
 	_ = s.Stop()
@@ -174,7 +174,7 @@ func uninstallService(s service.Service) error {
 }
 
 func startService(s service.Service) error {
-	fmt.Println("Starting clonr-server service...")
+	fmt.Println("Starting clonr server service...")
 
 	err := s.Start()
 	if err != nil {
@@ -223,23 +223,28 @@ func statusService(s service.Service) error {
 	return nil
 }
 
-// findServerExecutable locates the clonr-server executable
-func findServerExecutable() (string, error) {
+// findClonrExecutable locates the clonr executable
+func findClonrExecutable() (string, error) {
 	// Check common locations
 	locations := []string{
-		"clonr-server",           // In PATH
-		"clonr-server.exe",       // In PATH (Windows)
-		"./bin/clonr-server",     // Relative to current dir
-		"./bin/clonr-server.exe", // Relative to current dir (Windows)
+		"clonr",           // In PATH
+		"clonr.exe",       // In PATH (Windows)
+		"./bin/clonr",     // Relative to current dir
+		"./bin/clonr.exe", // Relative to current dir (Windows)
 	}
 
 	// Also check in the same directory as the current executable
 	if exePath, err := os.Executable(); err == nil {
 		exeDir := filepath.Dir(exePath)
 		locations = append(locations,
-			filepath.Join(exeDir, "clonr-server"),
-			filepath.Join(exeDir, "clonr-server.exe"),
+			filepath.Join(exeDir, "clonr"),
+			filepath.Join(exeDir, "clonr.exe"),
 		)
+		// If already running clonr, use it directly
+		if filepath.Base(exePath) == "clonr" || filepath.Base(exePath) == "clonr.exe" {
+			absPath, _ := filepath.Abs(exePath)
+			return absPath, nil
+		}
 	}
 
 	// Try each location
@@ -251,5 +256,5 @@ func findServerExecutable() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("clonr-server executable not found in PATH or common locations")
+	return "", fmt.Errorf("clonr executable not found in PATH or common locations")
 }
