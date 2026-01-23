@@ -14,8 +14,8 @@
 //
 // Use [GetDB] to obtain the singleton database instance:
 //
-//	db := database.GetDB()
-//	repos, err := db.GetAllRepos()
+//	storage := database.GetDB()
+//	repos, err := storage.GetAllRepos()
 //
 // # Server-Side Only
 //

@@ -22,7 +22,43 @@ const (
 )
 
 type Bolt struct {
-	db *bbolt.DB
+	storage *bbolt.DB
+}
+
+// NewBolt creates a new Bolt database at the specified path.
+// This is primarily exposed for testing purposes.
+func NewBolt(path string) (*Bolt, error) {
+	instance, err := bbolt.Open(path, 0600, &bbolt.Options{Timeout: 1 * time.Second})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := instance.Update(func(tx *bbolt.Tx) error {
+		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketRepos)); err != nil {
+			return err
+		}
+
+		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketPaths)); err != nil {
+			return err
+		}
+
+		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketConfig)); err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		_ = instance.Close()
+
+		return nil, err
+	}
+
+	return &Bolt{storage: instance}, nil
+}
+
+// Close closes the database.
+func (b *Bolt) Close() error {
+	return b.storage.Close()
 }
 
 func initDB() (Store, error) {
@@ -53,11 +89,11 @@ func initDB() (Store, error) {
 		return nil, err
 	}
 
-	return &Bolt{db: instance}, nil
+	return &Bolt{storage: instance}, nil
 }
 
 func (b *Bolt) Ping() error {
-	return b.db.View(func(tx *bbolt.Tx) error {
+	return b.storage.View(func(tx *bbolt.Tx) error {
 		return nil
 	})
 }
@@ -79,7 +115,7 @@ func (b *Bolt) SaveRepo(u *url.URL, path string) error {
 		return err
 	}
 
-	return b.db.Update(func(tx *bbolt.Tx) error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
 		var (
 			repos = tx.Bucket([]byte(boltBucketRepos))
 			paths = tx.Bucket([]byte(boltBucketPaths))
@@ -108,7 +144,7 @@ func (b *Bolt) SaveRepo(u *url.URL, path string) error {
 func (b *Bolt) RepoExistsByURL(u *url.URL) (bool, error) {
 	var exists bool
 
-	err := b.db.View(func(tx *bbolt.Tx) error {
+	err := b.storage.View(func(tx *bbolt.Tx) error {
 		repos := tx.Bucket([]byte(boltBucketRepos))
 		exists = repos.Get([]byte(u.String())) != nil
 
@@ -121,7 +157,7 @@ func (b *Bolt) RepoExistsByURL(u *url.URL) (bool, error) {
 func (b *Bolt) RepoExistsByPath(path string) (bool, error) {
 	var exists bool
 
-	err := b.db.View(func(tx *bbolt.Tx) error {
+	err := b.storage.View(func(tx *bbolt.Tx) error {
 		paths := tx.Bucket([]byte(boltBucketPaths))
 		exists = paths.Get([]byte(path)) != nil
 
@@ -158,7 +194,7 @@ func (b *Bolt) InsertRepoIfNotExists(u *url.URL, path string) error {
 func (b *Bolt) GetAllRepos() ([]model.Repository, error) {
 	var out []model.Repository
 
-	err := b.db.View(func(tx *bbolt.Tx) error {
+	err := b.storage.View(func(tx *bbolt.Tx) error {
 		repos := tx.Bucket([]byte(boltBucketRepos))
 
 		return repos.ForEach(func(k, v []byte) error {
@@ -184,7 +220,7 @@ func (b *Bolt) GetRepos(favoritesOnly bool) ([]model.Repository, error) {
 
 	var out []model.Repository
 
-	err := b.db.View(func(tx *bbolt.Tx) error {
+	err := b.storage.View(func(tx *bbolt.Tx) error {
 		repos := tx.Bucket([]byte(boltBucketRepos))
 
 		return repos.ForEach(func(k, v []byte) error {
@@ -206,7 +242,7 @@ func (b *Bolt) GetRepos(favoritesOnly bool) ([]model.Repository, error) {
 }
 
 func (b *Bolt) SetFavoriteByURL(urlStr string, fav bool) error {
-	return b.db.Update(func(tx *bbolt.Tx) error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
 		repos := tx.Bucket([]byte(boltBucketRepos))
 
 		v := repos.Get([]byte(urlStr))
@@ -233,7 +269,7 @@ func (b *Bolt) SetFavoriteByURL(urlStr string, fav bool) error {
 }
 
 func (b *Bolt) UpdateRepoTimestamp(urlStr string) error {
-	return b.db.Update(func(tx *bbolt.Tx) error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
 		repos := tx.Bucket([]byte(boltBucketRepos))
 
 		v := repos.Get([]byte(urlStr))
@@ -260,7 +296,7 @@ func (b *Bolt) UpdateRepoTimestamp(urlStr string) error {
 }
 
 func (b *Bolt) RemoveRepoByURL(u *url.URL) error {
-	return b.db.Update(func(tx *bbolt.Tx) error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
 		repos := tx.Bucket([]byte(boltBucketRepos))
 		paths := tx.Bucket([]byte(boltBucketPaths))
 
@@ -290,7 +326,7 @@ func (b *Bolt) RemoveRepoByURL(u *url.URL) error {
 func (b *Bolt) GetConfig() (*model.Config, error) {
 	var cfg *model.Config
 
-	err := b.db.View(func(tx *bbolt.Tx) error {
+	err := b.storage.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(boltBucketConfig))
 		v := bucket.Get([]byte("config"))
 
@@ -325,7 +361,7 @@ func (b *Bolt) SaveConfig(cfg *model.Config) error {
 		return err
 	}
 
-	return b.db.Update(func(tx *bbolt.Tx) error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(boltBucketConfig))
 
 		return bucket.Put([]byte("config"), data)
