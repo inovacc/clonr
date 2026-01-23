@@ -151,7 +151,7 @@ func isTransientError(err error) bool {
 	return false
 }
 
-// fetchOrgReposWithRetry fetches all repos from GitHub with pagination and rate limit handling
+// fetchOrgReposWithRetry fetches all repos from a GitHub org with pagination and rate limit handling
 func (w *GitHubClientWrapper) fetchOrgReposWithRetry(ctx context.Context, orgName string) ([]*github.Repository, error) {
 	opt := &github.RepositoryListByOrgOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
@@ -246,6 +246,125 @@ func (w *GitHubClientWrapper) fetchOrgReposWithRetry(ctx context.Context, orgNam
 	return allRepos, nil
 }
 
+// fetchUserReposWithRetry fetches all repos from a GitHub user with pagination and rate limit handling
+func (w *GitHubClientWrapper) fetchUserReposWithRetry(ctx context.Context, username string) ([]*github.Repository, error) {
+	opt := &github.RepositoryListByUserOptions{
+		Type:        "owner", // only repos owned by the user, not forks or collaborations
+		ListOptions: github.ListOptions{PerPage: 100},
+	}
+
+	var allRepos []*github.Repository
+	for {
+		var repos []*github.Repository
+		var resp *github.Response
+		var lastErr error
+
+		// Retry loop for this page
+		for attempt := 0; attempt <= w.rateCfg.MaxRetries; attempt++ {
+			var err error
+			repos, resp, err = w.client.Repositories.ListByUser(ctx, username, opt)
+
+			if err == nil {
+				break
+			}
+
+			// Check if rate limited
+			var rateLimitErr *github.RateLimitError
+			if errors.As(err, &rateLimitErr) {
+				resetTime := rateLimitErr.Rate.Reset.Time
+				waitDuration := time.Until(resetTime) + time.Second // add 1s buffer
+
+				w.logger.Warn("rate limited by GitHub API",
+					slog.Int("attempt", attempt+1),
+					slog.Duration("wait_duration", waitDuration),
+					slog.Time("reset_at", resetTime),
+				)
+
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-time.After(waitDuration):
+					continue
+				}
+			}
+
+			// Check for abuse rate limit
+			var abuseErr *github.AbuseRateLimitError
+			if errors.As(err, &abuseErr) {
+				retryAfter := abuseErr.GetRetryAfter()
+				w.logger.Warn("abuse rate limit hit",
+					slog.Int("attempt", attempt+1),
+					slog.Duration("retry_after", retryAfter),
+				)
+
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-time.After(retryAfter):
+					continue
+				}
+			}
+
+			// Check for transient errors
+			if isTransientError(err) {
+				backoff := w.calculateBackoff(attempt)
+				w.logger.Warn("transient error, retrying",
+					slog.Int("attempt", attempt+1),
+					slog.Duration("backoff", backoff),
+					slog.String("error", err.Error()),
+				)
+
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-time.After(backoff):
+					lastErr = err
+					continue
+				}
+			}
+
+			// Non-retryable error
+			return nil, fmt.Errorf("failed to fetch repos: %w", err)
+		}
+
+		if repos == nil && lastErr != nil {
+			return nil, fmt.Errorf("max retries exceeded: %w", lastErr)
+		}
+
+		allRepos = append(allRepos, repos...)
+
+		if resp == nil || resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+	}
+
+	return allRepos, nil
+}
+
+// fetchReposWithRetry tries to fetch repos as org first, then falls back to user
+func (w *GitHubClientWrapper) fetchReposWithRetry(ctx context.Context, name string) ([]*github.Repository, bool, error) {
+	// Try as organization first
+	repos, err := w.fetchOrgReposWithRetry(ctx, name)
+	if err == nil {
+		return repos, false, nil // isUser = false
+	}
+
+	// Check if it's a 404 (not found as org), then try as user
+	if strings.Contains(err.Error(), "404") {
+		w.logger.Info("not found as organization, trying as user",
+			slog.String("name", name),
+		)
+		repos, err = w.fetchUserReposWithRetry(ctx, name)
+		if err != nil {
+			return nil, false, fmt.Errorf("failed to fetch repos (tried org and user): %w", err)
+		}
+		return repos, true, nil // isUser = true
+	}
+
+	return nil, false, err
+}
+
 // PrepareMirror fetches repos from GitHub and determines actions
 func PrepareMirror(orgName, token string, opts MirrorOptions) (*MirrorPlan, error) {
 	logger := opts.Logger
@@ -266,15 +385,19 @@ func PrepareMirror(orgName, token string, opts MirrorOptions) (*MirrorPlan, erro
 	}
 	clientWrapper := NewGitHubClientWrapper(token, rateCfg, logger)
 
-	// Fetch all repositories from organization (with pagination and rate limit handling)
+	// Fetch all repositories (tries org first, then user)
 	ctx := context.Background()
-	repos, err := clientWrapper.fetchOrgReposWithRetry(ctx, orgName)
+	repos, isUser, err := clientWrapper.fetchReposWithRetry(ctx, orgName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch repositories: %w", err)
 	}
 
+	entityType := "org"
+	if isUser {
+		entityType = "user"
+	}
 	logger.Info("fetched repositories from GitHub",
-		slog.String("org", orgName),
+		slog.String(entityType, orgName),
 		slog.Int("count", len(repos)),
 	)
 

@@ -385,6 +385,19 @@ Error: Server not running
 Start the server with: clonr server start
 ```
 
+### Non-Interactive Mode
+
+Some commands support non-interactive mode for scripting and CI workflows:
+
+```sh
+# Remove repository by URL (non-interactive)
+clonr remove https://github.com/user/repo
+clonr remove --url https://github.com/user/repo
+
+# Mirror organization repositories without TUI
+clonr org mirror <org_name> --no-tui
+```
+
 ## gRPC Service Definition
 
 The service exposes 12 RPC methods (defined in `api/proto/v1/clonr.proto`):
