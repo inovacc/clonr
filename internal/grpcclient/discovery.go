@@ -7,8 +7,10 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/google/gops/goprocess"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -42,16 +44,19 @@ func discoverServerAddress() string {
 	}
 
 	// 2. Check server info file (written by server when it starts)
-	// Location: AppData\Local\clonr on Windows, ~/.local/share/clonr on Linux, ~/Library/Application Support/clonr on macOS
+	// Location: AppData\Local\clonr on Windows, ~/.cache/clonr on Linux, ~/Library/Caches/clonr on macOS
 	dataDir, err := os.UserCacheDir()
 	if err == nil {
 		serverInfoPath := filepath.Join(dataDir, "clonr", "server.json")
 		if data, err := os.ReadFile(serverInfoPath); err == nil {
 			var info ServerInfo
 			if err := json.Unmarshal(data, &info); err == nil {
-				// Verify the server is actually running
-				if isServerRunning(info.Address) {
-					return info.Address
+				// First check if the PID is a running clonr process (fast, no network)
+				if isClonrProcessRunning(info.PID) {
+					// Process exists, verify it's responding via gRPC
+					if isServerRunning(info.Address) {
+						return info.Address
+					}
 				}
 				// Server info exists but server not running - clean up stale file
 				_ = os.Remove(serverInfoPath)
@@ -85,6 +90,28 @@ func discoverServerAddress() string {
 
 	// 5. Default fallback
 	return "localhost:50051"
+}
+
+// isClonrProcessRunning checks if a clonr server with the given PID is running.
+// Uses goprocess to verify it's actually a Go process with clonr executable.
+func isClonrProcessRunning(pid int) bool {
+	if pid <= 0 {
+		return false
+	}
+
+	// Get all running Go processes
+	processes := goprocess.FindAll()
+
+	// Look for a process with matching PID
+	for _, proc := range processes {
+		if proc.PID == pid {
+			// Verify it's actually a clonr process by checking executable name
+			return strings.Contains(strings.ToLower(proc.Exec), "clonr") ||
+				strings.Contains(strings.ToLower(proc.Path), "clonr")
+		}
+	}
+
+	return false
 }
 
 // isServerRunning checks if a gRPC server is running at the given address

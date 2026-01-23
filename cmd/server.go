@@ -38,14 +38,8 @@ func init() {
 func runServerStart(cmd *cobra.Command, args []string) error {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	// Check if server is already running
-	if existingServer := grpcserver.IsServerRunning(); existingServer != nil {
-		_, _ = fmt.Fprintf(os.Stdout, "Server already running on %s (PID: %d, started: %s)\n",
-			existingServer.Address,
-			existingServer.PID,
-			existingServer.StartedAt.Format(time.RFC3339),
-		)
-
+	// Check if server is already running - silent abort if so
+	if grpcserver.IsServerRunning() != nil {
 		return nil
 	}
 

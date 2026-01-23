@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"syscall"
+	"strings"
 	"time"
+
+	"github.com/google/gops/goprocess"
 )
 
 // ErrNoServerInfo indicates no server info file exists
@@ -55,37 +57,43 @@ func ReadServerInfo() (*ServerInfo, error) {
 	return &info, nil
 }
 
-// IsProcessRunning checks if a process with the given PID is still running
-func IsProcessRunning(pid int) bool {
+// IsClonrProcessRunning checks if a clonr server with the given PID is running.
+// Uses goprocess to verify it's actually a Go process with clonr executable.
+func IsClonrProcessRunning(pid int) bool {
 	if pid <= 0 {
 		return false
 	}
 
-	process, err := os.FindProcess(pid)
-	if err != nil {
-		return false
+	// Get all running Go processes
+	processes := goprocess.FindAll()
+
+	// Look for a process with matching PID
+	for _, proc := range processes {
+		if proc.PID == pid {
+			// Verify it's actually a clonr process by checking executable name
+			return strings.Contains(strings.ToLower(proc.Exec), "clonr") ||
+				strings.Contains(strings.ToLower(proc.Path), "clonr")
+		}
 	}
 
-	// On Unix, FindProcess always succeeds, so we need to send signal 0 to check
-	err = process.Signal(syscall.Signal(0))
-
-	return err == nil
+	return false
 }
 
-// IsServerRunning checks if a clonr server is already running
-// Returns the server info if running, nil otherwise
+// IsServerRunning checks if a clonr server is already running.
+// Returns the server info if running, nil otherwise.
+// Uses goprocess to verify it's actually a running clonr process.
 func IsServerRunning() *ServerInfo {
 	info, err := ReadServerInfo()
 	if err != nil {
 		return nil
 	}
 
-	// Check if the process is still alive
-	if IsProcessRunning(info.PID) {
+	// Use goprocess to verify it's a running clonr process
+	if IsClonrProcessRunning(info.PID) {
 		return info
 	}
 
-	// Process is dead, clean up stale server info
+	// Process is dead or not clonr, clean up stale lock file
 	RemoveServerInfo()
 
 	return nil
