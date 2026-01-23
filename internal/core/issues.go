@@ -347,3 +347,194 @@ func getGHCLIToken() string {
 
 	return ""
 }
+
+// ListIssuesOptions configures the issue listing behavior
+type ListIssuesOptions struct {
+	State    string   // open, closed, all (default: open)
+	Labels   []string // Filter by labels
+	Assignee string   // Filter by assignee
+	Creator  string   // Filter by creator
+	Sort     string   // created, updated, comments (default: created)
+	Order    string   // asc, desc (default: desc)
+	Limit    int      // Max issues to return (0 = unlimited)
+	Logger   *slog.Logger
+}
+
+// ListIssuesFromAPI fetches issues directly from GitHub API
+func ListIssuesFromAPI(token, owner, repo string, opts ListIssuesOptions) (*IssuesData, error) {
+	logger := opts.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
+	// Set defaults
+	if opts.State == "" {
+		opts.State = "open"
+	}
+
+	if opts.Sort == "" {
+		opts.Sort = "created"
+	}
+
+	if opts.Order == "" {
+		opts.Order = "desc"
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+	tc := oauth2.NewClient(ctx, ts)
+	client := github.NewClient(tc)
+
+	opt := &github.IssueListByRepoOptions{
+		State:       opts.State,
+		Sort:        opts.Sort,
+		Direction:   opts.Order,
+		ListOptions: github.ListOptions{PerPage: 100},
+	}
+
+	if len(opts.Labels) > 0 {
+		opt.Labels = opts.Labels
+	}
+
+	if opts.Assignee != "" {
+		opt.Assignee = opts.Assignee
+	}
+
+	if opts.Creator != "" {
+		opt.Creator = opts.Creator
+	}
+
+	var allIssues []*github.Issue
+	collected := 0
+
+	for {
+		issues, resp, err := client.Issues.ListByRepo(ctx, owner, repo, opt)
+		if err != nil {
+			var rateLimitErr *github.RateLimitError
+			if errors.As(err, &rateLimitErr) {
+				resetTime := rateLimitErr.Rate.Reset.Time
+				waitDuration := time.Until(resetTime) + time.Second
+
+				logger.Warn("rate limited, waiting",
+					slog.Duration("wait", waitDuration),
+				)
+
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-time.After(waitDuration):
+					continue
+				}
+			}
+
+			return nil, fmt.Errorf("failed to list issues: %w", err)
+		}
+
+		// Filter out PRs (Issues API returns both)
+		for _, issue := range issues {
+			if issue.IsPullRequest() {
+				continue
+			}
+
+			allIssues = append(allIssues, issue)
+			collected++
+
+			// Check limit
+			if opts.Limit > 0 && collected >= opts.Limit {
+				break
+			}
+		}
+
+		// Check if we've reached the limit
+		if opts.Limit > 0 && collected >= opts.Limit {
+			break
+		}
+
+		if resp.NextPage == 0 {
+			break
+		}
+
+		opt.Page = resp.NextPage
+	}
+
+	return convertIssues(fmt.Sprintf("%s/%s", owner, repo), allIssues), nil
+}
+
+// CreateIssueOptions configures issue creation
+type CreateIssueOptions struct {
+	Title     string
+	Body      string
+	Labels    []string
+	Assignees []string
+	Milestone int // Milestone number (0 = none)
+	Logger    *slog.Logger
+}
+
+// CreatedIssue represents the result of creating an issue
+type CreatedIssue struct {
+	Number    int       `json:"number"`
+	Title     string    `json:"title"`
+	URL       string    `json:"url"`
+	State     string    `json:"state"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// CreateIssue creates a new issue in the specified repository
+func CreateIssue(token, owner, repo string, opts CreateIssueOptions) (*CreatedIssue, error) {
+	logger := opts.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
+	if opts.Title == "" {
+		return nil, fmt.Errorf("issue title is required")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+	tc := oauth2.NewClient(ctx, ts)
+	client := github.NewClient(tc)
+
+	issueReq := &github.IssueRequest{
+		Title: github.String(opts.Title),
+	}
+
+	if opts.Body != "" {
+		issueReq.Body = github.String(opts.Body)
+	}
+
+	if len(opts.Labels) > 0 {
+		issueReq.Labels = &opts.Labels
+	}
+
+	if len(opts.Assignees) > 0 {
+		issueReq.Assignees = &opts.Assignees
+	}
+
+	if opts.Milestone > 0 {
+		issueReq.Milestone = github.Int(opts.Milestone)
+	}
+
+	logger.Debug("creating issue",
+		slog.String("owner", owner),
+		slog.String("repo", repo),
+		slog.String("title", opts.Title),
+	)
+
+	issue, _, err := client.Issues.Create(ctx, owner, repo, issueReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create issue: %w", err)
+	}
+
+	return &CreatedIssue{
+		Number:    issue.GetNumber(),
+		Title:     issue.GetTitle(),
+		URL:       issue.GetHTMLURL(),
+		State:     issue.GetState(),
+		CreatedAt: issue.GetCreatedAt().Time,
+	}, nil
+}

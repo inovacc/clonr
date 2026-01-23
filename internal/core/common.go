@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -208,4 +209,94 @@ func hasSchemePrefix(s string) bool {
 		strings.HasPrefix(l, "ssh://") ||
 		strings.HasPrefix(l, "git://") ||
 		strings.HasPrefix(l, "git+ssh://")
+}
+
+// DetectRepository detects the GitHub owner/repo from various sources.
+// Priority:
+//  1. Explicit argument (owner/repo format)
+//  2. --repo flag value
+//  3. Current directory's git config (remote origin)
+//
+// Returns owner, repo, and any error encountered.
+func DetectRepository(arg, repoFlag string) (owner, repo string, err error) {
+	// 1. Check explicit argument first
+	if arg != "" {
+		return parseOwnerRepo(arg)
+	}
+
+	// 2. Check --repo flag
+	if repoFlag != "" {
+		return parseOwnerRepo(repoFlag)
+	}
+
+	// 3. Try to detect from current directory
+	return detectFromCurrentDir()
+}
+
+// parseOwnerRepo parses an "owner/repo" string or a full GitHub URL
+func parseOwnerRepo(s string) (owner, repo string, err error) {
+	s = strings.TrimSpace(s)
+
+	// Check if it's a full URL
+	if strings.Contains(s, "github.com") {
+		return parseGitHubURL(s)
+	}
+
+	// Simple owner/repo format
+	parts := strings.Split(s, "/")
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid repository format: %q (expected owner/repo)", s)
+	}
+
+	owner = strings.TrimSpace(parts[0])
+	repo = strings.TrimSpace(parts[1])
+
+	if owner == "" || repo == "" {
+		return "", "", fmt.Errorf("invalid repository format: %q (owner and repo cannot be empty)", s)
+	}
+
+	return owner, repo, nil
+}
+
+// detectFromCurrentDir attempts to detect owner/repo from the current directory's git config
+func detectFromCurrentDir() (owner, repo string, err error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	gitDir := filepath.Join(cwd, ".git")
+
+	info, err := os.Stat(gitDir)
+	if err != nil {
+		return "", "", fmt.Errorf("not a git repository (no .git directory found)")
+	}
+
+	if !info.IsDir() {
+		return "", "", fmt.Errorf("not a git repository (.git is not a directory)")
+	}
+
+	configFile := filepath.Join(gitDir, "config")
+	cfg, err := newGitConfig(configFile)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to read git config: %w", err)
+	}
+
+	origin, ok := cfg.Remote["origin"]
+	if !ok || origin.URL == "" {
+		return "", "", fmt.Errorf("no origin remote found in git config")
+	}
+
+	// Parse the origin URL to extract owner/repo
+	owner, repo, err = parseGitHubURL(origin.URL)
+	if err != nil {
+		return "", "", fmt.Errorf("origin is not a GitHub repository: %w", err)
+	}
+
+	return owner, repo, nil
+}
+
+// GetRepoFullName returns the full "owner/repo" name
+func GetRepoFullName(owner, repo string) string {
+	return fmt.Sprintf("%s/%s", owner, repo)
 }
