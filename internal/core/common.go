@@ -162,7 +162,8 @@ func gitHubURL(repoPath string) (*url.URL, error) {
 	// Normalize schemes we accept.
 	switch strings.ToLower(u.Scheme) {
 	case "http", "https":
-		// ok
+		// Remove credentials from HTTP(S) URLs for security
+		u.User = nil
 	case "ssh", "git+ssh":
 		// normalize git+ssh -> ssh
 		u.Scheme = "ssh"
