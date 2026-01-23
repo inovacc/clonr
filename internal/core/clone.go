@@ -12,11 +12,16 @@ import (
 	"github.com/inovacc/clonr/internal/grpcclient"
 )
 
+// CloneOptions configures the clone operation
+type CloneOptions struct {
+	Force bool // Force clone even if repo exists (removes existing)
+}
+
 // if dest dir is a dot clones into the current dir, if not,
 // then clone into specified dir when dest dir not exists use default dir, saved in db
 
 // PrepareClonePath validates the URL and determines the target path for cloning
-func PrepareClonePath(args []string) (*url.URL, string, error) {
+func PrepareClonePath(args []string, opts CloneOptions) (*url.URL, string, error) {
 	if len(args) < 1 {
 		return nil, "", fmt.Errorf("repository URL is required")
 	}
@@ -46,7 +51,16 @@ func PrepareClonePath(args []string) (*url.URL, string, error) {
 	}
 
 	if ok {
-		return nil, "", fmt.Errorf("repository already exists: %s", uri.String())
+		if !opts.Force {
+			return nil, "", fmt.Errorf("repository already exists: %s\n\nUse --force to remove and re-clone", uri.String())
+		}
+
+		// Force mode: remove existing repo from database
+		if err := client.RemoveRepoByURL(uri); err != nil {
+			return nil, "", fmt.Errorf("error removing existing repo from database: %w", err)
+		}
+
+		log.Printf("Removed existing repo from database: %s\n", uri.String())
 	}
 
 	// Get config to determine default clone directory
@@ -84,6 +98,20 @@ func PrepareClonePath(args []string) (*url.URL, string, error) {
 
 	savePath := filepath.Join(absPath, extractRepoName(uri.String()))
 
+	// Check if target directory already exists
+	if info, err := os.Stat(savePath); err == nil && info.IsDir() {
+		if !opts.Force {
+			return nil, "", fmt.Errorf("directory already exists: %s\n\nUse --force to remove and re-clone", savePath)
+		}
+
+		// Force mode: remove existing directory
+		if err := os.RemoveAll(savePath); err != nil {
+			return nil, "", fmt.Errorf("error removing existing directory: %w", err)
+		}
+
+		log.Printf("Removed existing directory: %s\n", savePath)
+	}
+
 	return uri, savePath, nil
 }
 
@@ -113,7 +141,7 @@ func SaveClonedRepo(uri *url.URL, savePath string) error {
 
 // CloneRepo is the legacy function that clones and saves in one operation
 func CloneRepo(args []string) error {
-	uri, savePath, err := PrepareClonePath(args)
+	uri, savePath, err := PrepareClonePath(args, CloneOptions{})
 	if err != nil {
 		return err
 	}

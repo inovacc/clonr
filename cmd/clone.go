@@ -10,27 +10,40 @@ import (
 var cloneCmd = &cobra.Command{
 	Use:   "clone <url> [destination]",
 	Short: "Clone a Git repository",
-	Long:  `Clone a Git repository and register it with Clonr. Supports https, http, git, ssh, ftp, sftp, and git@ URLs.`,
-	Args:  cobra.MinimumNArgs(1),
+	Long: `Clone a Git repository and register it with Clonr. Supports https, http, git, ssh, ftp, sftp, and git@ URLs.
+
+Use --force to remove and re-clone if the repository already exists in the database or the target directory already exists.`,
+	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		repoURL, targetPath, err := core.PrepareClonePath(args)
+		force, _ := cmd.Flags().GetBool("force")
+
+		opts := core.CloneOptions{
+			Force: force,
+		}
+
+		repoURL, targetPath, err := core.PrepareClonePath(args, opts)
 		if err != nil {
 			return err
 		}
+
 		m := cli.NewCloneModel(repoURL.String(), targetPath)
 		p := tea.NewProgram(m)
+
 		finalModel, err := p.Run()
 		if err != nil {
 			return err
 		}
+
 		cloneModel := finalModel.(cli.CloneModel)
 		if cloneModel.Error() != nil {
 			return cloneModel.Error()
 		}
+
 		return core.SaveClonedRepo(repoURL, targetPath)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(cloneCmd)
+	cloneCmd.Flags().BoolP("force", "f", false, "Force clone even if repository/directory already exists (removes existing)")
 }
