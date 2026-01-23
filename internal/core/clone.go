@@ -134,6 +134,12 @@ func SaveClonedRepo(uri *url.URL, savePath string) error {
 		})
 	}
 
+	// Gather and save git statistics using git-nerds (non-blocking)
+	_ = FetchAndSaveGitStats(uri.String(), savePath, FetchGitStatsOptions{
+		IncludeTemporal: true,
+		IncludeBranches: true,
+	})
+
 	log.Printf("Cloned repo at %s\n", savePath)
 
 	return nil

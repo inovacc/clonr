@@ -682,6 +682,12 @@ func MirrorUpdateRepo(repoURL, path string, strategy DirtyRepoStrategy, logger *
 		return fmt.Errorf("failed to update timestamp: %w", err)
 	}
 
+	// Refresh git statistics after pulling new changes (non-blocking)
+	_ = FetchAndSaveGitStats(repoURL, path, FetchGitStatsOptions{
+		IncludeTemporal: true,
+		IncludeBranches: true,
+	})
+
 	return nil
 }
 
@@ -719,6 +725,12 @@ func SaveMirroredRepo(repoURL, path string) error {
 			Token: token,
 		})
 	}
+
+	// Gather and save git statistics using git-nerds (non-blocking)
+	_ = FetchAndSaveGitStats(repoURL, path, FetchGitStatsOptions{
+		IncludeTemporal: true,
+		IncludeBranches: true,
+	})
 
 	return nil
 }
