@@ -1,8 +1,7 @@
 // Package database provides the storage abstraction layer for Clonr.
 //
 // The package defines the [Store] interface which abstracts all database
-// operations, allowing different storage backends to be used interchangeably.
-// Currently supported backends are BoltDB (default) and SQLite.
+// operations. The storage backend is BoltDB, an embedded key-value store.
 //
 // # Store Interface
 //
@@ -17,10 +16,6 @@
 //
 //	db := database.GetDB()
 //	repos, err := db.GetAllRepos()
-//
-// The database backend is selected at build time using build tags:
-//   - Default: BoltDB
-//   - With -tags sqlite: SQLite via GORM
 //
 // # Server-Side Only
 //

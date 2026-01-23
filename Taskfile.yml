@@ -2,6 +2,8 @@ version: '3'
 
 vars:
   MAIN_PACKAGE: .
+  BIN_DIR: bin
+  BIN_NAME: clonr
   COVERAGE_FILE: coverage.out
   GITHUB_OWNER:
     sh: echo "${GITHUB_OWNER:-dyammarcano}"
@@ -19,7 +21,29 @@ tasks:
     cmds:
       - go generate ./...
 
+  proto:
+    desc: Generate protobuf code
+    cmds:
+      - echo "Generating protobuf code..."
+      - go run scripts/proto/generate.go
+
   # === BUILD TASKS ===
+  build:
+    desc: Build clonr binary (simple go build)
+    deps: [proto]
+    cmds:
+      - echo "Building clonr..."
+      - go build -o {{.BIN_DIR}}/{{.BIN_NAME}}{{exeExt}} {{.MAIN_PACKAGE}}
+      - echo "Build complete! Binary at {{.BIN_DIR}}/{{.BIN_NAME}}{{exeExt}}"
+
+  install:
+    desc: Install clonr binary to GOPATH/bin
+    deps: [proto]
+    cmds:
+      - echo "Installing clonr..."
+      - go install {{.MAIN_PACKAGE}}
+      - echo "Installation complete!"
+
   build:dev:
     desc: Build development snapshot with goreleaser
     deps: [ generate ]
@@ -114,9 +138,28 @@ tasks:
   clean:
     desc: Clean build artifacts and generated files
     cmds:
-      - rm -rf {{.BUILD_DIR}}
+      - cmd: rm -rf {{.BIN_DIR}} dist
+        platforms: [linux, darwin]
+      - cmd: if exist {{.BIN_DIR}} rmdir /s /q {{.BIN_DIR}}
+        platforms: [windows]
+      - cmd: if exist dist rmdir /s /q dist
+        platforms: [windows]
       - rm -f {{.COVERAGE_FILE}} coverage.html
       - rm -f .go-version cmd/version.go
+
+  clean:proto:
+    desc: Clean generated protobuf files
+    cmds:
+      - cmd: rm -f pkg/api/v1/*.pb.go
+        platforms: [linux, darwin]
+      - cmd: if exist pkg\api\v1\*.pb.go del /q pkg\api\v1\*.pb.go
+        platforms: [windows]
+
+  clean:all:
+    desc: Clean everything (build artifacts, proto, coverage)
+    cmds:
+      - task: clean
+      - task: clean:proto
 
   # === RELEASE TASKS ===
   release:

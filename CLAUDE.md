@@ -4,49 +4,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Clonr is a **unified client-server tool** for managing Git repositories using **gRPC** architecture. A single `clonr` binary provides both client commands and server functionality. The persistent server manages repository metadata via BoltDB/SQLite, while client commands provide an interactive TUI and execute git operations locally.
+Clonr is a **unified client-server tool** for managing Git repositories using **gRPC** architecture. A single `clonr` binary provides both client commands and server functionality. The persistent server manages repository metadata via BoltDB, while client commands provide an interactive TUI and execute git operations locally.
 
 ## Build Commands
 
-### Quick Build
+### Using Taskfile (Recommended)
 
 ```sh
-# Build unified binary (recommended)
-make build
+task build         # Build clonr binary (includes proto generation)
+task proto         # Generate protobuf code only
+task install       # Install to GOPATH/bin
+task clean         # Clean build artifacts
+task clean:all     # Clean everything (build + proto + coverage)
+task test          # Run tests with coverage
+task lint          # Run golangci-lint
+task check         # Run all quality checks (fmt, vet, lint, test)
+task --list        # List all available tasks
+```
 
-# Build manually
+### Manual Build
+
+```sh
 go run scripts/proto/generate.go  # Generate protobuf code
-go build -o bin/clonr.exe .
-```
-
-### Using Make (Recommended)
-
-```sh
-make build         # Build clonr binary
-make proto         # Generate protobuf code
-make clean         # Clean generated files
-make test          # Run tests
-make install       # Install to GOPATH/bin
-```
-
-### Using Build Scripts (Windows)
-
-```batch
-# Batch script
-build.bat          # Build clonr binary
-build.bat clean    # Clean
-
-# PowerShell script
-.\build.ps1 -Target all     # Build binary
-.\build.ps1 -Target clean   # Clean
-```
-
-### Build with SQLite (instead of BoltDB)
-
-```sh
-make build-sqlite
-# Or manually:
-go build -tags sqlite -o bin/clonr.exe .
+go build -o bin/clonr .           # Build binary
 ```
 
 ### Testing
@@ -72,7 +52,7 @@ Clonr uses a **unified binary** with **gRPC client-server architecture**:
 #### Server Side (`clonr server`)
 - **Persistent process** that manages the repository database
 - Exposes 12 RPC methods via gRPC (mirrors `Store` interface exactly)
-- Uses `database.GetDB()` singleton to access BoltDB/SQLite
+- Uses `database.GetDB()` singleton to access BoltDB
 - Runs on port 50051 by default (configurable)
 - Started with `clonr server start`
 - Located in `cmd/server.go` and `internal/grpcserver/`
@@ -89,8 +69,7 @@ Clonr uses a **unified binary** with **gRPC client-server architecture**:
 The **server** uses a singleton database pattern:
 
 - `internal/database/database.go` defines the `Store` interface and exposes `GetDB()` singleton
-- `internal/database/bolt.go` and `internal/database/sqlite.go` provide implementations
-- Database is selected at **build time** via build tags (`-tags sqlite` for SQLite, default is BoltDB)
+- `internal/database/bolt.go` provides the BoltDB implementation
 - **Server code** uses `database.GetDB()` to access the database
 - The database is initialized once via `init()` and shared globally on the server
 
@@ -308,7 +287,7 @@ Never instantiate database implementations directly - always use the singleton.
 If you need to add a new database operation:
 
 1. Add method to `Store` interface in `internal/database/database.go`
-2. Implement in both `internal/database/bolt.go` and `sqlite.go`
+2. Implement in `internal/database/bolt.go`
 3. Define request/response messages in `api/proto/v1/*.proto`
 4. Add RPC to service definition in `api/proto/v1/clonr.proto`
 5. Run `make proto` to regenerate code
