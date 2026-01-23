@@ -7,13 +7,14 @@ import (
 var ghCmd = &cobra.Command{
 	Use:   "gh",
 	Short: "GitHub operations for repositories",
-	Long: `Interact with GitHub issues, PRs, actions, and releases.
+	Long: `Interact with GitHub issues, PRs, actions, releases, and contributors.
 
 Available Commands:
-  issues    Manage GitHub issues (list, create)
-  pr        Check pull request status
-  actions   Check GitHub Actions workflow status
-  release   Manage GitHub releases (create, download)
+  issues        Manage GitHub issues (list, create, close)
+  pr            Check pull request status
+  actions       Check GitHub Actions workflow status
+  release       Manage GitHub releases (create, download)
+  contributors  View contributors and their activity journey
 
 Repository Detection:
   Commands auto-detect the repository from the current directory,
