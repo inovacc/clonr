@@ -712,6 +712,14 @@ func SaveMirroredRepo(repoURL, path string) error {
 		return fmt.Errorf("failed to save repo: %w", err)
 	}
 
+	// Fetch and save GitHub issues (non-blocking, errors are logged but don't fail mirror)
+	token := GetGitHubToken()
+	if token != "" {
+		_ = FetchAndSaveIssues(repoURL, path, FetchIssuesOptions{
+			Token: token,
+		})
+	}
+
 	return nil
 }
 

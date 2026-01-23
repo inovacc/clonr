@@ -98,6 +98,14 @@ func SaveClonedRepo(uri *url.URL, savePath string) error {
 		return fmt.Errorf("error saving repo to database: %w", err)
 	}
 
+	// Fetch and save GitHub issues (non-blocking, errors are logged but don't fail clone)
+	token := GetGitHubToken()
+	if token != "" {
+		_ = FetchAndSaveIssues(uri.String(), savePath, FetchIssuesOptions{
+			Token: token,
+		})
+	}
+
 	log.Printf("Cloned repo at %s\n", savePath)
 
 	return nil
