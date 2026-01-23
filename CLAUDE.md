@@ -101,7 +101,8 @@ The **client** uses a singleton gRPC client pattern:
 - `internal/grpcclient/client.go` provides `GetClient()` singleton
 - Client methods mirror the `Store` interface exactly (all 12 methods)
 - **Core business logic** (`internal/core/*.go`) uses `grpcclient.GetClient()` instead of `database.GetDB()`
-- Server discovery priority: `CLONR_SERVER` env var → `~/.config/clonr/client.json` → `localhost:50051`
+- Server discovery priority: `CLONR_SERVER` env var → server.json (with PID check) → port probe → `localhost:50051`
+- Uses `goprocess` to verify PIDs are actually running clonr processes
 - 30-second timeout on all gRPC requests
 
 ### CLI Architecture
@@ -152,6 +153,10 @@ clonr/
 │   ├── clone.go, list.go, etc.      # Client commands
 │   ├── server.go                     # Server commands (clonr server start)
 │   └── service.go                    # Service management (clonr service --install)
+├── docs/                             # Project documentation
+│   ├── GRPC_IMPLEMENTATION_GUIDE.md  # gRPC implementation details
+│   ├── ROADMAP.md                    # Project roadmap
+│   └── ...                           # Other documentation
 ├── internal/
 │   ├── cli/                          # Bubbletea TUI components
 │   ├── core/                         # Business logic (uses gRPC client)
@@ -159,12 +164,13 @@ clonr/
 │   ├── model/                        # Data models (Repository, Config)
 │   ├── grpcserver/                   # gRPC server implementation
 │   │   ├── server.go                 # Server setup
+│   │   ├── serverinfo.go             # Server info file & PID checking
 │   │   ├── service.go                # RPC implementations (12 methods)
 │   │   ├── mapper.go                 # Proto ↔ Model conversions
 │   │   └── interceptors.go           # Logging, recovery, timeout
 │   ├── grpcclient/                   # gRPC client wrapper
 │   │   ├── client.go                 # Client methods (mirrors Store)
-│   │   └── discovery.go              # Server address discovery
+│   │   └── discovery.go              # Server address discovery + PID check
 │   └── monitor/                      # Repository monitoring
 ├── api/proto/v1/                     # Protocol Buffer definitions
 │   ├── common.proto                  # Common messages (Empty)
@@ -207,26 +213,31 @@ Client **automatically discovers** running servers without configuration:
 
 **Discovery Priority:**
 1. `CLONR_SERVER` environment variable (explicit override)
-2. **Server info file** - `AppData\Local\clonr\server.json` (written by server at startup)
+2. **Server info file** - `~/.cache/clonr/server.json` (written by server at startup)
    - Windows: `C:\Users\<user>\AppData\Local\clonr\server.json`
-   - Linux: `~/.local/share/clonr/server.json`
-   - macOS: `~/Library/Application Support/clonr/server.json`
+   - Linux: `~/.cache/clonr/server.json`
+   - macOS: `~/Library/Caches/clonr/server.json`
    - Contains: address, port, PID, started_at timestamp
+   - **PID verified using goprocess** before connecting
    - Automatically cleaned up when server stops gracefully
-3. **Auto-probe** common ports (50051-50055) - verifies with Ping RPC
+3. **Auto-probe** common ports (50051-50055) - verifies with gRPC health check
 4. `~/.config/clonr/client.json` config file (legacy, still supported)
 5. Default fallback: `localhost:50051`
 
 **Implementation Details:**
 - **Server writes** `server.json` on startup (`internal/grpcserver/serverinfo.go`)
+- **Server checks** for duplicate instances using `IsClonrProcessRunning()` with goprocess
 - **Client reads** `server.json` first (`internal/grpcclient/discovery.go`)
-- Stale files (server not running) are auto-cleaned by client
+- **Client verifies** PID is a running clonr process using goprocess before network check
+- Stale files (server not running or wrong process) are auto-cleaned
 - Quick TCP port check (500ms timeout per port) for probing
-- gRPC Ping verification (500ms timeout)
+- gRPC health check verification (500ms timeout)
 - Uses `os.UserCacheDir()` for cross-platform local data directory
 
 **Benefits:**
 - **Instant discovery** - no port probing needed if server.json exists
+- **Reliable PID checking** - goprocess verifies it's actually a clonr Go process
+- **Silent duplicate prevention** - second server start exits silently if already running
 - Zero configuration for standard setups
 - Automatic cleanup of stale discovery info
 - Cross-platform compatible
