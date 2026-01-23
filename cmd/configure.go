@@ -31,7 +31,7 @@ var configureCmd = &cobra.Command{
 			fmt.Println("No configuration found, using defaults.")
 		}
 
-		fmt.Println("\nStarting interactive configuration...\n")
+		fmt.Println("\nStarting interactive configuration...")
 
 		m, err := cli.NewConfigureModel()
 		if err != nil {

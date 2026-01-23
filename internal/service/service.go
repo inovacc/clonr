@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Service(cmd *cobra.Command, args []string) error {
+func Service(cmd *cobra.Command, args []string, port int) error {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// Initialize database
@@ -40,7 +40,7 @@ func Service(cmd *cobra.Command, args []string) error {
 	// Start server in background
 	go func() {
 		log.Printf("Starting Clonr gRPC server on %s", addr)
-		if err := srv.Serve(lis); err != nil {
+		if err := srv.GRPCServer.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve: %v", err)
 		}
 	}()
@@ -52,7 +52,7 @@ func Service(cmd *cobra.Command, args []string) error {
 
 	// Graceful shutdown
 	log.Println("Shutting down server...")
-	srv.GracefulStop()
+	srv.GRPCServer.GracefulStop()
 	log.Println("Server stopped")
 
 	return nil

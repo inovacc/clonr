@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"time"
 
-	v1 "github.com/inovacc/clonr/pkg/api/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 // ClientConfig holds client configuration for connecting to the server
@@ -96,26 +96,26 @@ func isServerRunning(address string) bool {
 	}
 	conn.Close()
 
-	// Port is open, now verify it's actually our gRPC server with a Ping
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-
-	grpcConn, err := grpc.DialContext(ctx, address,
+	// Port is open, now verify it's actually a healthy gRPC server using health check (per guide)
+	grpcConn, err := grpc.NewClient(address,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
 	)
 	if err != nil {
 		return false
 	}
 	defer grpcConn.Close()
 
-	// Try to ping the server
-	client := v1.NewClonrServiceClient(grpcConn)
-	pingCtx, pingCancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
-	defer pingCancel()
+	// Use standard health check protocol instead of custom Ping
+	healthClient := healthpb.NewHealthClient(grpcConn)
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
 
-	_, err = client.Ping(pingCtx, &v1.Empty{})
-	return err == nil
+	resp, err := healthClient.Check(ctx, &healthpb.HealthCheckRequest{})
+	if err != nil {
+		return false
+	}
+
+	return resp.GetStatus() == healthpb.HealthCheckResponse_SERVING
 }
 
 // SaveServerAddress saves the server address to the config file

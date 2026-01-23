@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 )
 
@@ -46,15 +47,33 @@ func lazyLoad() {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	conn, err := grpc.DialContext(ctx, addr,
+	// Use grpc.NewClient (v1.78.0+) instead of deprecated DialContext
+	// This uses lazy connection establishment
+	conn, err := grpc.NewClient(addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
 	)
 	if err != nil {
-		clientErr = fmt.Errorf("failed to connect to server at %s: %w\n\nNo clonr-server found running on common ports.\nStart the server with:\n  clonr service --start    (recommended)\n  clonr-server start", addr, err)
+		clientErr = fmt.Errorf("failed to create gRPC client: %w", err)
+		return
+	}
+
+	// Perform health check to trigger connection (per guide)
+	// This is the proper way to verify server is reachable in v1.78.0+
+	healthClient := healthpb.NewHealthClient(conn)
+	healthCtx, healthCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer healthCancel()
+
+	resp, err := healthClient.Check(healthCtx, &healthpb.HealthCheckRequest{})
+	if err != nil {
+		_ = conn.Close()
+		clientErr = fmt.Errorf("server not reachable at %s: %w\n\nNo clonr server found running.\nStart the server with:\n  clonr service --start    (recommended)\n  clonr server start", addr, err)
+		return
+	}
+
+	// Verify server is healthy
+	if resp.GetStatus() != healthpb.HealthCheckResponse_SERVING {
+		_ = conn.Close()
+		clientErr = fmt.Errorf("server not healthy at %s: status=%v\n\nThe server may be shutting down or not fully initialized.\nStart the server with:\n  clonr service --start    (recommended)\n  clonr server start", addr, resp.GetStatus())
 		return
 	}
 
@@ -62,18 +81,6 @@ func lazyLoad() {
 		conn:    conn,
 		service: v1.NewClonrServiceClient(conn),
 		timeout: 30 * time.Second,
-	}
-
-	// Verify connection with Ping
-	pingCtx, pingCancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer pingCancel()
-
-	if _, err := client.service.Ping(pingCtx, &v1.Empty{}); err != nil {
-		_ = conn.Close()
-		clientErr = fmt.Errorf("server not responding: %w\n\nThe server may be starting up or not fully initialized.\nStart the server with:\n  clonr service --start    (recommended)\n  clonr-server start", err)
-		client = nil
-
-		return
 	}
 }
 

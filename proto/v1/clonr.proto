@@ -4,9 +4,9 @@ package clonr.v1;
 
 option go_package = "github.com/inovacc/clonr/pkg/api/v1";
 
-import "proto/v1/common.proto";
-import "proto/v1/repository.proto";
-import "proto/v1/config.proto";
+import "v1/common.proto";
+import "v1/repository.proto";
+import "v1/config.proto";
 
 // ClonrService defines all database operations for Clonr
 service ClonrService {

@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/inovacc/clonr/internal/database"
 	"github.com/inovacc/clonr/internal/grpcserver"
@@ -59,10 +60,10 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 		log.Printf("Server info written to local data directory")
 	}
 
-	srv := grpcserver.NewServer(db)
+	srvWithHealth := grpcserver.NewServer(db)
 	go func() {
 		log.Printf("Starting Clonr gRPC server on %s", addr)
-		if err := srv.Serve(lis); err != nil {
+		if err := srvWithHealth.GRPCServer.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve: %v", err)
 		}
 	}()
@@ -72,12 +73,29 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 	<-quit
 
 	log.Println("Shutting down server...")
-	srv.GracefulStop()
+
+	// Set health status to NOT_SERVING before shutdown (per guide)
+	srvWithHealth.HealthServer.SetServingStatus("", 2) // 2 = NOT_SERVING
+
+	// Start graceful stop with timeout (per guide)
+	stopChan := make(chan struct{})
+	go func() {
+		srvWithHealth.GRPCServer.GracefulStop()
+		close(stopChan)
+	}()
+
+	// Wait for graceful stop or force stop after 30 seconds
+	select {
+	case <-stopChan:
+		log.Println("Server stopped gracefully")
+	case <-time.After(30 * time.Second):
+		log.Println("Timeout waiting for graceful shutdown, forcing stop")
+		srvWithHealth.GRPCServer.Stop()
+	}
 
 	// Clean up server info file
 	grpcserver.RemoveServerInfo()
 	log.Println("Server info file removed")
 
-	log.Println("Server stopped")
 	return nil
 }
