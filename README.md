@@ -15,6 +15,7 @@ Clonr is a client-server tool for managing Git repositories efficiently. It uses
 - **Map**: Map local directories to search for existing repositories.
 - **Status**: Show git status of all managed repositories.
 - **Nerds**: Display statistics and metrics for all repositories.
+- **GitHub CLI Integration**: Interact with GitHub issues, PRs, actions, and releases directly from clonr.
 - **Client-Server Architecture**: Persistent gRPC server with centralized database, lightweight CLI client performs git operations locally.
 
 ## Installation
@@ -130,9 +131,43 @@ clonr                          # Interactive menu
 - `clonr nerds`: Display nerd statistics and metrics for all repositories.
 - `clonr server start`: Start the gRPC server.
 - `clonr service`: Manage the server as a system service (install, uninstall, start, stop, status).
+- `clonr gh`: GitHub CLI integration (see below).
 - `clonr help`: Display help information.
 
 Use `clonr [command] --help` for more details on each command.
+
+### GitHub CLI Integration
+
+Clonr includes GitHub CLI-like functionality for managing GitHub resources:
+
+```sh
+# Issues
+clonr gh issues list                    # List open issues in current repo
+clonr gh issues list owner/repo         # List issues in specified repo
+clonr gh issues list --state all        # List all issues (open + closed)
+clonr gh issues create --title "Bug"    # Create a new issue
+
+# Pull Requests
+clonr gh pr status                      # List open PRs in current repo
+clonr gh pr status 123                  # Detailed status of PR #123
+clonr gh pr status --base main          # Filter by base branch
+
+# Actions (Workflow Runs)
+clonr gh actions status                 # List recent workflow runs
+clonr gh actions status 123456789       # Detailed status of specific run
+clonr gh actions status --branch main   # Filter by branch
+
+# Releases
+clonr gh release list                   # List releases
+clonr gh release create --tag v1.0.0    # Create a new release
+clonr gh release download --tag latest  # Download release assets
+```
+
+**Features:**
+- **Auto-detection**: Commands auto-detect repository from current directory's git config
+- **Token resolution**: Automatically finds GitHub token from `GITHUB_TOKEN`, `GH_TOKEN`, or gh CLI config
+- **JSON output**: All commands support `--json` flag for scripting
+- **Filtering**: Rich filtering options for each command
 
 ### Interactive Features
 
@@ -366,10 +401,20 @@ clonr/
 │   ├── root.go                       # Root command
 │   ├── clone.go, list.go, etc.      # Client commands
 │   ├── server.go                     # Server commands
-│   └── service.go                    # Service management commands
+│   ├── service.go                    # Service management commands
+│   ├── gh.go                         # GitHub CLI parent command
+│   ├── gh_issues.go                  # GitHub issues commands
+│   ├── gh_pr.go                      # GitHub PR status command
+│   ├── gh_actions.go                 # GitHub Actions commands
+│   └── gh_release.go                 # GitHub release commands
 ├── internal/
 │   ├── cli/                          # Bubbletea UI components
 │   ├── core/                         # Core business logic (uses gRPC client)
+│   │   ├── issues.go                 # Issues logic (list, create)
+│   │   ├── gh_pr.go                  # PR status logic
+│   │   ├── gh_actions.go             # Actions workflow logic
+│   │   ├── gh_release.go             # Release management logic
+│   │   └── common.go                 # Shared utilities (DetectRepository)
 │   ├── database/                     # Database abstraction (BoltDB/SQLite)
 │   ├── model/                        # Data models (Repository, Config)
 │   ├── grpcserver/                   # gRPC server implementation

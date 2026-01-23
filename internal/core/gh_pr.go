@@ -112,6 +112,7 @@ func GetPRStatus(token, owner, repo string, prNumber int, opts PRStatusOptions) 
 
 		// Extract reviewers
 		seen := make(map[string]bool)
+
 		for _, review := range reviews {
 			if review.User != nil && review.User.Login != nil {
 				login := *review.User.Login
@@ -130,6 +131,7 @@ func GetPRStatus(token, owner, repo string, prNumber int, opts PRStatusOptions) 
 			slog.Int("pr", prNumber),
 			slog.String("error", err.Error()),
 		)
+
 		status.ChecksStatus = "unknown"
 	} else {
 		status.Checks = checkRuns
@@ -154,9 +156,11 @@ func listPRs(token, owner, repo string, opts ListPRsOptions) (*PRsData, error) {
 	if opts.State == "" {
 		opts.State = "open"
 	}
+
 	if opts.Sort == "" {
 		opts.Sort = "created"
 	}
+
 	if opts.Order == "" {
 		opts.Order = "desc"
 	}
@@ -178,11 +182,13 @@ func listPRs(token, owner, repo string, opts ListPRsOptions) (*PRsData, error) {
 	if opts.Base != "" {
 		listOpts.Base = opts.Base
 	}
+
 	if opts.Head != "" {
 		listOpts.Head = opts.Head
 	}
 
 	var allPRs []*github.PullRequest
+
 	collected := 0
 
 	for {
@@ -216,6 +222,7 @@ func listPRs(token, owner, repo string, opts ListPRsOptions) (*PRsData, error) {
 			if len(allPRs) > opts.Limit {
 				allPRs = allPRs[:opts.Limit]
 			}
+
 			break
 		}
 
@@ -259,6 +266,7 @@ func convertPRToStatus(pr *github.PullRequest) *PRStatus {
 		t := pr.GetMergedAt().Time
 		status.MergedAt = &t
 	}
+
 	if !pr.GetClosedAt().IsZero() {
 		t := pr.GetClosedAt().Time
 		status.ClosedAt = &t
@@ -299,6 +307,7 @@ func convertPRsData(owner, repo string, prs []*github.PullRequest) *PRsData {
 	}
 
 	data.TotalCount = len(prs)
+
 	return data
 }
 
@@ -310,6 +319,7 @@ func determineReviewState(reviews []*github.PullRequestReview) string {
 		if review.User == nil || review.User.Login == nil {
 			continue
 		}
+
 		login := *review.User.Login
 		state := review.GetState()
 
@@ -337,12 +347,15 @@ func determineReviewState(reviews []*github.PullRequestReview) string {
 	if hasChangesRequested {
 		return "changes_requested"
 	}
+
 	if hasApproved {
 		return "approved"
 	}
+
 	if hasCommented {
 		return "commented"
 	}
+
 	return "pending"
 }
 
@@ -371,6 +384,7 @@ func getCheckRuns(ctx context.Context, client *github.Client, owner, repo, ref s
 			t := run.GetStartedAt().Time
 			check.StartedAt = &t
 		}
+
 		if !run.GetCompletedAt().IsZero() {
 			t := run.GetCompletedAt().Time
 			check.CompletedAt = &t
@@ -393,6 +407,7 @@ func getCheckRuns(ctx context.Context, client *github.Client, owner, repo, ref s
 
 	// Determine overall checks status
 	var checksStatus string
+
 	switch {
 	case len(checks) == 0:
 		checksStatus = "none"

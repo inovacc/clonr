@@ -277,6 +277,7 @@ func detectFromCurrentDir() (owner, repo string, err error) {
 	}
 
 	configFile := filepath.Join(gitDir, "config")
+
 	cfg, err := newGitConfig(configFile)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to read git config: %w", err)

@@ -108,22 +108,28 @@ func ListWorkflowRuns(token, owner, repo string, opts ListWorkflowRunsOptions) (
 	if opts.Branch != "" {
 		listOpts.Branch = opts.Branch
 	}
+
 	if opts.Event != "" {
 		listOpts.Event = opts.Event
 	}
+
 	if opts.Status != "" {
 		listOpts.Status = opts.Status
 	}
+
 	if opts.Actor != "" {
 		listOpts.Actor = opts.Actor
 	}
 
 	var allRuns []*github.WorkflowRun
+
 	collected := 0
 
 	for {
 		var runs *github.WorkflowRuns
+
 		var resp *github.Response
+
 		var err error
 
 		if opts.WorkflowID > 0 {
@@ -160,6 +166,7 @@ func ListWorkflowRuns(token, owner, repo string, opts ListWorkflowRunsOptions) (
 			if len(allRuns) > opts.Limit {
 				allRuns = allRuns[:opts.Limit]
 			}
+
 			break
 		}
 
@@ -236,6 +243,7 @@ func getWorkflowJobs(ctx context.Context, client *github.Client, owner, repo str
 			t := job.GetStartedAt().Time
 			wj.StartedAt = &t
 		}
+
 		if !job.GetCompletedAt().IsZero() {
 			t := job.GetCompletedAt().Time
 			wj.CompletedAt = &t
@@ -254,6 +262,7 @@ func getWorkflowJobs(ctx context.Context, client *github.Client, owner, repo str
 				t := step.GetStartedAt().Time
 				js.StartedAt = &t
 			}
+
 			if !step.GetCompletedAt().IsZero() {
 				t := step.GetCompletedAt().Time
 				js.CompletedAt = &t
@@ -320,9 +329,11 @@ func convertWorkflowRun(run *github.WorkflowRun) *WorkflowRun {
 		if idx := findNewline(msg); idx > 0 {
 			msg = msg[:idx]
 		}
+
 		if len(msg) > 50 {
 			msg = msg[:47] + "..."
 		}
+
 		wr.HeadCommit = msg
 	}
 
@@ -334,11 +345,13 @@ func convertWorkflowRun(run *github.WorkflowRun) *WorkflowRun {
 	// Calculate duration if completed
 	if run.GetStatus() == "completed" && wr.StartedAt != nil {
 		var end time.Time
+
 		if !run.GetUpdatedAt().IsZero() {
 			end = run.GetUpdatedAt().Time
 		} else {
 			end = time.Now()
 		}
+
 		duration := end.Sub(*wr.StartedAt)
 		wr.Duration = formatDuration(duration)
 		wr.CompletedAt = &end
@@ -353,6 +366,7 @@ func findNewline(s string) int {
 			return i
 		}
 	}
+
 	return -1
 }
 
@@ -360,12 +374,16 @@ func formatDuration(d time.Duration) string {
 	if d < time.Minute {
 		return fmt.Sprintf("%ds", int(d.Seconds()))
 	}
+
 	if d < time.Hour {
 		mins := int(d.Minutes())
 		secs := int(d.Seconds()) % 60
+
 		return fmt.Sprintf("%dm %ds", mins, secs)
 	}
+
 	hours := int(d.Hours())
 	mins := int(d.Minutes()) % 60
+
 	return fmt.Sprintf("%dh %dm", hours, mins)
 }

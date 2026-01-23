@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 var issuesCmd = &cobra.Command{
 	Use:   "issues",
 	Short: "Manage GitHub issues",
-	Long: `List and create GitHub issues for a repository.
+	Long: `List, create, and close GitHub issues for a repository.
 
 Repository Detection:
   Commands auto-detect the repository from the current directory,
@@ -24,7 +25,8 @@ Repository Detection:
 Examples:
   clonr gh issues list                    # List issues in current repo
   clonr gh issues list owner/repo         # List issues in specified repo
-  clonr gh issues create --title "Bug"    # Create an issue`,
+  clonr gh issues create --title "Bug"    # Create an issue
+  clonr gh issues close 123               # Close issue #123`,
 }
 
 var issuesListCmd = &cobra.Command{
@@ -59,10 +61,25 @@ Examples:
 	RunE: runIssuesCreate,
 }
 
+var issuesCloseCmd = &cobra.Command{
+	Use:   "close <issue-number> [owner/repo]",
+	Short: "Close an issue",
+	Long: `Close a GitHub issue by its number.
+
+The issue number is required as the first argument.
+
+Examples:
+  clonr gh issues close 123                # Close issue #123 in current repo
+  clonr gh issues close 123 owner/repo     # Close issue in specified repo
+  clonr gh issues close 123 --comment "Fixed in v1.0"  # Close with comment`,
+	RunE: runIssuesClose,
+}
+
 func init() {
 	ghCmd.AddCommand(issuesCmd)
 	issuesCmd.AddCommand(issuesListCmd)
 	issuesCmd.AddCommand(issuesCreateCmd)
+	issuesCmd.AddCommand(issuesCloseCmd)
 
 	// List flags
 	addGHCommonFlags(issuesListCmd)
@@ -80,6 +97,11 @@ func init() {
 	issuesCreateCmd.Flags().String("body", "", "Issue body")
 	issuesCreateCmd.Flags().StringSlice("labels", nil, "Labels to add (comma-separated)")
 	issuesCreateCmd.Flags().StringSlice("assignees", nil, "Assignees (comma-separated)")
+
+	// Close flags
+	addGHCommonFlags(issuesCloseCmd)
+	issuesCloseCmd.Flags().String("comment", "", "Add a comment when closing")
+	issuesCloseCmd.Flags().String("reason", "completed", "Close reason: completed, not_planned")
 }
 
 func runIssuesList(cmd *cobra.Command, args []string) error {
@@ -260,6 +282,79 @@ func runIssuesCreate(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func runIssuesClose(cmd *cobra.Command, args []string) error {
+	// Get flags
+	tokenFlag, _ := cmd.Flags().GetString("token")
+	repoFlag, _ := cmd.Flags().GetString("repo")
+	jsonOutput, _ := cmd.Flags().GetBool("json")
+	comment, _ := cmd.Flags().GetString("comment")
+	reason, _ := cmd.Flags().GetString("reason")
+
+	// Parse arguments - first should be issue number, optional second is owner/repo
+	if len(args) == 0 {
+		return fmt.Errorf("issue number is required\n\nUsage: clonr gh issues close <issue-number>")
+	}
+
+	issueNumber, err := strconv.Atoi(args[0])
+	if err != nil {
+		return fmt.Errorf("invalid issue number: %s", args[0])
+	}
+
+	var repoArg string
+	if len(args) > 1 {
+		repoArg = args[1]
+	}
+
+	// Resolve token
+	token, _, err := core.ResolveGitHubToken(tokenFlag)
+	if err != nil {
+		return err
+	}
+
+	// Detect repository
+	owner, repo, err := core.DetectRepository(repoArg, repoFlag)
+	if err != nil {
+		return fmt.Errorf("could not determine repository: %w\n\nSpecify a repository with: clonr gh issues close <number> owner/repo", err)
+	}
+
+	// Setup logger
+	var logger *slog.Logger
+	if jsonOutput {
+		logger = slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
+	} else {
+		logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
+	}
+
+	// Close issue
+	opts := core.CloseIssueOptions{
+		Comment: comment,
+		Reason:  reason,
+		Logger:  logger,
+	}
+
+	if !jsonOutput {
+		_, _ = fmt.Fprintf(os.Stderr, "Closing issue #%d in %s/%s...\n", issueNumber, owner, repo)
+	}
+
+	closed, err := core.CloseIssue(token, owner, repo, issueNumber, opts)
+	if err != nil {
+		return fmt.Errorf("failed to close issue: %w", err)
+	}
+
+	// Output results
+	if jsonOutput {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+
+		return enc.Encode(closed)
+	}
+
+	_, _ = fmt.Fprintf(os.Stdout, "\n✓ Closed issue #%d: %s\n", closed.Number, closed.Title)
+	_, _ = fmt.Fprintf(os.Stdout, "  %s\n", closed.URL)
+
+	return nil
+}
+
 // formatAge formats a time as a human-readable age string
 func formatAge(t time.Time) string {
 	d := time.Since(t)
@@ -272,30 +367,35 @@ func formatAge(t time.Time) string {
 		if mins == 1 {
 			return "1 minute ago"
 		}
+
 		return fmt.Sprintf("%d minutes ago", mins)
 	case d < 24*time.Hour:
 		hours := int(d.Hours())
 		if hours == 1 {
 			return "1 hour ago"
 		}
+
 		return fmt.Sprintf("%d hours ago", hours)
 	case d < 30*24*time.Hour:
 		days := int(d.Hours() / 24)
 		if days == 1 {
 			return "1 day ago"
 		}
+
 		return fmt.Sprintf("%d days ago", days)
 	case d < 365*24*time.Hour:
 		months := int(d.Hours() / 24 / 30)
 		if months == 1 {
 			return "1 month ago"
 		}
+
 		return fmt.Sprintf("%d months ago", months)
 	default:
 		years := int(d.Hours() / 24 / 365)
 		if years == 1 {
 			return "1 year ago"
 		}
+
 		return fmt.Sprintf("%d years ago", years)
 	}
 }

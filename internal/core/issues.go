@@ -407,6 +407,7 @@ func ListIssuesFromAPI(token, owner, repo string, opts ListIssuesOptions) (*Issu
 	}
 
 	var allIssues []*github.Issue
+
 	collected := 0
 
 	for {
@@ -536,5 +537,91 @@ func CreateIssue(token, owner, repo string, opts CreateIssueOptions) (*CreatedIs
 		URL:       issue.GetHTMLURL(),
 		State:     issue.GetState(),
 		CreatedAt: issue.GetCreatedAt().Time,
+	}, nil
+}
+
+// CloseIssueOptions configures issue closing
+type CloseIssueOptions struct {
+	Comment string // Optional comment to add when closing
+	Reason  string // Close reason: completed, not_planned (default: completed)
+	Logger  *slog.Logger
+}
+
+// ClosedIssue represents the result of closing an issue
+type ClosedIssue struct {
+	Number   int       `json:"number"`
+	Title    string    `json:"title"`
+	URL      string    `json:"url"`
+	State    string    `json:"state"`
+	ClosedAt time.Time `json:"closed_at"`
+}
+
+// CloseIssue closes an issue in the specified repository
+func CloseIssue(token, owner, repo string, issueNumber int, opts CloseIssueOptions) (*ClosedIssue, error) {
+	logger := opts.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+	tc := oauth2.NewClient(ctx, ts)
+	client := github.NewClient(tc)
+
+	// Add comment if provided
+	if opts.Comment != "" {
+		logger.Debug("adding comment before closing",
+			slog.String("owner", owner),
+			slog.String("repo", repo),
+			slog.Int("issue", issueNumber),
+		)
+
+		commentBody := &github.IssueComment{
+			Body: github.String(opts.Comment),
+		}
+
+		_, _, err := client.Issues.CreateComment(ctx, owner, repo, issueNumber, commentBody)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add comment: %w", err)
+		}
+	}
+
+	// Determine state reason
+	stateReason := "completed"
+	if opts.Reason == "not_planned" {
+		stateReason = "not_planned"
+	}
+
+	logger.Debug("closing issue",
+		slog.String("owner", owner),
+		slog.String("repo", repo),
+		slog.Int("issue", issueNumber),
+		slog.String("reason", stateReason),
+	)
+
+	// Close the issue
+	issueReq := &github.IssueRequest{
+		State:       github.String("closed"),
+		StateReason: github.String(stateReason),
+	}
+
+	issue, _, err := client.Issues.Edit(ctx, owner, repo, issueNumber, issueReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to close issue: %w", err)
+	}
+
+	closedAt := time.Now()
+	if !issue.GetClosedAt().IsZero() {
+		closedAt = issue.GetClosedAt().Time
+	}
+
+	return &ClosedIssue{
+		Number:   issue.GetNumber(),
+		Title:    issue.GetTitle(),
+		URL:      issue.GetHTMLURL(),
+		State:    issue.GetState(),
+		ClosedAt: closedAt,
 	}, nil
 }

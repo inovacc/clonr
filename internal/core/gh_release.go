@@ -112,6 +112,7 @@ func ListReleases(token, owner, repo string, opts ListReleasesOptions) (*Release
 	listOpts := &github.ListOptions{PerPage: 100}
 
 	var allReleases []*github.RepositoryRelease
+
 	collected := 0
 
 	for {
@@ -144,6 +145,7 @@ func ListReleases(token, owner, repo string, opts ListReleasesOptions) (*Release
 			if len(allReleases) > opts.Limit {
 				allReleases = allReleases[:opts.Limit]
 			}
+
 			break
 		}
 
@@ -167,6 +169,7 @@ func GetRelease(token, owner, repo, tag string) (*Release, error) {
 	client := github.NewClient(tc)
 
 	var release *github.RepositoryRelease
+
 	var err error
 
 	if tag == "latest" || tag == "" {
@@ -245,8 +248,10 @@ func CreateRelease(token, owner, repo string, opts CreateReleaseOptions) (*Relea
 					slog.String("path", assetPath),
 					slog.String("error", err.Error()),
 				)
+
 				continue
 			}
+
 			result.Assets = append(result.Assets, *asset)
 		}
 	}
@@ -265,6 +270,7 @@ func DownloadRelease(token, owner, repo string, opts DownloadReleaseOptions) (*D
 	if opts.Tag == "" {
 		opts.Tag = "latest"
 	}
+
 	if opts.Dir == "" {
 		opts.Dir = "."
 	}
@@ -287,17 +293,21 @@ func DownloadRelease(token, owner, repo string, opts DownloadReleaseOptions) (*D
 
 	// Compile patterns
 	var patterns []*regexp.Regexp
+
 	for _, p := range opts.Patterns {
 		// Convert glob-like pattern to regex
 		regexPattern := globToRegex(p)
+
 		re, err := regexp.Compile(regexPattern)
 		if err != nil {
 			logger.Warn("invalid pattern",
 				slog.String("pattern", p),
 				slog.String("error", err.Error()),
 			)
+
 			continue
 		}
+
 		patterns = append(patterns, re)
 	}
 
@@ -312,12 +322,14 @@ func DownloadRelease(token, owner, repo string, opts DownloadReleaseOptions) (*D
 		// Check if asset matches patterns (or download all if no patterns)
 		if len(patterns) > 0 {
 			matched := false
+
 			for _, re := range patterns {
 				if re.MatchString(asset.Name) {
 					matched = true
 					break
 				}
 			}
+
 			if !matched {
 				continue
 			}
@@ -329,12 +341,14 @@ func DownloadRelease(token, owner, repo string, opts DownloadReleaseOptions) (*D
 		)
 
 		destPath := filepath.Join(opts.Dir, asset.Name)
+
 		size, err := downloadFile(ctx, tc.Transport, asset.DownloadURL, destPath)
 		if err != nil {
 			logger.Warn("failed to download asset",
 				slog.String("name", asset.Name),
 				slog.String("error", err.Error()),
 			)
+
 			continue
 		}
 
@@ -353,6 +367,7 @@ func uploadAsset(ctx context.Context, client *github.Client, owner, repo string,
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
+
 	defer func() {
 		_ = file.Close()
 	}()
@@ -397,10 +412,12 @@ func downloadFile(ctx context.Context, transport http.RoundTripper, url, destPat
 	}
 
 	client := &http.Client{Transport: transport}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return 0, fmt.Errorf("failed to download: %w", err)
 	}
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()
@@ -413,6 +430,7 @@ func downloadFile(ctx context.Context, transport http.RoundTripper, url, destPat
 	if err != nil {
 		return 0, fmt.Errorf("failed to create file: %w", err)
 	}
+
 	defer func() {
 		_ = out.Close()
 	}()
@@ -499,5 +517,6 @@ func globToRegex(glob string) string {
 	}
 
 	sb.WriteString("$")
+
 	return sb.String()
 }

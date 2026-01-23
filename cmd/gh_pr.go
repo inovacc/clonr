@@ -121,11 +121,13 @@ func showPRDetail(token, owner, repo string, prNumber int, jsonOutput bool) erro
 	if jsonOutput {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(status)
 	}
 
 	// Text output
 	printPRDetail(status)
+
 	return nil
 }
 
@@ -151,6 +153,7 @@ func listPRs(token, owner, repo string, jsonOutput bool, state, base, head, sort
 	if jsonOutput {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(data)
 	}
 
@@ -240,10 +243,13 @@ func printPRDetail(pr *core.PRStatus) {
 	case "commented":
 		reviewIcon = "💬"
 	}
+
 	_, _ = fmt.Fprintf(os.Stdout, "Reviews: %s %s", reviewIcon, pr.ReviewState)
+
 	if pr.ReviewCount > 0 {
 		_, _ = fmt.Fprintf(os.Stdout, " (%d reviews)", pr.ReviewCount)
 	}
+
 	_, _ = fmt.Fprintln(os.Stdout)
 
 	// Reviewers
@@ -322,8 +328,10 @@ func printPRDetail(pr *core.PRStatus) {
 
 func formatUsers(users []string) []string {
 	result := make([]string, len(users))
+
 	for i, u := range users {
 		result[i] = "@" + u
 	}
+
 	return result
 }

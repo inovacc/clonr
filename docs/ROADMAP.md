@@ -10,6 +10,13 @@ open-after-clone), and private repository support.
 
 ## Milestones
 
+### v0.1.1 – GitHub CLI Integration ✅ (Completed)
+
+- GitHub Issues (`clonr gh issues list`, `clonr gh issues create`)
+- Pull Request Status (`clonr gh pr status`)
+- GitHub Actions (`clonr gh actions status`)
+- GitHub Releases (`clonr gh release list`, `clonr gh release create`, `clonr gh release download`)
+
 ### v0.2.0 – Onboarding and QoL
 
 - Add Command (Manual registration of existing local repos)
@@ -28,6 +35,63 @@ open-after-clone), and private repository support.
 - Optional secure storage integration for credentials (system keychain when available)
 
 ## Feature Breakdowns
+
+### 0) GitHub CLI Integration ✅
+
+CLI: `clonr gh <subcommand>`
+
+The GitHub CLI integration provides gh-like functionality for managing GitHub resources directly from clonr.
+
+#### Issues
+
+- `clonr gh issues list [owner/repo]` - List issues for a repository
+  - Flags: `--state`, `--labels`, `--assignee`, `--creator`, `--sort`, `--order`, `--limit`, `--json`
+- `clonr gh issues create [owner/repo]` - Create a new issue
+  - Flags: `--title` (required), `--body`, `--labels`, `--assignees`, `--json`
+
+#### Pull Requests
+
+- `clonr gh pr status [pr-number | owner/repo]` - Check PR status
+  - Without PR number: lists all open PRs
+  - With PR number: shows detailed status (reviews, CI checks, mergeable state)
+  - Flags: `--state`, `--base`, `--head`, `--sort`, `--order`, `--limit`, `--json`
+
+#### Actions
+
+- `clonr gh actions status [run-id | owner/repo]` - Check workflow runs
+  - Without run ID: lists recent workflow runs
+  - With run ID: shows detailed run status including jobs
+  - Flags: `--branch`, `--event`, `--status`, `--actor`, `--limit`, `--jobs`, `--json`
+
+#### Releases
+
+- `clonr gh release list [owner/repo]` - List releases
+  - Flags: `--limit`, `--include-drafts`, `--json`
+- `clonr gh release create [owner/repo]` - Create a new release
+  - Flags: `--tag` (required), `--name`, `--notes`, `--target`, `--draft`, `--prerelease`, `--latest`, `--assets`, `--json`
+- `clonr gh release download [owner/repo]` - Download release assets
+  - Flags: `--tag`, `--patterns`, `--dir`, `--json`
+
+#### Common Features
+
+- **Auto-detection**: All commands auto-detect repository from current directory's git config
+- **Token resolution**: Uses go-gh for automatic token discovery (GITHUB_TOKEN, GH_TOKEN, gh CLI config)
+- **JSON output**: All commands support `--json` flag for scripting
+- **Pagination**: Automatic pagination with configurable limits
+- **Rate limiting**: Handles GitHub API rate limits with automatic backoff
+
+#### Implementation Files
+
+- `cmd/gh.go` - Parent command with common flags
+- `cmd/gh_issues.go` - Issues list and create commands
+- `cmd/gh_pr.go` - PR status command
+- `cmd/gh_actions.go` - Actions status command
+- `cmd/gh_release.go` - Release list, create, download commands
+- `internal/core/issues.go` - Issues business logic (extended)
+- `internal/core/gh_pr.go` - PR status logic
+- `internal/core/gh_actions.go` - Actions workflow logic
+- `internal/core/gh_release.go` - Release management logic
+- `internal/core/common.go` - DetectRepository helper
 
 ### 1) Add Command
 

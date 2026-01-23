@@ -139,6 +139,7 @@ func runReleaseList(cmd *cobra.Command, args []string) error {
 	if jsonOutput {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(data)
 	}
 
@@ -173,6 +174,7 @@ func runReleaseCreate(cmd *cobra.Command, args []string) error {
 
 	// Parse arguments - first is tag, second is optional repo
 	var tag, repoArg string
+
 	for i, arg := range args {
 		if i == 0 {
 			tag = arg
@@ -191,6 +193,7 @@ func runReleaseCreate(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to read notes file: %w", err)
 		}
+
 		notes = string(content)
 	}
 
@@ -229,20 +232,24 @@ func runReleaseCreate(cmd *cobra.Command, args []string) error {
 	if jsonOutput {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(release)
 	}
 
 	// Text output
 	_, _ = fmt.Fprintf(os.Stdout, "\n✓ Created release %s\n", release.TagName)
 	_, _ = fmt.Fprintf(os.Stdout, "  Name: %s\n", release.Name)
+
 	if release.Draft {
 		_, _ = fmt.Fprintln(os.Stdout, "  Status: draft")
 	} else if release.Prerelease {
 		_, _ = fmt.Fprintln(os.Stdout, "  Status: prerelease")
 	}
+
 	if len(release.Assets) > 0 {
 		_, _ = fmt.Fprintf(os.Stdout, "  Assets: %d uploaded\n", len(release.Assets))
 	}
+
 	_, _ = fmt.Fprintf(os.Stdout, "  URL: %s\n", release.URL)
 
 	return nil
@@ -298,6 +305,7 @@ func runReleaseDownload(cmd *cobra.Command, args []string) error {
 	if jsonOutput {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(result)
 	}
 
@@ -308,6 +316,7 @@ func runReleaseDownload(cmd *cobra.Command, args []string) error {
 		} else {
 			_, _ = fmt.Fprintf(os.Stdout, "No assets matched the specified patterns\n")
 		}
+
 		return nil
 	}
 
@@ -326,9 +335,11 @@ func printReleaseSummary(release *core.Release) {
 	if release.Draft {
 		statusParts = append(statusParts, "draft")
 	}
+
 	if release.Prerelease {
 		statusParts = append(statusParts, "prerelease")
 	}
+
 	statusStr := ""
 	if len(statusParts) > 0 {
 		statusStr = fmt.Sprintf(" [%s]", strings.Join(statusParts, ", "))
@@ -344,9 +355,11 @@ func printReleaseSummary(release *core.Release) {
 
 	// Tag and date
 	publishedStr := "draft"
+
 	if release.PublishedAt != nil {
 		publishedStr = formatAge(*release.PublishedAt)
 	}
+
 	_, _ = fmt.Fprintf(os.Stdout, "   %s · %s by @%s\n", release.TagName, publishedStr, release.Author)
 
 	// Assets
@@ -355,6 +368,7 @@ func printReleaseSummary(release *core.Release) {
 		for _, a := range release.Assets {
 			totalSize += a.Size
 		}
+
 		_, _ = fmt.Fprintf(os.Stdout, "   %d assets (%s)\n", len(release.Assets), formatFileSize(int64(totalSize)))
 	}
 
