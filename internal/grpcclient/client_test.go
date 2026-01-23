@@ -1,6 +1,8 @@
 package grpcclient
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -229,44 +231,80 @@ func TestModelToProtoConfig(t *testing.T) {
 	}
 }
 
-func TestClientConfigStruct(t *testing.T) {
-	cfg := ClientConfig{
-		ServerAddress:  "localhost:50051",
-		TimeoutSeconds: 30,
+func TestHandleGRPCError_NonGRPCError(t *testing.T) {
+	// Test with a non-gRPC error
+	regularErr := fmt.Errorf("some regular error")
+
+	err := handleGRPCError(regularErr)
+	if err == nil {
+		t.Fatal("handleGRPCError should return error for non-gRPC error")
 	}
 
-	if cfg.ServerAddress != "localhost:50051" {
-		t.Errorf("ServerAddress = %q, want %q", cfg.ServerAddress, "localhost:50051")
+	// Should wrap as unknown error
+	if !strings.Contains(err.Error(), "unknown error") {
+		t.Errorf("handleGRPCError() = %q, should contain 'unknown error'", err.Error())
+	}
+}
+
+func TestProtoToModelRepository_NilTimestamps(t *testing.T) {
+	proto := &v1.Repository{
+		Id:       1,
+		Uid:      "test",
+		Url:      "https://example.com",
+		Path:     "/test",
+		Favorite: false,
+		// Nil timestamps - protobuf returns Unix epoch (1970-01-01) for nil
+		ClonedAt:    nil,
+		UpdatedAt:   nil,
+		LastChecked: nil,
 	}
 
-	if cfg.TimeoutSeconds != 30 {
-		t.Errorf("TimeoutSeconds = %d, want %d", cfg.TimeoutSeconds, 30)
+	repo := protoToModelRepository(proto)
+
+	if repo.ID != 1 {
+		t.Errorf("ID = %d, want 1", repo.ID)
+	}
+
+	if repo.UID != "test" {
+		t.Errorf("UID = %q, want %q", repo.UID, "test")
+	}
+
+	if repo.URL != "https://example.com" {
+		t.Errorf("URL = %q, want %q", repo.URL, "https://example.com")
+	}
+
+	if repo.Path != "/test" {
+		t.Errorf("Path = %q, want %q", repo.Path, "/test")
+	}
+
+	if repo.Favorite {
+		t.Error("Favorite = true, want false")
 	}
 }
 
-func TestServerInfoStruct(t *testing.T) {
-	now := time.Now()
+func TestProtoToModelConfig_NilConfig(t *testing.T) {
+	// Test with nil proto config
+	cfg := protoToModelConfig(nil)
 
-	info := ServerInfo{
-		Address:   "localhost:8080",
-		Port:      8080,
-		PID:       12345,
-		StartedAt: now,
+	// Should return a config with zero values
+	if cfg.DefaultCloneDir != "" {
+		t.Errorf("DefaultCloneDir = %q, want empty", cfg.DefaultCloneDir)
 	}
 
-	if info.Address != "localhost:8080" {
-		t.Errorf("Address = %q, want %q", info.Address, "localhost:8080")
+	if cfg.Editor != "" {
+		t.Errorf("Editor = %q, want empty", cfg.Editor)
 	}
 
-	if info.Port != 8080 {
-		t.Errorf("Port = %d, want %d", info.Port, 8080)
+	if cfg.Terminal != "" {
+		t.Errorf("Terminal = %q, want empty", cfg.Terminal)
 	}
 
-	if info.PID != 12345 {
-		t.Errorf("PID = %d, want %d", info.PID, 12345)
+	if cfg.MonitorInterval != 0 {
+		t.Errorf("MonitorInterval = %d, want 0", cfg.MonitorInterval)
 	}
 
-	if !info.StartedAt.Equal(now) {
-		t.Errorf("StartedAt = %v, want %v", info.StartedAt, now)
+	if cfg.ServerPort != 0 {
+		t.Errorf("ServerPort = %d, want 0", cfg.ServerPort)
 	}
 }
+

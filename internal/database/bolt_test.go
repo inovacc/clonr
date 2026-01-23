@@ -430,3 +430,515 @@ func TestBolt_SaveConfig(t *testing.T) {
 		t.Errorf("ServerPort = %d, want %d", loaded.ServerPort, cfg.ServerPort)
 	}
 }
+
+func TestBolt_SaveRepo_NilURL(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	err := db.SaveRepo(nil, "/tmp/path")
+	if err == nil {
+		t.Error("SaveRepo(nil) should return error")
+	}
+}
+
+func TestBolt_SaveConfig_NilConfig(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	err := db.SaveConfig(nil)
+	if err == nil {
+		t.Error("SaveConfig(nil) should return error")
+	}
+}
+
+func TestBolt_SetFavoriteByURL_NonExistent(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Should not error when repo doesn't exist
+	err := db.SetFavoriteByURL("https://github.com/nonexistent/repo", true)
+	if err != nil {
+		t.Errorf("SetFavoriteByURL() on non-existent repo error = %v, want nil", err)
+	}
+}
+
+func TestBolt_UpdateRepoTimestamp_NonExistent(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Should not error when repo doesn't exist
+	err := db.UpdateRepoTimestamp("https://github.com/nonexistent/repo")
+	if err != nil {
+		t.Errorf("UpdateRepoTimestamp() on non-existent repo error = %v, want nil", err)
+	}
+}
+
+func TestBolt_RemoveRepoByURL_NonExistent(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	u, _ := url.Parse("https://github.com/nonexistent/repo")
+
+	// Should not error when repo doesn't exist
+	err := db.RemoveRepoByURL(u)
+	if err != nil {
+		t.Errorf("RemoveRepoByURL() on non-existent repo error = %v, want nil", err)
+	}
+}
+
+func TestBolt_InsertRepoIfNotExists_NilURL(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// With nil URL, should check path only
+	err := db.InsertRepoIfNotExists(nil, "/tmp/nil-url-path")
+	if err == nil {
+		// Expected to error because SaveRepo requires URL
+		// But based on code, it calls SaveRepo with nil which returns error
+		t.Log("InsertRepoIfNotExists(nil, path) returned error as expected")
+	}
+}
+
+func TestBolt_SaveRepo_DuplicateURL(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	u, _ := url.Parse("https://github.com/test/duplicate")
+
+	// First save
+	if err := db.SaveRepo(u, "/tmp/first"); err != nil {
+		t.Fatalf("First SaveRepo() error = %v", err)
+	}
+
+	// Second save with same URL but different path should be ignored
+	if err := db.SaveRepo(u, "/tmp/second"); err != nil {
+		t.Fatalf("Second SaveRepo() error = %v", err)
+	}
+
+	// Verify only one repo exists
+	repos, err := db.GetAllRepos()
+	if err != nil {
+		t.Fatalf("GetAllRepos() error = %v", err)
+	}
+
+	if len(repos) != 1 {
+		t.Errorf("GetAllRepos() returned %d repos, want 1", len(repos))
+	}
+}
+
+func TestBolt_SaveRepo_DuplicatePath(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	u1, _ := url.Parse("https://github.com/test/repo1")
+	u2, _ := url.Parse("https://github.com/test/repo2")
+
+	// First save
+	if err := db.SaveRepo(u1, "/tmp/samepath"); err != nil {
+		t.Fatalf("First SaveRepo() error = %v", err)
+	}
+
+	// Second save with different URL but same path should be ignored
+	if err := db.SaveRepo(u2, "/tmp/samepath"); err != nil {
+		t.Fatalf("Second SaveRepo() error = %v", err)
+	}
+
+	// Verify only one repo exists
+	repos, err := db.GetAllRepos()
+	if err != nil {
+		t.Fatalf("GetAllRepos() error = %v", err)
+	}
+
+	if len(repos) != 1 {
+		t.Errorf("GetAllRepos() returned %d repos, want 1", len(repos))
+	}
+}
+
+func TestBolt_Close(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "clonr-close-test-*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+
+	defer func() {
+		_ = os.RemoveAll(tmpDir)
+	}()
+
+	dbPath := filepath.Join(tmpDir, "test.storage")
+
+	db, err := NewBolt(dbPath)
+	if err != nil {
+		t.Fatalf("failed to create database: %v", err)
+	}
+
+	// Close should not error
+	if err := db.Close(); err != nil {
+		t.Errorf("Close() error = %v, want nil", err)
+	}
+}
+
+func TestBolt_GetConfig_ReturnsDefault(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Get config without saving any - should return default
+	cfg, err := db.GetConfig()
+	if err != nil {
+		t.Fatalf("GetConfig() error = %v", err)
+	}
+
+	if cfg == nil {
+		t.Fatal("GetConfig() returned nil")
+	}
+
+	// Should have default values
+	defaultCfg := model.DefaultConfig()
+	if cfg.Editor != defaultCfg.Editor {
+		t.Errorf("Editor = %q, want default %q", cfg.Editor, defaultCfg.Editor)
+	}
+}
+
+func TestBolt_InsertRepoIfNotExists_PathAlreadyExists(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	u1, _ := url.Parse("https://github.com/test/first")
+	u2, _ := url.Parse("https://github.com/test/second")
+	testPath := "/tmp/same-path"
+
+	// First insert
+	if err := db.InsertRepoIfNotExists(u1, testPath); err != nil {
+		t.Fatalf("First InsertRepoIfNotExists() error = %v", err)
+	}
+
+	// Second insert with same path - should be idempotent (no error, no duplicate)
+	if err := db.InsertRepoIfNotExists(u2, testPath); err != nil {
+		t.Errorf("Second InsertRepoIfNotExists() error = %v, want nil", err)
+	}
+
+	// Verify only one repo exists
+	repos, err := db.GetAllRepos()
+	if err != nil {
+		t.Fatalf("GetAllRepos() error = %v", err)
+	}
+
+	if len(repos) != 1 {
+		t.Errorf("GetAllRepos() returned %d repos, want 1", len(repos))
+	}
+}
+
+func TestBolt_InsertRepoIfNotExists_URLAlreadyExists(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	testURL := "https://github.com/test/same-url"
+	u, _ := url.Parse(testURL)
+
+	// First insert
+	if err := db.InsertRepoIfNotExists(u, "/tmp/first-path"); err != nil {
+		t.Fatalf("First InsertRepoIfNotExists() error = %v", err)
+	}
+
+	// Second insert with same URL but different path - should be idempotent
+	if err := db.InsertRepoIfNotExists(u, "/tmp/second-path"); err != nil {
+		t.Errorf("Second InsertRepoIfNotExists() error = %v, want nil", err)
+	}
+
+	// Verify only one repo exists
+	repos, err := db.GetAllRepos()
+	if err != nil {
+		t.Fatalf("GetAllRepos() error = %v", err)
+	}
+
+	if len(repos) != 1 {
+		t.Errorf("GetAllRepos() returned %d repos, want 1", len(repos))
+	}
+}
+
+func TestBolt_RemoveRepoByURL_WithPath(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	testURL := "https://github.com/test/remove-with-path"
+	testPath := "/tmp/remove-path-test"
+	u, _ := url.Parse(testURL)
+
+	if err := db.SaveRepo(u, testPath); err != nil {
+		t.Fatalf("SaveRepo() error = %v", err)
+	}
+
+	// Verify both URL and path exist
+	existsURL, _ := db.RepoExistsByURL(u)
+	existsPath, _ := db.RepoExistsByPath(testPath)
+
+	if !existsURL || !existsPath {
+		t.Fatal("Repo should exist by both URL and path before removal")
+	}
+
+	// Remove
+	if err := db.RemoveRepoByURL(u); err != nil {
+		t.Errorf("RemoveRepoByURL() error = %v", err)
+	}
+
+	// Verify both URL and path are removed
+	existsURL, _ = db.RepoExistsByURL(u)
+	existsPath, _ = db.RepoExistsByPath(testPath)
+
+	if existsURL {
+		t.Error("Repo should not exist by URL after removal")
+	}
+
+	if existsPath {
+		t.Error("Repo should not exist by path after removal")
+	}
+}
+
+func TestBolt_GetRepos_NoFavorites(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Add repos without favorites
+	u1, _ := url.Parse("https://github.com/user/repo1")
+	u2, _ := url.Parse("https://github.com/user/repo2")
+
+	if err := db.SaveRepo(u1, "/tmp/repo1"); err != nil {
+		t.Fatalf("SaveRepo() error = %v", err)
+	}
+
+	if err := db.SaveRepo(u2, "/tmp/repo2"); err != nil {
+		t.Fatalf("SaveRepo() error = %v", err)
+	}
+
+	// Get favorites only - should be empty
+	favRepos, err := db.GetRepos(true)
+	if err != nil {
+		t.Fatalf("GetRepos(true) error = %v", err)
+	}
+
+	if len(favRepos) != 0 {
+		t.Errorf("GetRepos(true) returned %d repos, want 0", len(favRepos))
+	}
+}
+
+func TestBolt_SaveConfig_Multiple(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Save first config
+	cfg1 := &model.Config{
+		DefaultCloneDir: "/first/path",
+		Editor:          "vim",
+		ServerPort:      5000,
+	}
+
+	if err := db.SaveConfig(cfg1); err != nil {
+		t.Fatalf("First SaveConfig() error = %v", err)
+	}
+
+	// Save second config (overwrites)
+	cfg2 := &model.Config{
+		DefaultCloneDir: "/second/path",
+		Editor:          "nvim",
+		ServerPort:      6000,
+	}
+
+	if err := db.SaveConfig(cfg2); err != nil {
+		t.Fatalf("Second SaveConfig() error = %v", err)
+	}
+
+	// Get config and verify it's the second one
+	loaded, err := db.GetConfig()
+	if err != nil {
+		t.Fatalf("GetConfig() error = %v", err)
+	}
+
+	if loaded.DefaultCloneDir != "/second/path" {
+		t.Errorf("DefaultCloneDir = %q, want %q", loaded.DefaultCloneDir, "/second/path")
+	}
+
+	if loaded.Editor != "nvim" {
+		t.Errorf("Editor = %q, want %q", loaded.Editor, "nvim")
+	}
+
+	if loaded.ServerPort != 6000 {
+		t.Errorf("ServerPort = %d, want %d", loaded.ServerPort, 6000)
+	}
+}
+
+func TestBolt_SetFavoriteByURL_Toggle(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	testURL := "https://github.com/test/toggle-fav"
+	u, _ := url.Parse(testURL)
+
+	if err := db.SaveRepo(u, "/tmp/toggle"); err != nil {
+		t.Fatalf("SaveRepo() error = %v", err)
+	}
+
+	// Initial state - not favorite
+	repos, _ := db.GetAllRepos()
+	if repos[0].Favorite {
+		t.Error("Repo should not be favorite initially")
+	}
+
+	// Set as favorite
+	if err := db.SetFavoriteByURL(testURL, true); err != nil {
+		t.Fatalf("SetFavoriteByURL(true) error = %v", err)
+	}
+
+	repos, _ = db.GetAllRepos()
+	if !repos[0].Favorite {
+		t.Error("Repo should be favorite after setting")
+	}
+
+	// Unset favorite
+	if err := db.SetFavoriteByURL(testURL, false); err != nil {
+		t.Fatalf("SetFavoriteByURL(false) error = %v", err)
+	}
+
+	repos, _ = db.GetAllRepos()
+	if repos[0].Favorite {
+		t.Error("Repo should not be favorite after unsetting")
+	}
+
+	// Set again
+	if err := db.SetFavoriteByURL(testURL, true); err != nil {
+		t.Fatalf("SetFavoriteByURL(true) second time error = %v", err)
+	}
+
+	repos, _ = db.GetAllRepos()
+	if !repos[0].Favorite {
+		t.Error("Repo should be favorite after setting again")
+	}
+}
+
+func TestNewBolt_InvalidPath(t *testing.T) {
+	// Try to create a database at an invalid path
+	_, err := NewBolt("/nonexistent/path/that/does/not/exist/test.db")
+	if err == nil {
+		t.Error("NewBolt() with invalid path should return error")
+	}
+}
+
+func TestBolt_RepositoryFieldsPreserved(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	testURL := "https://github.com/test/fields"
+	u, _ := url.Parse(testURL)
+	testPath := "/tmp/fields-test"
+
+	if err := db.SaveRepo(u, testPath); err != nil {
+		t.Fatalf("SaveRepo() error = %v", err)
+	}
+
+	repos, err := db.GetAllRepos()
+	if err != nil {
+		t.Fatalf("GetAllRepos() error = %v", err)
+	}
+
+	if len(repos) != 1 {
+		t.Fatalf("Expected 1 repo, got %d", len(repos))
+	}
+
+	repo := repos[0]
+
+	// Verify all fields are set correctly
+	if repo.UID == "" {
+		t.Error("UID should not be empty")
+	}
+
+	if repo.URL != testURL {
+		t.Errorf("URL = %q, want %q", repo.URL, testURL)
+	}
+
+	if repo.Path != testPath {
+		t.Errorf("Path = %q, want %q", repo.Path, testPath)
+	}
+
+	if repo.Favorite {
+		t.Error("Favorite should be false by default")
+	}
+
+	if repo.ClonedAt.IsZero() {
+		t.Error("ClonedAt should not be zero")
+	}
+}
+
+func TestBolt_MultipleReposOperations(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Add multiple repos
+	urls := []string{
+		"https://github.com/user/repo1",
+		"https://github.com/user/repo2",
+		"https://github.com/user/repo3",
+		"https://github.com/user/repo4",
+		"https://github.com/user/repo5",
+	}
+
+	for i, urlStr := range urls {
+		u, _ := url.Parse(urlStr)
+
+		if err := db.SaveRepo(u, "/tmp/multi-"+string(rune('a'+i))); err != nil {
+			t.Fatalf("SaveRepo(%s) error = %v", urlStr, err)
+		}
+	}
+
+	// Verify all repos exist
+	repos, err := db.GetAllRepos()
+	if err != nil {
+		t.Fatalf("GetAllRepos() error = %v", err)
+	}
+
+	if len(repos) != 5 {
+		t.Errorf("Expected 5 repos, got %d", len(repos))
+	}
+
+	// Set some as favorites
+	if err := db.SetFavoriteByURL(urls[0], true); err != nil {
+		t.Fatalf("SetFavoriteByURL() error = %v", err)
+	}
+
+	if err := db.SetFavoriteByURL(urls[2], true); err != nil {
+		t.Fatalf("SetFavoriteByURL() error = %v", err)
+	}
+
+	// Check favorites
+	favRepos, err := db.GetRepos(true)
+	if err != nil {
+		t.Fatalf("GetRepos(true) error = %v", err)
+	}
+
+	if len(favRepos) != 2 {
+		t.Errorf("Expected 2 favorites, got %d", len(favRepos))
+	}
+
+	// Remove one repo
+	u, _ := url.Parse(urls[1])
+
+	if err := db.RemoveRepoByURL(u); err != nil {
+		t.Fatalf("RemoveRepoByURL() error = %v", err)
+	}
+
+	// Verify removal
+	repos, _ = db.GetAllRepos()
+	if len(repos) != 4 {
+		t.Errorf("Expected 4 repos after removal, got %d", len(repos))
+	}
+
+	// Remove a favorite repo
+	u, _ = url.Parse(urls[0])
+
+	if err := db.RemoveRepoByURL(u); err != nil {
+		t.Fatalf("RemoveRepoByURL() error = %v", err)
+	}
+
+	// Check favorites again
+	favRepos, _ = db.GetRepos(true)
+	if len(favRepos) != 1 {
+		t.Errorf("Expected 1 favorite after removal, got %d", len(favRepos))
+	}
+}

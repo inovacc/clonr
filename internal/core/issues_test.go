@@ -39,6 +39,7 @@ func TestFetchAndSaveIssues(t *testing.T) {
 
 	// Check if issues file was created
 	issuesPath := filepath.Join(testPath, ".clonr", "issues.json")
+
 	info, err := os.Stat(issuesPath)
 	if err != nil {
 		t.Fatalf("Issues file not created: %v", err)
@@ -48,9 +49,7 @@ func TestFetchAndSaveIssues(t *testing.T) {
 
 	// Print content
 	data, _ := os.ReadFile(issuesPath)
-	previewLen := 500
-	if len(data) < previewLen {
-		previewLen = len(data)
-	}
+	previewLen := min(500, len(data))
+
 	t.Logf("Content preview:\n%s", string(data[:previewLen]))
 }

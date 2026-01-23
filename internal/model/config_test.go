@@ -1,8 +1,10 @@
 package model
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -92,5 +94,127 @@ func TestConfig_ZeroValues(t *testing.T) {
 
 	if cfg.ServerPort != 0 {
 		t.Errorf("zero Config.ServerPort = %d, want 0", cfg.ServerPort)
+	}
+}
+
+func TestDefaultConfig_Consistency(t *testing.T) {
+	// Multiple calls should return same values
+	cfg1 := DefaultConfig()
+	cfg2 := DefaultConfig()
+
+	if cfg1.DefaultCloneDir != cfg2.DefaultCloneDir {
+		t.Error("DefaultConfig() returns inconsistent DefaultCloneDir")
+	}
+
+	if cfg1.Editor != cfg2.Editor {
+		t.Error("DefaultConfig() returns inconsistent Editor")
+	}
+
+	if cfg1.Terminal != cfg2.Terminal {
+		t.Error("DefaultConfig() returns inconsistent Terminal")
+	}
+
+	if cfg1.MonitorInterval != cfg2.MonitorInterval {
+		t.Error("DefaultConfig() returns inconsistent MonitorInterval")
+	}
+
+	if cfg1.ServerPort != cfg2.ServerPort {
+		t.Error("DefaultConfig() returns inconsistent ServerPort")
+	}
+}
+
+func TestConfig_JSONMarshaling(t *testing.T) {
+	original := Config{
+		DefaultCloneDir: "/custom/clone/dir",
+		Editor:          "vim",
+		Terminal:        "kitty",
+		MonitorInterval: 600,
+		ServerPort:      8080,
+	}
+
+	data, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("json.Marshal() error = %v", err)
+	}
+
+	var decoded Config
+
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("json.Unmarshal() error = %v", err)
+	}
+
+	if decoded.DefaultCloneDir != original.DefaultCloneDir {
+		t.Errorf("DefaultCloneDir = %q, want %q", decoded.DefaultCloneDir, original.DefaultCloneDir)
+	}
+
+	if decoded.Editor != original.Editor {
+		t.Errorf("Editor = %q, want %q", decoded.Editor, original.Editor)
+	}
+
+	if decoded.Terminal != original.Terminal {
+		t.Errorf("Terminal = %q, want %q", decoded.Terminal, original.Terminal)
+	}
+
+	if decoded.MonitorInterval != original.MonitorInterval {
+		t.Errorf("MonitorInterval = %d, want %d", decoded.MonitorInterval, original.MonitorInterval)
+	}
+
+	if decoded.ServerPort != original.ServerPort {
+		t.Errorf("ServerPort = %d, want %d", decoded.ServerPort, original.ServerPort)
+	}
+}
+
+func TestConfig_JSONFields(t *testing.T) {
+	cfg := Config{
+		DefaultCloneDir: "/test/path",
+		Editor:          "nano",
+		Terminal:        "gnome-terminal",
+		MonitorInterval: 120,
+		ServerPort:      3000,
+	}
+
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatalf("json.Marshal() error = %v", err)
+	}
+
+	jsonStr := string(data)
+
+	// Verify JSON field names match struct tags
+	expectedFields := []string{
+		`"default_clone_dir":"/test/path"`,
+		`"editor":"nano"`,
+		`"terminal":"gnome-terminal"`,
+		`"monitor_interval":120`,
+		`"server_port":3000`,
+	}
+
+	for _, field := range expectedFields {
+		if !strings.Contains(jsonStr, field) {
+			t.Errorf("JSON missing field %q in %s", field, jsonStr)
+		}
+	}
+}
+
+func TestDefaultConfig_ContainsClonrDir(t *testing.T) {
+	cfg := DefaultConfig()
+
+	// DefaultCloneDir should contain "clonr"
+	if !strings.Contains(cfg.DefaultCloneDir, "clonr") {
+		t.Errorf("DefaultCloneDir = %q, should contain 'clonr'", cfg.DefaultCloneDir)
+	}
+}
+
+func TestDefaultConfig_PositiveValues(t *testing.T) {
+	cfg := DefaultConfig()
+
+	// MonitorInterval should be positive
+	if cfg.MonitorInterval <= 0 {
+		t.Errorf("MonitorInterval = %d, should be positive", cfg.MonitorInterval)
+	}
+
+	// ServerPort should be in valid range
+	if cfg.ServerPort <= 0 || cfg.ServerPort > 65535 {
+		t.Errorf("ServerPort = %d, should be between 1 and 65535", cfg.ServerPort)
 	}
 }
