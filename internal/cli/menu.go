@@ -111,6 +111,7 @@ func NewMainMenu() MainMenuModel {
 	items := []list.Item{
 		menuItem{title: "Clone Repository", description: "Clone a Git repository", action: "clone"},
 		menuItem{title: "List Repositories", description: "List all managed repositories", action: "list"},
+		menuItem{title: "List Branches", description: "List and switch branches", action: "branches"},
 		menuItem{title: "Add Repository", description: "Add an existing local repository", action: "add"},
 		menuItem{title: "Map Repositories", description: "Scan directory for Git repositories", action: "map"},
 		menuItem{title: "Favorite Repository", description: "Mark/unmark repository as favorite", action: "favorite"},
@@ -126,7 +127,7 @@ func NewMainMenu() MainMenuModel {
 
 	const defaultWidth = 20
 
-	l := list.New(items, itemDelegate{}, defaultWidth, 14)
+	l := list.New(items, itemDelegate{}, defaultWidth, 15)
 	l.Title = "Clonr - Git Repository Manager"
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
