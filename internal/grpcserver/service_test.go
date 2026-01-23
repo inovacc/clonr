@@ -14,23 +14,23 @@ import (
 
 // mockStore implements database.Store for testing
 type mockStore struct {
-	pingErr              error
-	saveRepoErr          error
-	repoExistsByURL      bool
-	repoExistsByURLErr   error
-	repoExistsByPath     bool
-	repoExistsByPathErr  error
-	insertRepoErr        error
-	getAllReposResult    []model.Repository
-	getAllReposErr       error
-	getReposResult       []model.Repository
-	getReposErr          error
-	setFavoriteErr       error
-	updateTimestampErr   error
-	removeRepoErr        error
-	getConfigResult      *model.Config
-	getConfigErr         error
-	saveConfigErr        error
+	pingErr             error
+	saveRepoErr         error
+	repoExistsByURL     bool
+	repoExistsByURLErr  error
+	repoExistsByPath    bool
+	repoExistsByPathErr error
+	insertRepoErr       error
+	getAllReposResult   []model.Repository
+	getAllReposErr      error
+	getReposResult      []model.Repository
+	getReposErr         error
+	setFavoriteErr      error
+	updateTimestampErr  error
+	removeRepoErr       error
+	getConfigResult     *model.Config
+	getConfigErr        error
+	saveConfigErr       error
 }
 
 func (m *mockStore) Ping() error {
@@ -122,12 +122,12 @@ func TestService_Ping(t *testing.T) {
 
 func TestService_SaveRepo(t *testing.T) {
 	tests := []struct {
-		name      string
-		url       string
-		path      string
-		saveErr   error
-		wantErr   bool
-		wantCode  codes.Code
+		name     string
+		url      string
+		path     string
+		saveErr  error
+		wantErr  bool
+		wantCode codes.Code
 	}{
 		{"success", "https://github.com/user/repo", "/tmp/repo", nil, false, codes.OK},
 		{"empty url", "", "/tmp/repo", nil, true, codes.InvalidArgument},

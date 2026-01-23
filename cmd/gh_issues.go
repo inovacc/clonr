@@ -108,7 +108,7 @@ func runIssuesList(cmd *cobra.Command, args []string) error {
 	// Get flags
 	tokenFlag, _ := cmd.Flags().GetString("token")
 	repoFlag, _ := cmd.Flags().GetString("repo")
-	jsonOutput, _ := cmd.Flags().GetBool("json")
+	outputJson, _ := cmd.Flags().GetBool("json")
 	state, _ := cmd.Flags().GetString("state")
 	labels, _ := cmd.Flags().GetStringSlice("labels")
 	assignee, _ := cmd.Flags().GetString("assignee")
@@ -137,7 +137,7 @@ func runIssuesList(cmd *cobra.Command, args []string) error {
 
 	// Setup logger
 	var logger *slog.Logger
-	if jsonOutput {
+	if outputJson {
 		logger = slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
 	} else {
 		logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
@@ -155,7 +155,7 @@ func runIssuesList(cmd *cobra.Command, args []string) error {
 		Logger:   logger,
 	}
 
-	if !jsonOutput {
+	if !outputJson {
 		_, _ = fmt.Fprintf(os.Stderr, "Fetching issues for %s/%s...\n", owner, repo)
 	}
 
@@ -165,7 +165,7 @@ func runIssuesList(cmd *cobra.Command, args []string) error {
 	}
 
 	// Output results
-	if jsonOutput {
+	if outputJson {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
 
@@ -213,7 +213,7 @@ func runIssuesCreate(cmd *cobra.Command, args []string) error {
 	// Get flags
 	tokenFlag, _ := cmd.Flags().GetString("token")
 	repoFlag, _ := cmd.Flags().GetString("repo")
-	jsonOutput, _ := cmd.Flags().GetBool("json")
+	outputJson, _ := cmd.Flags().GetBool("json")
 	title, _ := cmd.Flags().GetString("title")
 	body, _ := cmd.Flags().GetString("body")
 	labels, _ := cmd.Flags().GetStringSlice("labels")
@@ -244,7 +244,7 @@ func runIssuesCreate(cmd *cobra.Command, args []string) error {
 
 	// Setup logger
 	var logger *slog.Logger
-	if jsonOutput {
+	if outputJson {
 		logger = slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
 	} else {
 		logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
@@ -259,7 +259,7 @@ func runIssuesCreate(cmd *cobra.Command, args []string) error {
 		Logger:    logger,
 	}
 
-	if !jsonOutput {
+	if !outputJson {
 		_, _ = fmt.Fprintf(os.Stderr, "Creating issue in %s/%s...\n", owner, repo)
 	}
 
@@ -269,7 +269,7 @@ func runIssuesCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Output results
-	if jsonOutput {
+	if outputJson {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
 
@@ -286,7 +286,7 @@ func runIssuesClose(cmd *cobra.Command, args []string) error {
 	// Get flags
 	tokenFlag, _ := cmd.Flags().GetString("token")
 	repoFlag, _ := cmd.Flags().GetString("repo")
-	jsonOutput, _ := cmd.Flags().GetBool("json")
+	outputJson, _ := cmd.Flags().GetBool("json")
 	comment, _ := cmd.Flags().GetString("comment")
 	reason, _ := cmd.Flags().GetString("reason")
 
@@ -319,7 +319,7 @@ func runIssuesClose(cmd *cobra.Command, args []string) error {
 
 	// Setup logger
 	var logger *slog.Logger
-	if jsonOutput {
+	if outputJson {
 		logger = slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
 	} else {
 		logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
@@ -332,7 +332,7 @@ func runIssuesClose(cmd *cobra.Command, args []string) error {
 		Logger:  logger,
 	}
 
-	if !jsonOutput {
+	if !outputJson {
 		_, _ = fmt.Fprintf(os.Stderr, "Closing issue #%d in %s/%s...\n", issueNumber, owner, repo)
 	}
 
@@ -342,7 +342,7 @@ func runIssuesClose(cmd *cobra.Command, args []string) error {
 	}
 
 	// Output results
-	if jsonOutput {
+	if outputJson {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
 

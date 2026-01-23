@@ -307,4 +307,3 @@ func TestProtoToModelConfig_NilConfig(t *testing.T) {
 		t.Errorf("ServerPort = %d, want 0", cfg.ServerPort)
 	}
 }
-
