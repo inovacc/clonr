@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/inovacc/clonr/internal/cli"
@@ -29,7 +30,7 @@ var favoriteCmd = &cobra.Command{
 			if err := core.SetFavoriteByURL(selected.URL, true); err != nil {
 				return err
 			}
-			fmt.Printf("✓ Marked %s as favorite\n", selected.URL)
+			_, _ = fmt.Fprintf(os.Stdout, "✓ Marked %s as favorite\n", selected.URL)
 		}
 		return nil
 	},

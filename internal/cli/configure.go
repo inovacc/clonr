@@ -81,11 +81,11 @@ func NewConfigureModel() (ConfigureModel, error) {
 	return m, nil
 }
 
-func (m ConfigureModel) Init() tea.Cmd {
+func (m *ConfigureModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (m ConfigureModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *ConfigureModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case successMsg:
 		m.Saved = true
@@ -157,7 +157,7 @@ func (m *ConfigureModel) updateInputs(msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (m ConfigureModel) View() string {
+func (m *ConfigureModel) View() string {
 	if m.Saved {
 		return lipgloss.NewStyle().
 			Foreground(lipgloss.Color("42")).

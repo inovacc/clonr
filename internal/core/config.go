@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/inovacc/clonr/internal/grpcclient"
 	"github.com/inovacc/clonr/internal/model"
@@ -19,13 +20,13 @@ func ShowConfig() error {
 		return err
 	}
 
-	fmt.Println("Current Configuration:")
-	fmt.Println("=====================")
-	fmt.Printf("Default Clone Directory: %s\n", cfg.DefaultCloneDir)
-	fmt.Printf("Editor:                  %s\n", cfg.Editor)
-	fmt.Printf("Terminal:                %s\n", cfg.Terminal)
-	fmt.Printf("Monitor Interval:        %d seconds\n", cfg.MonitorInterval)
-	fmt.Printf("Server Port:             %d\n", cfg.ServerPort)
+	_, _ = fmt.Fprintln(os.Stdout, "Current Configuration:")
+	_, _ = fmt.Fprintln(os.Stdout, "=====================")
+	_, _ = fmt.Fprintf(os.Stdout, "Default Clone Directory: %s\n", cfg.DefaultCloneDir)
+	_, _ = fmt.Fprintf(os.Stdout, "Editor:                  %s\n", cfg.Editor)
+	_, _ = fmt.Fprintf(os.Stdout, "Terminal:                %s\n", cfg.Terminal)
+	_, _ = fmt.Fprintf(os.Stdout, "Monitor Interval:        %d seconds\n", cfg.MonitorInterval)
+	_, _ = fmt.Fprintf(os.Stdout, "Server Port:             %d\n", cfg.ServerPort)
 
 	return nil
 }
@@ -43,13 +44,13 @@ func ResetConfig() error {
 		return fmt.Errorf("failed to reset configuration: %w", err)
 	}
 
-	fmt.Println("✓ Configuration reset to defaults:")
-	fmt.Println("==================================")
-	fmt.Printf("Default Clone Directory: %s\n", defaultCfg.DefaultCloneDir)
-	fmt.Printf("Editor:                  %s\n", defaultCfg.Editor)
-	fmt.Printf("Terminal:                %s\n", defaultCfg.Terminal)
-	fmt.Printf("Monitor Interval:        %d seconds\n", defaultCfg.MonitorInterval)
-	fmt.Printf("Server Port:             %d\n", defaultCfg.ServerPort)
+	_, _ = fmt.Fprintln(os.Stdout, "✓ Configuration reset to defaults:")
+	_, _ = fmt.Fprintln(os.Stdout, "==================================")
+	_, _ = fmt.Fprintf(os.Stdout, "Default Clone Directory: %s\n", defaultCfg.DefaultCloneDir)
+	_, _ = fmt.Fprintf(os.Stdout, "Editor:                  %s\n", defaultCfg.Editor)
+	_, _ = fmt.Fprintf(os.Stdout, "Terminal:                %s\n", defaultCfg.Terminal)
+	_, _ = fmt.Fprintf(os.Stdout, "Monitor Interval:        %d seconds\n", defaultCfg.MonitorInterval)
+	_, _ = fmt.Fprintf(os.Stdout, "Server Port:             %d\n", defaultCfg.ServerPort)
 
 	return nil
 }

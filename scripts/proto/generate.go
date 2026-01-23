@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	fmt.Println("Generating protobuf code with buf...")
+	_, _ = fmt.Fprintln(os.Stdout, "Generating protobuf code with buf...")
 
 	// Run buf generate
 	cmd := exec.Command("buf", "generate")
@@ -24,6 +24,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("")
-	fmt.Println("Proto files generated successfully in pkg/api")
+	_, _ = fmt.Fprintln(os.Stdout, "")
+	_, _ = fmt.Fprintln(os.Stdout, "Proto files generated successfully in pkg/api")
 }

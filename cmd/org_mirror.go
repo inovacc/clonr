@@ -151,7 +151,8 @@ func runMirror(cmd *cobra.Command, args []string) error {
 	)
 
 	// Call core logic to prepare mirror operation
-	fmt.Printf("Fetching repositories from organization '%s'...\n", orgName)
+	_, _ = fmt.Fprintf(os.Stdout, "Fetching repositories from organization '%s'...\n", orgName)
+
 	mirrorPlan, err := core.PrepareMirror(orgName, token, opts)
 	if err != nil {
 		return fmt.Errorf("failed to prepare mirror: %w", err)
@@ -159,16 +160,20 @@ func runMirror(cmd *cobra.Command, args []string) error {
 
 	if len(mirrorPlan.Repos) == 0 {
 		logger.Warn("no repositories found to mirror", slog.String("org", orgName))
-		fmt.Println("\nNo repositories found to mirror.")
+
+		_, _ = fmt.Fprintln(os.Stdout, "\nNo repositories found to mirror.")
+
 		return nil
 	}
 
 	if dryRun {
 		// Print what would be done and exit
 		core.PrintDryRunPlan(mirrorPlan)
+
 		if jsonOutput {
 			core.LogDryRunPlan(mirrorPlan, logger)
 		}
+
 		return nil
 	}
 
@@ -177,7 +182,7 @@ func runMirror(cmd *cobra.Command, args []string) error {
 
 	if noTUI {
 		// Batch mode (no TUI)
-		fmt.Printf("\nMirroring %d repositories (parallel: %d)...\n\n", len(mirrorPlan.Repos), parallel)
+		_, _ = fmt.Fprintf(os.Stdout, "\nMirroring %d repositories (parallel: %d)...\n\n", len(mirrorPlan.Repos), parallel)
 
 		batchOpts := core.MirrorBatchOptions{
 			Plan:   mirrorPlan,
@@ -190,6 +195,7 @@ func runMirror(cmd *cobra.Command, args []string) error {
 		}
 
 		core.PrintBatchSummary(result)
+
 		if jsonOutput {
 			core.LogMirrorSummary(result.Results, logger)
 		}
@@ -204,6 +210,7 @@ func runMirror(cmd *cobra.Command, args []string) error {
 	// Launch TUI
 	m := cli.NewMirrorModel(mirrorPlan)
 	p := tea.NewProgram(m)
+
 	finalModel, err := p.Run()
 	if err != nil {
 		return fmt.Errorf("UI error: %w", err)
@@ -216,6 +223,7 @@ func runMirror(cmd *cobra.Command, args []string) error {
 	}
 
 	core.PrintMirrorSummary(mirrorModel.Results())
+
 	if jsonOutput {
 		core.LogMirrorSummary(mirrorModel.Results(), logger)
 	}
@@ -226,6 +234,7 @@ func runMirror(cmd *cobra.Command, args []string) error {
 // setupMirrorLogger creates a configured slog.Logger
 func setupMirrorLogger(levelStr string, jsonOutput bool) *slog.Logger {
 	var level slog.Level
+
 	switch levelStr {
 	case "debug":
 		level = slog.LevelDebug

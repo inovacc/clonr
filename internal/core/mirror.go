@@ -148,6 +148,7 @@ func isTransientError(err error) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -158,16 +159,20 @@ func (w *GitHubClientWrapper) fetchOrgReposWithRetry(ctx context.Context, orgNam
 	}
 
 	var allRepos []*github.Repository
+
 	for {
-		var repos []*github.Repository
-		var resp *github.Response
-		var lastErr error
+		var (
+			repos   []*github.Repository
+			resp    *github.Response
+			lastErr error
+		)
 
 		// Retry loop for this page
+
 		for attempt := 0; attempt <= w.rateCfg.MaxRetries; attempt++ {
 			var err error
-			repos, resp, err = w.client.Repositories.ListByOrg(ctx, orgName, opt)
 
+			repos, resp, err = w.client.Repositories.ListByOrg(ctx, orgName, opt)
 			if err == nil {
 				break
 			}
@@ -240,6 +245,7 @@ func (w *GitHubClientWrapper) fetchOrgReposWithRetry(ctx context.Context, orgNam
 		if resp == nil || resp.NextPage == 0 {
 			break
 		}
+
 		opt.Page = resp.NextPage
 	}
 
@@ -254,16 +260,20 @@ func (w *GitHubClientWrapper) fetchUserReposWithRetry(ctx context.Context, usern
 	}
 
 	var allRepos []*github.Repository
+
 	for {
-		var repos []*github.Repository
-		var resp *github.Response
-		var lastErr error
+		var (
+			repos   []*github.Repository
+			resp    *github.Response
+			lastErr error
+		)
 
 		// Retry loop for this page
+
 		for attempt := 0; attempt <= w.rateCfg.MaxRetries; attempt++ {
 			var err error
-			repos, resp, err = w.client.Repositories.ListByUser(ctx, username, opt)
 
+			repos, resp, err = w.client.Repositories.ListByUser(ctx, username, opt)
 			if err == nil {
 				break
 			}
@@ -336,6 +346,7 @@ func (w *GitHubClientWrapper) fetchUserReposWithRetry(ctx context.Context, usern
 		if resp == nil || resp.NextPage == 0 {
 			break
 		}
+
 		opt.Page = resp.NextPage
 	}
 
@@ -355,10 +366,12 @@ func (w *GitHubClientWrapper) fetchReposWithRetry(ctx context.Context, name stri
 		w.logger.Info("not found as organization, trying as user",
 			slog.String("name", name),
 		)
+
 		repos, err = w.fetchUserReposWithRetry(ctx, name)
 		if err != nil {
 			return nil, false, fmt.Errorf("failed to fetch repos (tried org and user): %w", err)
 		}
+
 		return repos, true, nil // isUser = true
 	}
 
@@ -383,10 +396,12 @@ func PrepareMirror(orgName, token string, opts MirrorOptions) (*MirrorPlan, erro
 	if rateCfg.MaxRetries == 0 {
 		rateCfg = DefaultRateLimitConfig()
 	}
+
 	clientWrapper := NewGitHubClientWrapper(token, rateCfg, logger)
 
 	// Fetch all repositories (tries org first, then user)
 	ctx := context.Background()
+
 	repos, isUser, err := clientWrapper.fetchReposWithRetry(ctx, orgName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch repositories: %w", err)
@@ -396,6 +411,7 @@ func PrepareMirror(orgName, token string, opts MirrorOptions) (*MirrorPlan, erro
 	if isUser {
 		entityType = "user"
 	}
+
 	logger.Info("fetched repositories from GitHub",
 		slog.String(entityType, orgName),
 		slog.Int("count", len(repos)),
@@ -480,6 +496,7 @@ func determineAction(repo *github.Repository, path string, logger *slog.Logger) 
 				slog.String("path", path),
 				slog.String("error", err.Error()),
 			)
+
 			return "skip", "could not verify remote URL", SkipReasonPathCollision
 		}
 
@@ -489,6 +506,7 @@ func determineAction(repo *github.Repository, path string, logger *slog.Logger) 
 				slog.String("expected", repo.GetCloneURL()),
 				slog.String("actual", existingURL),
 			)
+
 			return "skip", fmt.Sprintf("path contains different repo: %s", existingURL), SkipReasonPathCollision
 		}
 
@@ -501,10 +519,12 @@ func determineAction(repo *github.Repository, path string, logger *slog.Logger) 
 // getRepoRemoteURL gets the origin remote URL from a git repository
 func getRepoRemoteURL(path string) (string, error) {
 	cmd := exec.Command("git", "-C", path, "remote", "get-url", "origin")
+
 	output, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("git remote get-url failed: %w", err)
 	}
+
 	return strings.TrimSpace(string(output)), nil
 }
 
@@ -513,8 +533,10 @@ func urlsMatch(url1, url2 string) bool {
 	normalize := func(u string) string {
 		u = strings.TrimSuffix(u, ".git")
 		u = strings.Replace(u, "git@github.com:", "https://github.com/", 1)
+
 		return strings.ToLower(u)
 	}
+
 	return normalize(url1) == normalize(url2)
 }
 
@@ -522,32 +544,38 @@ func urlsMatch(url1, url2 string) bool {
 func isGitRepo(path string) bool {
 	gitDir := filepath.Join(path, ".git")
 	info, err := os.Stat(gitDir)
+
 	return err == nil && info.IsDir()
 }
 
 // isRepoDirty checks if repo has uncommitted changes
 func isRepoDirty(path string) bool {
 	cmd := exec.Command("git", "-C", path, "status", "--porcelain")
+
 	output, err := cmd.Output()
 	if err != nil {
 		return true // assume dirty on error
 	}
+
 	return len(output) > 0
 }
 
 // stashChanges stashes uncommitted changes in a repository
 func stashChanges(path string) error {
 	cmd := exec.Command("git", "-C", path, "stash", "push", "-m", "clonr-mirror-autostash")
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("git stash failed: %v - %s", err, string(output))
 	}
+
 	return nil
 }
 
 // unstashChanges pops stashed changes in a repository
 func unstashChanges(path string, logger *slog.Logger) {
 	cmd := exec.Command("git", "-C", path, "stash", "pop")
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		logger.Error("failed to unstash changes",
@@ -562,6 +590,7 @@ func unstashChanges(path string, logger *slog.Logger) {
 func resetRepo(path string) error {
 	// Reset staged and unstaged changes
 	cmd := exec.Command("git", "-C", path, "reset", "--hard", "HEAD")
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("git reset failed: %v - %s", err, string(output))
@@ -569,6 +598,7 @@ func resetRepo(path string) error {
 
 	// Clean untracked files
 	cmd = exec.Command("git", "-C", path, "clean", "-fd")
+
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("git clean failed: %v - %s", err, string(output))
@@ -588,13 +618,16 @@ func MirrorCloneRepo(repoURL, path string, shallow bool) error {
 	if shallow {
 		args = append(args, "--depth", "1")
 	}
+
 	args = append(args, repoURL, path)
 
 	cmd := exec.Command("git", args...)
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("git clone failed: %v - %s", err, string(output))
 	}
+
 	return nil
 }
 
@@ -608,12 +641,14 @@ func MirrorUpdateRepo(repoURL, path string, strategy DirtyRepoStrategy, logger *
 				slog.String("path", path),
 				slog.String("url", repoURL),
 			)
+
 			return &DirtyRepoError{Path: path}
 
 		case DirtyStrategyStash:
 			logger.Info("stashing changes before update",
 				slog.String("path", path),
 			)
+
 			if err := stashChanges(path); err != nil {
 				return fmt.Errorf("failed to stash changes: %w", err)
 			}
@@ -623,6 +658,7 @@ func MirrorUpdateRepo(repoURL, path string, strategy DirtyRepoStrategy, logger *
 			logger.Warn("resetting repository to clean state",
 				slog.String("path", path),
 			)
+
 			if err := resetRepo(path); err != nil {
 				return fmt.Errorf("failed to reset repository: %w", err)
 			}
@@ -630,6 +666,7 @@ func MirrorUpdateRepo(repoURL, path string, strategy DirtyRepoStrategy, logger *
 	}
 
 	cmd := exec.Command("git", "-C", path, "pull", "--ff-only")
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("git pull failed: %v - %s", err, string(output))
@@ -668,8 +705,10 @@ func SaveMirroredRepo(repoURL, path string) error {
 			if err := client.UpdateRepoTimestamp(repoURL); err != nil {
 				return fmt.Errorf("failed to update timestamp: %w", err)
 			}
+
 			return nil
 		}
+
 		return fmt.Errorf("failed to save repo: %w", err)
 	}
 
@@ -782,9 +821,9 @@ func LogMirrorSummary(results []MirrorResult, logger *slog.Logger) {
 
 // PrintDryRunPlan prints what would be done without executing (for TUI display)
 func PrintDryRunPlan(plan *MirrorPlan) {
-	fmt.Printf("\nDry run: Mirroring organization '%s'\n", plan.OrgName)
-	fmt.Printf("Base directory: %s\n", plan.BaseDir)
-	fmt.Printf("Total repositories: %d\n\n", len(plan.Repos))
+	_, _ = fmt.Fprintf(os.Stdout, "\nDry run: Mirroring organization '%s'\n", plan.OrgName)
+	_, _ = fmt.Fprintf(os.Stdout, "Base directory: %s\n", plan.BaseDir)
+	_, _ = fmt.Fprintf(os.Stdout, "Total repositories: %d\n\n", len(plan.Repos))
 
 	cloneCount := 0
 	updateCount := 0
@@ -801,53 +840,61 @@ func PrintDryRunPlan(plan *MirrorPlan) {
 		}
 	}
 
-	fmt.Printf("Actions:\n")
-	fmt.Printf("  Clone: %d repositories\n", cloneCount)
-	fmt.Printf("  Update: %d repositories\n", updateCount)
-	fmt.Printf("  Skip: %d repositories\n\n", skipCount)
+	_, _ = fmt.Fprintf(os.Stdout, "Actions:\n")
+	_, _ = fmt.Fprintf(os.Stdout, "  Clone: %d repositories\n", cloneCount)
+	_, _ = fmt.Fprintf(os.Stdout, "  Update: %d repositories\n", updateCount)
+	_, _ = fmt.Fprintf(os.Stdout, "  Skip: %d repositories\n\n", skipCount)
 
 	if cloneCount > 0 {
-		fmt.Println("Repositories to clone:")
+		_, _ = fmt.Fprintln(os.Stdout, "Repositories to clone:")
+
 		for _, repo := range plan.Repos {
 			if repo.Action == "clone" {
 				archivedStr := ""
 				if repo.IsArchived {
 					archivedStr = " [archived]"
 				}
+
 				forkStr := ""
 				if repo.IsFork {
 					forkStr = " [fork]"
 				}
-				fmt.Printf("  * %s%s%s\n", repo.Name, archivedStr, forkStr)
+
+				_, _ = fmt.Fprintf(os.Stdout, "  * %s%s%s\n", repo.Name, archivedStr, forkStr)
 			}
 		}
-		fmt.Println()
+
+		_, _ = fmt.Fprintln(os.Stdout)
 	}
 
 	if updateCount > 0 {
-		fmt.Println("Repositories to update:")
+		_, _ = fmt.Fprintln(os.Stdout, "Repositories to update:")
+
 		for _, repo := range plan.Repos {
 			if repo.Action == "update" {
-				fmt.Printf("  * %s\n", repo.Name)
+				_, _ = fmt.Fprintf(os.Stdout, "  * %s\n", repo.Name)
 			}
 		}
-		fmt.Println()
+
+		_, _ = fmt.Fprintln(os.Stdout)
 	}
 
 	if skipCount > 0 {
-		fmt.Println("Repositories to skip:")
+		_, _ = fmt.Fprintln(os.Stdout, "Repositories to skip:")
+
 		for _, repo := range plan.Repos {
 			if repo.Action == "skip" {
-				fmt.Printf("  * %s - %s\n", repo.Name, repo.Reason)
+				_, _ = fmt.Fprintf(os.Stdout, "  * %s - %s\n", repo.Name, repo.Reason)
 			}
 		}
-		fmt.Println()
+
+		_, _ = fmt.Fprintln(os.Stdout)
 	}
 }
 
 // PrintMirrorSummary prints the final summary after mirroring (for TUI display)
 func PrintMirrorSummary(results []MirrorResult) {
-	fmt.Println("\nMirror operation complete!")
+	_, _ = fmt.Fprintln(os.Stdout, "\nMirror operation complete!")
 
 	cloned := 0
 	updated := 0
@@ -869,14 +916,15 @@ func PrintMirrorSummary(results []MirrorResult) {
 		}
 	}
 
-	fmt.Println("Results:")
-	fmt.Printf("  Cloned:  %d\n", cloned)
-	fmt.Printf("  Updated: %d\n", updated)
-	fmt.Printf("  Skipped: %d\n", skipped)
-	fmt.Printf("  Failed:  %d\n\n", failed)
+	_, _ = fmt.Fprintln(os.Stdout, "Results:")
+	_, _ = fmt.Fprintf(os.Stdout, "  Cloned:  %d\n", cloned)
+	_, _ = fmt.Fprintf(os.Stdout, "  Updated: %d\n", updated)
+	_, _ = fmt.Fprintf(os.Stdout, "  Skipped: %d\n", skipped)
+	_, _ = fmt.Fprintf(os.Stdout, "  Failed:  %d\n\n", failed)
 
 	if failed > 0 {
-		fmt.Println("Failed repositories:")
+		_, _ = fmt.Fprintln(os.Stdout, "Failed repositories:")
+
 		for _, result := range results {
 			if !result.Success {
 				errMsg := result.Error.Error()
@@ -884,10 +932,12 @@ func PrintMirrorSummary(results []MirrorResult) {
 				if len(errMsg) > 100 {
 					errMsg = errMsg[:100] + "..."
 				}
-				fmt.Printf("  * %s: %s\n", result.Repo.Name, errMsg)
+
+				_, _ = fmt.Fprintf(os.Stdout, "  * %s: %s\n", result.Repo.Name, errMsg)
 			}
 		}
-		fmt.Println()
+
+		_, _ = fmt.Fprintln(os.Stdout)
 	}
 }
 
@@ -928,5 +978,6 @@ func IsNetworkError(err error) bool {
 			return true
 		}
 	}
+
 	return false
 }

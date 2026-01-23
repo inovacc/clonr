@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -27,6 +28,7 @@ type MirrorBatchResult struct {
 // ExecuteMirrorBatch runs the mirror operation without TUI
 func ExecuteMirrorBatch(opts MirrorBatchOptions) (*MirrorBatchResult, error) {
 	plan := opts.Plan
+
 	logger := opts.Logger
 	if logger == nil {
 		logger = slog.Default()
@@ -35,15 +37,19 @@ func ExecuteMirrorBatch(opts MirrorBatchOptions) (*MirrorBatchResult, error) {
 	start := time.Now()
 
 	// Counters
-	var cloned, updated, skipped, failed atomic.Int32
-	var current atomic.Int32
+	var (
+		cloned, updated, skipped, failed atomic.Int32
+		current                          atomic.Int32
+	)
 
 	total := len(plan.Repos)
 	results := make([]MirrorResult, 0, total)
+
 	var resultsMu sync.Mutex
 
 	// Work queue
 	workQueue := make(chan MirrorRepo, total)
+
 	var wg sync.WaitGroup
 
 	// Progress printer
@@ -51,15 +57,19 @@ func ExecuteMirrorBatch(opts MirrorBatchOptions) (*MirrorBatchResult, error) {
 		curr := current.Add(1)
 		pct := float64(curr) / float64(total) * 100
 
-		var status string
-		var detail string
+		var (
+			status string
+			detail string
+		)
 
 		switch {
 		case action == "skip":
 			status = "SKIP"
+
 			skipped.Add(1)
 		case success:
 			status = "OK"
+
 			if action == "clone" {
 				cloned.Add(1)
 			} else {
@@ -67,7 +77,9 @@ func ExecuteMirrorBatch(opts MirrorBatchOptions) (*MirrorBatchResult, error) {
 			}
 		default:
 			status = "FAIL"
+
 			failed.Add(1)
+
 			if err != nil {
 				detail = fmt.Sprintf(" - %s", err.Error())
 				if len(detail) > 60 {
@@ -81,29 +93,30 @@ func ExecuteMirrorBatch(opts MirrorBatchOptions) (*MirrorBatchResult, error) {
 			retryInfo = fmt.Sprintf(" (retries: %d)", retryCount)
 		}
 
-		fmt.Printf("[%3.0f%%] [%-5s] %-40s%s%s\n", pct, status, repo, detail, retryInfo)
+		_, _ = fmt.Fprintf(os.Stdout, "[%3.0f%%] [%-5s] %-40s%s%s\n", pct, status, repo, detail, retryInfo)
 	}
 
 	// Spawn workers
 	for i := 0; i < plan.Parallel; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for repo := range workQueue {
 				result := processRepoBatch(repo, plan, logger)
 				printProgress(repo.Name, repo.Action, result.Success, result.Error, result.RetryCount)
 
 				resultsMu.Lock()
+
 				results = append(results, result)
+
 				resultsMu.Unlock()
 			}
-		}()
+		})
 	}
 
 	// Queue work
 	for _, repo := range plan.Repos {
 		workQueue <- repo
 	}
+
 	close(workQueue)
 
 	// Wait for completion
@@ -126,6 +139,7 @@ func processRepoBatch(repo MirrorRepo, plan *MirrorPlan, logger *slog.Logger) Mi
 	start := time.Now()
 
 	var err error
+
 	retryCount := 0
 
 	switch repo.Action {
@@ -183,10 +197,8 @@ func executeWithNetworkRetryBatch(op func() error, maxRetries int, retryCount *i
 		lastErr = err
 
 		// Exponential backoff: 1s, 2s, 4s...
-		backoff := time.Duration(1<<attempt) * time.Second
-		if backoff > 30*time.Second {
-			backoff = 30 * time.Second
-		}
+		backoff := min(time.Duration(1<<attempt)*time.Second, 30*time.Second)
+
 		time.Sleep(backoff)
 	}
 
@@ -199,23 +211,24 @@ func executeWithNetworkRetryBatch(op func() error, maxRetries int, retryCount *i
 
 // PrintBatchSummary prints a summary of the batch mirror results
 func PrintBatchSummary(result *MirrorBatchResult) {
-	fmt.Println()
-	fmt.Println("═══════════════════════════════════════════════════════════")
-	fmt.Println("                    Mirror Complete")
-	fmt.Println("═══════════════════════════════════════════════════════════")
-	fmt.Printf("  Cloned:   %d\n", result.Cloned)
-	fmt.Printf("  Updated:  %d\n", result.Updated)
-	fmt.Printf("  Skipped:  %d\n", result.Skipped)
-	fmt.Printf("  Failed:   %d\n", result.Failed)
-	fmt.Println("───────────────────────────────────────────────────────────")
-	fmt.Printf("  Total:    %d repositories in %s\n",
+	_, _ = fmt.Fprintln(os.Stdout)
+	_, _ = fmt.Fprintln(os.Stdout, "═══════════════════════════════════════════════════════════")
+	_, _ = fmt.Fprintln(os.Stdout, "                    Mirror Complete")
+	_, _ = fmt.Fprintln(os.Stdout, "═══════════════════════════════════════════════════════════")
+	_, _ = fmt.Fprintf(os.Stdout, "  Cloned:   %d\n", result.Cloned)
+	_, _ = fmt.Fprintf(os.Stdout, "  Updated:  %d\n", result.Updated)
+	_, _ = fmt.Fprintf(os.Stdout, "  Skipped:  %d\n", result.Skipped)
+	_, _ = fmt.Fprintf(os.Stdout, "  Failed:   %d\n", result.Failed)
+	_, _ = fmt.Fprintln(os.Stdout, "───────────────────────────────────────────────────────────")
+	_, _ = fmt.Fprintf(os.Stdout, "  Total:    %d repositories in %s\n",
 		result.Cloned+result.Updated+result.Skipped+result.Failed,
 		result.Duration.Round(time.Millisecond))
-	fmt.Println("═══════════════════════════════════════════════════════════")
+	_, _ = fmt.Fprintln(os.Stdout, "═══════════════════════════════════════════════════════════")
 
 	// Show failed repos if any
 	if result.Failed > 0 {
-		fmt.Println("\nFailed repositories:")
+		_, _ = fmt.Fprintln(os.Stdout, "\nFailed repositories:")
+
 		for _, r := range result.Results {
 			if !r.Success && r.Repo.Action != "skip" {
 				errMsg := "unknown error"
@@ -225,7 +238,8 @@ func PrintBatchSummary(result *MirrorBatchResult) {
 						errMsg = errMsg[:67] + "..."
 					}
 				}
-				fmt.Printf("  - %s: %s\n", r.Repo.Name, errMsg)
+
+				_, _ = fmt.Fprintf(os.Stdout, "  - %s: %s\n", r.Repo.Name, errMsg)
 			}
 		}
 	}

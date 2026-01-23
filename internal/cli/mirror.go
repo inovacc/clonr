@@ -121,6 +121,7 @@ func (m *MirrorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Close channels to stop workers
 			close(m.workQueue)
 			close(m.doneCh)
+
 			return m, tea.Quit
 		case "p":
 			m.paused = !m.paused
@@ -134,6 +135,7 @@ func (m *MirrorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			startTime: time.Now(),
 		}
 		m.mu.Unlock()
+
 		return m, nil
 
 	case mirrorResultMsg:
@@ -177,7 +179,9 @@ func (m *MirrorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd
+
 		m.spinner, cmd = m.spinner.Update(msg)
+
 		return m, cmd
 	}
 
@@ -213,6 +217,7 @@ func (m *MirrorModel) View() string {
 
 	// Active operations
 	m.mu.Lock()
+
 	activeCount := len(m.active)
 	if activeCount > 0 {
 		b.WriteString(boldStyle.Render(fmt.Sprintf("Currently processing (%d):", activeCount)))
@@ -224,8 +229,10 @@ func (m *MirrorModel) View() string {
 			b.WriteString(infoStyle.Render(fmt.Sprintf("  [%s] %s - %sing...\n",
 				icon, op.repo.Name, op.repo.Action)))
 		}
+
 		b.WriteString("\n")
 	}
+
 	m.mu.Unlock()
 
 	// Recent activity log
@@ -233,14 +240,13 @@ func (m *MirrorModel) View() string {
 		b.WriteString(boldStyle.Render("Recent activity:"))
 		b.WriteString("\n")
 
-		start := len(m.activity) - 5
-		if start < 0 {
-			start = 0
-		}
+		start := max(len(m.activity)-5, 0)
 
 		for _, item := range m.activity[start:] {
-			var statusIcon string
-			var style lipgloss.Style
+			var (
+				statusIcon string
+				style      lipgloss.Style
+			)
 
 			switch item.status {
 			case "success":
@@ -268,6 +274,7 @@ func (m *MirrorModel) View() string {
 			b.WriteString(style.Render(fmt.Sprintf("  %s %s", statusIcon, item.repo)))
 			b.WriteString(dimStyle.Render(fmt.Sprintf(" - %s%s\n", message, retryInfo)))
 		}
+
 		b.WriteString("\n")
 	}
 
@@ -295,22 +302,21 @@ func (m *MirrorModel) startWorkers() tea.Cmd {
 
 		// Spawn N workers (based on parallel flag)
 		for i := 0; i < m.plan.Parallel; i++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				for {
 					select {
 					case repo, ok := <-m.workQueue:
 						if !ok {
 							return
 						}
+
 						result := m.processRepo(repo)
 						m.resultCh <- result
 					case <-m.doneCh:
 						return
 					}
 				}
-			}()
+			})
 		}
 
 		// Wait for all workers to finish in a separate goroutine
@@ -328,7 +334,9 @@ func (m *MirrorModel) queueWork() tea.Cmd {
 		for _, repo := range m.plan.Repos {
 			m.workQueue <- repo
 		}
+
 		close(m.workQueue)
+
 		return nil
 	}
 }
@@ -339,6 +347,7 @@ func (m *MirrorModel) waitForResults() tea.Cmd {
 		if !ok {
 			return mirrorDoneMsg{}
 		}
+
 		return mirrorResultMsg{result: result}
 	}
 }
@@ -347,6 +356,7 @@ func (m *MirrorModel) processRepo(repo core.MirrorRepo) core.MirrorResult {
 	start := time.Now()
 
 	var err error
+
 	retryCount := 0
 
 	switch repo.Action {
@@ -412,10 +422,8 @@ func (m *MirrorModel) executeWithNetworkRetry(op func() error, retryCount *int) 
 		lastErr = err
 
 		// Exponential backoff: 1s, 2s, 4s...
-		backoff := time.Duration(1<<attempt) * time.Second
-		if backoff > 30*time.Second {
-			backoff = 30 * time.Second
-		}
+		backoff := min(time.Duration(1<<attempt)*time.Second, 30*time.Second)
+
 		time.Sleep(backoff)
 	}
 
@@ -439,6 +447,7 @@ func (m *MirrorModel) addActivity(result core.MirrorResult) {
 	}
 
 	var status string
+
 	switch {
 	case result.Repo.Action == "skip":
 		status = "skip"

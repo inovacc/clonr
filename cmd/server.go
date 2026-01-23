@@ -37,6 +37,7 @@ func init() {
 
 func runServerStart(cmd *cobra.Command, args []string) error {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	db := database.GetDB()
 
 	// Use configured port if default not overridden
@@ -48,6 +49,7 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 	}
 
 	addr := fmt.Sprintf(":%d", serverPort)
+
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		return fmt.Errorf("failed to listen on %s: %w", addr, err)
@@ -61,8 +63,10 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 	}
 
 	srvWithHealth := grpcserver.NewServer(db)
+
 	go func() {
 		log.Printf("Starting Clonr gRPC server on %s", addr)
+
 		if err := srvWithHealth.GRPCServer.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve: %v", err)
 		}
@@ -79,6 +83,7 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 
 	// Start graceful stop with timeout (per guide)
 	stopChan := make(chan struct{})
+
 	go func() {
 		srvWithHealth.GRPCServer.GracefulStop()
 		close(stopChan)

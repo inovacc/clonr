@@ -19,7 +19,7 @@ import (
 var (
 	once      sync.Once
 	client    *Client
-	clientErr error
+	errClient error
 )
 
 // Client wraps the gRPC client and provides methods matching the database.Store interface
@@ -33,19 +33,15 @@ type Client struct {
 func GetClient() (*Client, error) {
 	once.Do(lazyLoad)
 
-	if clientErr != nil {
-		return nil, clientErr
+	if errClient != nil {
+		return nil, errClient
 	}
 
 	return client, nil
 }
 
 func lazyLoad() {
-	addr, err := discoverServerAddress()
-	if err != nil {
-		clientErr = fmt.Errorf("failed to discover server address: %w", err)
-		return
-	}
+	addr := discoverServerAddress()
 
 	// Use grpc.NewClient (v1.78.0+) instead of deprecated DialContext
 	// This uses lazy connection establishment
@@ -53,27 +49,30 @@ func lazyLoad() {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		clientErr = fmt.Errorf("failed to create gRPC client: %w", err)
+		errClient = fmt.Errorf("failed to create gRPC client: %w", err)
 		return
 	}
 
 	// Perform health check to trigger connection (per guide)
 	// This is the proper way to verify server is reachable in v1.78.0+
 	healthClient := healthpb.NewHealthClient(conn)
+
 	healthCtx, healthCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer healthCancel()
 
 	resp, err := healthClient.Check(healthCtx, &healthpb.HealthCheckRequest{})
 	if err != nil {
 		_ = conn.Close()
-		clientErr = fmt.Errorf("server not reachable at %s: %w\n\nNo clonr server found running.\nStart the server with:\n  clonr service --start    (recommended)\n  clonr server start", addr, err)
+		errClient = fmt.Errorf("server not reachable at %s: %w\n\nNo clonr server found running.\nStart the server with:\n  clonr service --start    (recommended)\n  clonr server start", addr, err)
+
 		return
 	}
 
 	// Verify server is healthy
 	if resp.GetStatus() != healthpb.HealthCheckResponse_SERVING {
 		_ = conn.Close()
-		clientErr = fmt.Errorf("server not healthy at %s: status=%v\n\nThe server may be shutting down or not fully initialized.\nStart the server with:\n  clonr service --start    (recommended)\n  clonr server start", addr, resp.GetStatus())
+		errClient = fmt.Errorf("server not healthy at %s: status=%v\n\nThe server may be shutting down or not fully initialized.\nStart the server with:\n  clonr service --start    (recommended)\n  clonr server start", addr, resp.GetStatus())
+
 		return
 	}
 
@@ -321,6 +320,7 @@ func handleGRPCError(err error) error {
 		return fmt.Errorf("unknown error: %w", err)
 	}
 
+	//nolint:exhaustive // default case handles remaining codes
 	switch st.Code() {
 	case codes.InvalidArgument:
 		return fmt.Errorf("invalid input: %s", st.Message())

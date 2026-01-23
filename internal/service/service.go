@@ -29,6 +29,7 @@ func Service(cmd *cobra.Command, args []string, port int) error {
 
 	// Create listener
 	addr := fmt.Sprintf(":%d", port)
+
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		return fmt.Errorf("failed to listen on %s: %w", addr, err)
@@ -40,6 +41,7 @@ func Service(cmd *cobra.Command, args []string, port int) error {
 	// Start server in background
 	go func() {
 		log.Printf("Starting Clonr gRPC server on %s", addr)
+
 		if err := srv.GRPCServer.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve: %v", err)
 		}

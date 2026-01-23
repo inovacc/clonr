@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/inovacc/clonr/internal/cli"
@@ -27,11 +28,11 @@ You can specify the repository URL as an argument or use the interactive list.`,
 		}
 
 		if url != "" {
-			fmt.Printf("Removing repository: %s\n", url)
+			_, _ = fmt.Fprintf(os.Stdout, "Removing repository: %s\n", url)
 			if err := core.RemoveRepo(url); err != nil {
 				return fmt.Errorf("failed to remove repository: %w", err)
 			}
-			fmt.Println("Repository removed successfully")
+			_, _ = fmt.Fprintln(os.Stdout, "Repository removed successfully")
 			return nil
 		}
 
@@ -48,7 +49,7 @@ You can specify the repository URL as an argument or use the interactive list.`,
 		repoModel := finalModel.(cli.RepoListModel)
 		selected := repoModel.GetSelectedRepo()
 		if selected != nil {
-			fmt.Printf("Removing repository: %s\n", selected.URL)
+			_, _ = fmt.Fprintf(os.Stdout, "Removing repository: %s\n", selected.URL)
 			return core.RemoveRepo(selected.URL)
 		}
 		return nil

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/inovacc/clonr/internal/cli"
@@ -28,10 +29,10 @@ var configureCmd = &cobra.Command{
 		}
 
 		if err := core.ShowConfig(); err != nil {
-			fmt.Println("No configuration found, using defaults.")
+			_, _ = fmt.Fprintln(os.Stdout, "No configuration found, using defaults.")
 		}
 
-		fmt.Println("\nStarting interactive configuration...")
+		_, _ = fmt.Fprintln(os.Stdout, "\nStarting interactive configuration...")
 
 		m, err := cli.NewConfigureModel()
 		if err != nil {
@@ -44,7 +45,7 @@ var configureCmd = &cobra.Command{
 			return err
 		}
 
-		configModel := finalModel.(cli.ConfigureModel)
+		configModel := finalModel.(*cli.ConfigureModel)
 		if configModel.Err != nil {
 			return configModel.Err
 		}

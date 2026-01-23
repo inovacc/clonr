@@ -80,15 +80,19 @@ func runService(_ *cobra.Command, _ []string) error {
 	if serviceStart {
 		flagCount++
 	}
+
 	if serviceStop {
 		flagCount++
 	}
+
 	if serviceInstall {
 		flagCount++
 	}
+
 	if serviceUninstall {
 		flagCount++
 	}
+
 	if serviceStatus {
 		flagCount++
 	}
@@ -110,6 +114,7 @@ func runService(_ *cobra.Command, _ []string) error {
 	}
 
 	prg := &program{port: servicePort}
+
 	s, err := service.New(prg, svcConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create service: %w", err)
@@ -139,27 +144,27 @@ func installService(s service.Service) error {
 		return fmt.Errorf("cannot find clonr executable: %w\n\nPlease ensure clonr is installed or in your PATH", err)
 	}
 
-	fmt.Printf("Installing clonr server service...\n")
-	fmt.Printf("Executable: %s\n", clonrPath)
-	fmt.Printf("Command: clonr server start --port %d\n", servicePort)
+	_, _ = fmt.Fprintf(os.Stdout, "Installing clonr server service...\n")
+	_, _ = fmt.Fprintf(os.Stdout, "Executable: %s\n", clonrPath)
+	_, _ = fmt.Fprintf(os.Stdout, "Command: clonr server start --port %d\n", servicePort)
 
 	err = s.Install()
 	if err != nil {
 		return fmt.Errorf("failed to install service: %w", err)
 	}
 
-	fmt.Println("✓ Service installed successfully!")
-	fmt.Println("\nTo start the service, run:")
-	fmt.Println("  clonr service --start")
-	fmt.Println("\nOr use your system's service manager:")
-	fmt.Printf("  Windows: sc start ClonrServer\n")
-	fmt.Printf("  Linux:   sudo systemctl start clonr\n")
+	_, _ = fmt.Fprintln(os.Stdout, "✓ Service installed successfully!")
+	_, _ = fmt.Fprintln(os.Stdout, "\nTo start the service, run:")
+	_, _ = fmt.Fprintln(os.Stdout, "  clonr service --start")
+	_, _ = fmt.Fprintln(os.Stdout, "\nOr use your system's service manager:")
+	_, _ = fmt.Fprintf(os.Stdout, "  Windows: sc start ClonrServer\n")
+	_, _ = fmt.Fprintf(os.Stdout, "  Linux:   sudo systemctl start clonr\n")
 
 	return nil
 }
 
 func uninstallService(s service.Service) error {
-	fmt.Println("Uninstalling clonr server service...")
+	_, _ = fmt.Fprintln(os.Stdout, "Uninstalling clonr server service...")
 
 	// Try to stop first
 	_ = s.Stop()
@@ -169,36 +174,38 @@ func uninstallService(s service.Service) error {
 		return fmt.Errorf("failed to uninstall service: %w", err)
 	}
 
-	fmt.Println("✓ Service uninstalled successfully!")
+	_, _ = fmt.Fprintln(os.Stdout, "✓ Service uninstalled successfully!")
+
 	return nil
 }
 
 func startService(s service.Service) error {
-	fmt.Println("Starting clonr server service...")
+	_, _ = fmt.Fprintln(os.Stdout, "Starting clonr server service...")
 
 	err := s.Start()
 	if err != nil {
 		return fmt.Errorf("failed to start service: %w", err)
 	}
 
-	fmt.Println("✓ Service started successfully!")
-	fmt.Printf("\nServer is running on port %d\n", servicePort)
-	fmt.Println("You can now use clonr commands:")
-	fmt.Println("  clonr list")
-	fmt.Println("  clonr clone https://github.com/user/repo")
+	_, _ = fmt.Fprintln(os.Stdout, "✓ Service started successfully!")
+	_, _ = fmt.Fprintf(os.Stdout, "\nServer is running on port %d\n", servicePort)
+	_, _ = fmt.Fprintln(os.Stdout, "You can now use clonr commands:")
+	_, _ = fmt.Fprintln(os.Stdout, "  clonr list")
+	_, _ = fmt.Fprintln(os.Stdout, "  clonr clone https://github.com/user/repo")
 
 	return nil
 }
 
 func stopService(s service.Service) error {
-	fmt.Println("Stopping clonr-server service...")
+	_, _ = fmt.Fprintln(os.Stdout, "Stopping clonr-server service...")
 
 	err := s.Stop()
 	if err != nil {
 		return fmt.Errorf("failed to stop service: %w", err)
 	}
 
-	fmt.Println("✓ Service stopped successfully!")
+	_, _ = fmt.Fprintln(os.Stdout, "✓ Service stopped successfully!")
+
 	return nil
 }
 
@@ -208,16 +215,17 @@ func statusService(s service.Service) error {
 		return fmt.Errorf("failed to get service status: %w", err)
 	}
 
-	fmt.Printf("Service Status: ")
+	_, _ = fmt.Fprintf(os.Stdout, "Service Status: ")
+
 	switch status {
 	case service.StatusRunning:
-		fmt.Println("Running ✓")
+		_, _ = fmt.Fprintln(os.Stdout, "Running ✓")
 	case service.StatusStopped:
-		fmt.Println("Stopped")
+		_, _ = fmt.Fprintln(os.Stdout, "Stopped")
 	case service.StatusUnknown:
-		fmt.Println("Unknown")
+		_, _ = fmt.Fprintln(os.Stdout, "Unknown")
 	default:
-		fmt.Printf("%v\n", status)
+		_, _ = fmt.Fprintf(os.Stdout, "%v\n", status)
 	}
 
 	return nil

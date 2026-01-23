@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -37,12 +38,12 @@ var openCmd = &cobra.Command{
 		if cfg.Editor == "" {
 			return fmt.Errorf("no editor configured. Run 'clonr configure' to set an editor")
 		}
-		fmt.Printf("Opening %s in %s...\n", selected.Path, cfg.Editor)
+		_, _ = fmt.Fprintf(os.Stdout, "Opening %s in %s...\n", selected.Path, cfg.Editor)
 		execCmd := exec.Command(cfg.Editor, selected.Path)
 		if err := execCmd.Start(); err != nil {
 			return fmt.Errorf("failed to open editor: %w", err)
 		}
-		fmt.Printf("✓ Opened %s\n", selected.URL)
+		_, _ = fmt.Fprintf(os.Stdout, "✓ Opened %s\n", selected.URL)
 		return nil
 	},
 }

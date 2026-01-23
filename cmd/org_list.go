@@ -55,7 +55,7 @@ Examples:
 			logger.Debug("token resolved", slog.String("source", string(tokenSource)))
 		}
 
-		fmt.Println("Fetching organizations...")
+		_, _ = fmt.Fprintln(os.Stdout, "Fetching organizations...")
 
 		opts := core.ListOrganizationsOptions{
 			IncludeUser: includeUser,
@@ -67,7 +67,7 @@ Examples:
 		}
 
 		if len(orgs) == 0 {
-			fmt.Println("No organizations found.")
+			_, _ = fmt.Fprintln(os.Stdout, "No organizations found.")
 			return nil
 		}
 
@@ -91,28 +91,31 @@ func printOrgsTable(orgs []core.Organization) {
 	// Calculate column widths
 	maxLogin := 10
 	maxName := 10
+
 	for _, org := range orgs {
 		if len(org.Login) > maxLogin {
 			maxLogin = len(org.Login)
 		}
+
 		if len(org.Name) > maxName && len(org.Name) <= 30 {
 			maxName = len(org.Name)
 		}
 	}
+
 	if maxName > 30 {
 		maxName = 30
 	}
 
 	// Print header
-	fmt.Println()
-	fmt.Printf("%s  %s  %s  %s  %s\n",
+	_, _ = fmt.Fprintln(os.Stdout)
+	_, _ = fmt.Fprintf(os.Stdout, "%s  %s  %s  %s  %s\n",
 		headerStyle.Render(padRight("LOGIN", maxLogin)),
 		headerStyle.Render(padRight("NAME", maxName)),
 		headerStyle.Render(padRight("REPOS", 7)),
 		headerStyle.Render(padRight("MIRRORED", 10)),
 		headerStyle.Render("LOCAL"),
 	)
-	fmt.Println(strings.Repeat("-", maxLogin+maxName+35))
+	_, _ = fmt.Fprintln(os.Stdout, strings.Repeat("-", maxLogin+maxName+35))
 
 	// Print rows
 	for _, org := range orgs {
@@ -133,7 +136,7 @@ func printOrgsTable(orgs []core.Organization) {
 			localCount = countStyle.Render(fmt.Sprintf("%d", org.LocalRepos))
 		}
 
-		fmt.Printf("%s  %s  %s  %s  %s\n",
+		_, _ = fmt.Fprintf(os.Stdout, "%s  %s  %s  %s  %s\n",
 			padRight(org.Login, maxLogin),
 			padRight(name, maxName),
 			countStyle.Render(padRight(fmt.Sprintf("%d", org.RepoCount), 7)),
@@ -142,27 +145,31 @@ func printOrgsTable(orgs []core.Organization) {
 		)
 	}
 
-	fmt.Println()
-	fmt.Printf("Total: %d organizations\n", len(orgs))
+	_, _ = fmt.Fprintln(os.Stdout)
+	_, _ = fmt.Fprintf(os.Stdout, "Total: %d organizations\n", len(orgs))
 }
 
 func printOrgsJSON(orgs []core.Organization) {
-	fmt.Println("[")
+	_, _ = fmt.Fprintln(os.Stdout, "[")
+
 	for i, org := range orgs {
 		comma := ","
 		if i == len(orgs)-1 {
 			comma = ""
 		}
-		fmt.Printf(`  {"login": %q, "name": %q, "repos": %d, "mirrored": %t, "local_repos": %d}%s`+"\n",
+
+		_, _ = fmt.Fprintf(os.Stdout, `  {"login": %q, "name": %q, "repos": %d, "mirrored": %t, "local_repos": %d}%s`+"\n",
 			org.Login, org.Name, org.RepoCount, org.IsMirrored, org.LocalRepos, comma)
 	}
-	fmt.Println("]")
+
+	_, _ = fmt.Fprintln(os.Stdout, "]")
 }
 
 func padRight(s string, length int) string {
 	if len(s) >= length {
 		return s
 	}
+
 	return s + strings.Repeat(" ", length-len(s))
 }
 

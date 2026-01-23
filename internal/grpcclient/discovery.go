@@ -35,10 +35,10 @@ type ServerInfo struct {
 // 3. Probe common ports for a running server (50051-50055)
 // 4. ~/.config/clonr/client.json config file
 // 5. Default: localhost:50051
-func discoverServerAddress() (string, error) {
+func discoverServerAddress() string {
 	// 1. Check environment variable - if explicitly set, trust it
 	if addr := os.Getenv("CLONR_SERVER"); addr != "" {
-		return addr, nil
+		return addr
 	}
 
 	// 2. Check server info file (written by server when it starts)
@@ -51,7 +51,7 @@ func discoverServerAddress() (string, error) {
 			if err := json.Unmarshal(data, &info); err == nil {
 				// Verify the server is actually running
 				if isServerRunning(info.Address) {
-					return info.Address, nil
+					return info.Address
 				}
 				// Server info exists but server not running - clean up stale file
 				_ = os.Remove(serverInfoPath)
@@ -64,7 +64,7 @@ func discoverServerAddress() (string, error) {
 	for _, port := range commonPorts {
 		addr := fmt.Sprintf("localhost:%d", port)
 		if isServerRunning(addr) {
-			return addr, nil
+			return addr
 		}
 	}
 
@@ -77,14 +77,14 @@ func discoverServerAddress() (string, error) {
 			if err := json.Unmarshal(data, &cfg); err == nil && cfg.ServerAddress != "" {
 				// Verify the configured server is actually running
 				if isServerRunning(cfg.ServerAddress) {
-					return cfg.ServerAddress, nil
+					return cfg.ServerAddress
 				}
 			}
 		}
 	}
 
 	// 5. Default fallback
-	return "localhost:50051", nil
+	return "localhost:50051"
 }
 
 // isServerRunning checks if a gRPC server is running at the given address
@@ -94,7 +94,8 @@ func isServerRunning(address string) bool {
 	if err != nil {
 		return false
 	}
-	conn.Close()
+
+	_ = conn.Close()
 
 	// Port is open, now verify it's actually a healthy gRPC server using health check (per guide)
 	grpcConn, err := grpc.NewClient(address,
@@ -103,10 +104,14 @@ func isServerRunning(address string) bool {
 	if err != nil {
 		return false
 	}
-	defer grpcConn.Close()
+
+	defer func() {
+		_ = grpcConn.Close()
+	}()
 
 	// Use standard health check protocol instead of custom Ping
 	healthClient := healthpb.NewHealthClient(grpcConn)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 

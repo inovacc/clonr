@@ -8,6 +8,8 @@ import (
 )
 
 // Store defines the database operations used by the app.
+//
+//nolint:interfacebloat // all methods are required for database operations
 type Store interface {
 	Ping() error
 	SaveRepo(u *url.URL, path string) error

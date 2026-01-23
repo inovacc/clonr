@@ -72,6 +72,7 @@ func ResolveGitHubTokenForHost(flagToken, host string) (token string, source Tok
 	if token = os.Getenv("GITHUB_TOKEN"); token != "" {
 		return token, TokenSourceEnvGitHub, nil
 	}
+
 	if token = os.Getenv("GH_TOKEN"); token != "" {
 		return token, TokenSourceEnvGH, nil
 	}

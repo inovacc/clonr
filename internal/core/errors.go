@@ -66,6 +66,7 @@ func (r SkipReason) String() string {
 	case SkipReasonNotGitRepo:
 		return "not a git repository"
 	}
+
 	return ""
 }
 

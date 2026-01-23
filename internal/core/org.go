@@ -34,7 +34,7 @@ func ListOrganizations(token string, opts ListOrganizationsOptions) ([]Organizat
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Create GitHub client
+	// Create a GitHub client
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
@@ -45,13 +45,13 @@ func ListOrganizations(token string, opts ListOrganizationsOptions) ([]Organizat
 		return nil, fmt.Errorf("failed to list organizations: %w", err)
 	}
 
-	// Get clone directory from config
+	// Get a clone directory from config
 	cloneDir, err := getCloneDir()
 	if err != nil {
 		return nil, err
 	}
 
-	var orgs []Organization
+	var orgs = make([]Organization, 0)
 
 	// Optionally include user's personal repos
 	if opts.IncludeUser {
@@ -66,8 +66,9 @@ func ListOrganizations(token string, opts ListOrganizationsOptions) ([]Organizat
 
 			// Get user's repo count
 			if user.PublicRepos != nil {
-				userOrg.RepoCount = int(*user.PublicRepos)
+				userOrg.RepoCount = *user.PublicRepos
 			}
+
 			if user.TotalPrivateRepos != nil {
 				userOrg.RepoCount += int(*user.TotalPrivateRepos)
 			}
@@ -91,10 +92,12 @@ func ListOrganizations(token string, opts ListOrganizationsOptions) ([]Organizat
 		fullOrg, _, err := client.Organizations.Get(ctx, org.Login)
 		if err == nil {
 			org.Name = safeString(fullOrg.Name)
+
 			org.Description = safeString(fullOrg.Description)
 			if fullOrg.PublicRepos != nil {
-				org.RepoCount = int(*fullOrg.PublicRepos)
+				org.RepoCount = *fullOrg.PublicRepos
 			}
+
 			if fullOrg.TotalPrivateRepos != nil {
 				org.RepoCount += int(*fullOrg.TotalPrivateRepos)
 			}
@@ -123,6 +126,7 @@ func getCloneDir() (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to get home directory: %w", err)
 		}
+
 		return filepath.Join(home, "clonr"), nil
 	}
 
@@ -132,6 +136,7 @@ func getCloneDir() (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to get home directory: %w", err)
 		}
+
 		return filepath.Join(home, "clonr"), nil
 	}
 
@@ -152,6 +157,7 @@ func checkMirrorStatus(path string) (bool, int) {
 	}
 
 	count := 0
+
 	for _, entry := range entries {
 		if entry.IsDir() {
 			// Check if it's a git repo (include repos starting with dot like .github)
@@ -170,6 +176,7 @@ func safeString(s *string) string {
 	if s == nil {
 		return ""
 	}
+
 	return *s
 }
 
@@ -178,8 +185,10 @@ func getUserName(user *github.User) string {
 	if user.Name != nil && *user.Name != "" {
 		return *user.Name
 	}
+
 	if user.Login != nil {
 		return *user.Login
 	}
+
 	return "Unknown"
 }
