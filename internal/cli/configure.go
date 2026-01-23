@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/inovacc/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/grpcclient"
 	"github.com/inovacc/clonr/internal/model"
 )
 
@@ -27,23 +27,26 @@ var (
 type ConfigureModel struct {
 	focusIndex int
 	inputs     []textinput.Model
-	db         database.Store
+	client     *grpcclient.Client
 	Saved      bool
 	Err        error
 }
 
 func NewConfigureModel() (ConfigureModel, error) {
-	db := database.GetDB()
+	client, err := grpcclient.GetClient()
+	if err != nil {
+		return ConfigureModel{}, fmt.Errorf("failed to connect to server: %w", err)
+	}
 
 	// Load existing config or defaults
-	cfg, err := db.GetConfig()
+	cfg, err := client.GetConfig()
 	if err != nil {
 		return ConfigureModel{}, err
 	}
 
 	m := ConfigureModel{
 		inputs: make([]textinput.Model, 5),
-		db:     db,
+		client: client,
 	}
 
 	var t textinput.Model
@@ -215,7 +218,7 @@ func (m *ConfigureModel) saveConfig() tea.Msg {
 		ServerPort:      serverPort,
 	}
 
-	if err := m.db.SaveConfig(cfg); err != nil {
+	if err := m.client.SaveConfig(cfg); err != nil {
 		return errMsg{err}
 	}
 

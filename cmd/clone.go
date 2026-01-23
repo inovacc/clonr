@@ -12,6 +12,9 @@ var cloneCmd = &cobra.Command{
 	Short: "Clone a Git repository",
 	Long: `Clone a Git repository and register it with Clonr. Supports https, http, git, ssh, ftp, sftp, and git@ URLs.
 
+If no destination is specified, the repository is cloned to the default clone directory
+configured in settings (default: ~/clonr). Use 'clonr configure' to change this.
+
 Use --force to remove and re-clone if the repository already exists in the database or the target directory already exists.`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
