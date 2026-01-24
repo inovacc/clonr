@@ -3,9 +3,8 @@ package core
 import (
 	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
+
+	git_nerds "github.com/inovacc/git-nerds"
 )
 
 // ReauthorOptions contains options for rewriting git author history.
@@ -33,16 +32,8 @@ type ReauthorResult struct {
 }
 
 // Reauthor rewrites git history to change author/committer email and name.
-// This uses git filter-branch to rewrite commits matching the old email.
+// This delegates to git-nerds library for the actual implementation.
 func Reauthor(opts ReauthorOptions) (*ReauthorResult, error) {
-	if opts.OldEmail == "" {
-		return nil, fmt.Errorf("old email is required")
-	}
-
-	if opts.NewEmail == "" {
-		return nil, fmt.Errorf("new email is required")
-	}
-
 	repoPath := opts.RepoPath
 	if repoPath == "" {
 		cwd, err := os.Getwd()
@@ -52,138 +43,32 @@ func Reauthor(opts ReauthorOptions) (*ReauthorResult, error) {
 		repoPath = cwd
 	}
 
-	// Verify it's a git repository
-	gitDir := filepath.Join(repoPath, ".git")
-	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
-		return nil, fmt.Errorf("not a git repository: %s", repoPath)
-	}
-
-	// Build the filter-branch env-filter script
-	script := buildEnvFilterScript(opts)
-
-	// Build the git filter-branch command
-	args := []string{
-		"filter-branch",
-		"-f",
-		"--env-filter", script,
-		"--tag-name-filter", "cat",
-	}
-
-	if opts.AllRefs {
-		args = append(args, "--", "--branches", "--tags")
-	} else {
-		args = append(args, "--", "--all")
-	}
-
-	cmd := exec.Command("git", args...)
-	cmd.Dir = repoPath
-	cmd.Env = append(os.Environ(), "FILTER_BRANCH_SQUELCH_WARNING=1")
-
-	output, err := cmd.CombinedOutput()
+	// Open repository using git-nerds
+	repo, err := git_nerds.Open(repoPath)
 	if err != nil {
-		return nil, fmt.Errorf("git filter-branch failed: %w\nOutput: %s", err, string(output))
+		return nil, fmt.Errorf("failed to open repository: %w", err)
 	}
 
-	result := parseFilterBranchOutput(string(output))
-	return result, nil
-}
-
-// buildEnvFilterScript creates the shell script for git filter-branch --env-filter.
-func buildEnvFilterScript(opts ReauthorOptions) string {
-	var script strings.Builder
-
-	script.WriteString(fmt.Sprintf(`OLD_EMAIL="%s"
-CORRECT_EMAIL="%s"
-`, opts.OldEmail, opts.NewEmail))
-
-	if opts.NewName != "" {
-		script.WriteString(fmt.Sprintf(`CORRECT_NAME="%s"
-`, opts.NewName))
+	// Convert options
+	nerdsOpts := git_nerds.ReauthorOptions{
+		OldEmail: opts.OldEmail,
+		NewEmail: opts.NewEmail,
+		NewName:  opts.NewName,
+		AllRefs:  opts.AllRefs,
 	}
 
-	// Committer check
-	script.WriteString(`
-if [ "$GIT_COMMITTER_EMAIL" = "$OLD_EMAIL" ]
-then
-    export GIT_COMMITTER_EMAIL="$CORRECT_EMAIL"
-`)
-
-	if opts.NewName != "" {
-		script.WriteString(`    export GIT_COMMITTER_NAME="$CORRECT_NAME"
-`)
+	// Execute reauthor
+	nerdsResult, err := repo.Reauthor(nerdsOpts)
+	if err != nil {
+		return nil, err
 	}
 
-	script.WriteString(`fi
-`)
-
-	// Author check
-	script.WriteString(`
-if [ "$GIT_AUTHOR_EMAIL" = "$OLD_EMAIL" ]
-then
-    export GIT_AUTHOR_EMAIL="$CORRECT_EMAIL"
-`)
-
-	if opts.NewName != "" {
-		script.WriteString(`    export GIT_AUTHOR_NAME="$CORRECT_NAME"
-`)
-	}
-
-	script.WriteString(`fi
-`)
-
-	return script.String()
-}
-
-// parseFilterBranchOutput parses the output of git filter-branch to extract statistics.
-func parseFilterBranchOutput(output string) *ReauthorResult {
-	result := &ReauthorResult{
-		TagsRewritten:     []string{},
-		BranchesRewritten: []string{},
-	}
-
-	lines := strings.Split(output, "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-
-		// Count rewritten commits from lines like "Rewrite abc123 (1/10)"
-		if strings.HasPrefix(line, "Rewrite ") {
-			result.CommitsRewritten++
-		}
-
-		// Parse rewritten refs
-		if strings.HasPrefix(line, "Ref 'refs/heads/") && strings.Contains(line, "was rewritten") {
-			branch := extractRefName(line, "refs/heads/")
-			if branch != "" {
-				result.BranchesRewritten = append(result.BranchesRewritten, branch)
-			}
-		}
-
-		if strings.HasPrefix(line, "Ref 'refs/tags/") && strings.Contains(line, "was rewritten") {
-			tag := extractRefName(line, "refs/tags/")
-			if tag != "" {
-				result.TagsRewritten = append(result.TagsRewritten, tag)
-			}
-		}
-	}
-
-	return result
-}
-
-// extractRefName extracts the ref name from a git filter-branch output line.
-func extractRefName(line, prefix string) string {
-	// Line format: "Ref 'refs/heads/main' was rewritten"
-	start := strings.Index(line, prefix)
-	if start == -1 {
-		return ""
-	}
-
-	start += len(prefix)
-	end := strings.Index(line[start:], "'")
-	if end == -1 {
-		return ""
-	}
-
-	return line[start : start+end]
+	// Convert result
+	return &ReauthorResult{
+		CommitsRewritten:  nerdsResult.CommitsRewritten,
+		TagsRewritten:     nerdsResult.TagsRewritten,
+		BranchesRewritten: nerdsResult.BranchesRewritten,
+	}, nil
 }
 
 // ListAuthors returns a list of unique author emails in the repository.
@@ -196,30 +81,12 @@ func ListAuthors(repoPath string) ([]string, error) {
 		repoPath = cwd
 	}
 
-	cmd := exec.Command("git", "log", "--all", "--format=%ae", "--")
-	cmd.Dir = repoPath
-
-	output, err := cmd.Output()
+	repo, err := git_nerds.Open(repoPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list authors: %w", err)
+		return nil, fmt.Errorf("failed to open repository: %w", err)
 	}
 
-	// Deduplicate emails
-	emailSet := make(map[string]struct{})
-	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	for _, email := range lines {
-		email = strings.TrimSpace(email)
-		if email != "" {
-			emailSet[email] = struct{}{}
-		}
-	}
-
-	emails := make([]string, 0, len(emailSet))
-	for email := range emailSet {
-		emails = append(emails, email)
-	}
-
-	return emails, nil
+	return repo.ListAuthorEmails()
 }
 
 // CountCommitsByEmail counts commits by a specific email address.
@@ -232,18 +99,10 @@ func CountCommitsByEmail(repoPath, email string) (int, error) {
 		repoPath = cwd
 	}
 
-	cmd := exec.Command("git", "log", "--all", "--author="+email, "--format=%H", "--")
-	cmd.Dir = repoPath
-
-	output, err := cmd.Output()
+	repo, err := git_nerds.Open(repoPath)
 	if err != nil {
-		return 0, fmt.Errorf("failed to count commits: %w", err)
+		return 0, fmt.Errorf("failed to open repository: %w", err)
 	}
 
-	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	if len(lines) == 1 && lines[0] == "" {
-		return 0, nil
-	}
-
-	return len(lines), nil
+	return repo.CountCommitsByEmail(email)
 }
