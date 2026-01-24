@@ -15,6 +15,7 @@ Clonr is a client-server tool for managing Git repositories efficiently. It uses
 - **Map**: Map local directories to search for existing repositories.
 - **Status**: Show git status of all managed repositories.
 - **Nerds**: Display statistics and metrics for all repositories.
+- **Reauthor**: Rewrite git history to change author/committer email and name.
 - **GitHub CLI Integration**: Interact with GitHub issues, PRs, actions, and releases directly from clonr.
 - **Client-Server Architecture**: Persistent gRPC server with centralized database, lightweight CLI client performs git operations locally.
 
@@ -129,6 +130,8 @@ clonr                          # Interactive menu
 - `clonr map`: Map a local directory to search and register existing Git repositories.
 - `clonr status`: Show the Git status of all managed repositories.
 - `clonr nerds`: Display nerd statistics and metrics for all repositories.
+- `clonr reauthor`: Rewrite git history to change author/committer identity.
+- `clonr reauthor --list`: List all unique author emails in the repository.
 - `clonr server start`: Start the gRPC server.
 - `clonr service`: Manage the server as a system service (install, uninstall, start, stop, status).
 - `clonr gh`: GitHub CLI integration (see below).
@@ -168,6 +171,38 @@ clonr gh release download --tag latest  # Download release assets
 - **Token resolution**: Automatically finds GitHub token from `GITHUB_TOKEN`, `GH_TOKEN`, or gh CLI config
 - **JSON output**: All commands support `--json` flag for scripting
 - **Filtering**: Rich filtering options for each command
+
+### Reauthor (Git History Rewriting)
+
+Clonr includes functionality to rewrite git history and change author/committer identity:
+
+```sh
+# List all unique author emails in the current repository
+clonr reauthor --list
+
+# Replace an email address in git history
+clonr reauthor --old-email="old@company.com" --new-email="new@personal.com"
+
+# Also change the author/committer name
+clonr reauthor --old-email="old@company.com" --new-email="new@personal.com" --new-name="John Doe"
+
+# Run in a specific repository
+clonr reauthor --old-email="old@email.com" --new-email="new@email.com" --repo /path/to/repo
+
+# Skip confirmation prompt
+clonr reauthor --old-email="old@email.com" --new-email="new@email.com" --force
+```
+
+**Features:**
+- **List authors**: View all unique author emails with commit counts
+- **Preview**: Shows number of commits that will be affected before rewriting
+- **Confirmation**: Requires confirmation before rewriting (unless `--force` is used)
+- **Next steps**: Provides guidance for force pushing after rewrite
+
+**Warning**: This operation rewrites git history. After reauthoring:
+1. Review changes: `git log --oneline`
+2. Force push: `git push --force --all && git push --force --tags`
+3. All collaborators will need to re-clone or rebase their work
 
 ### Interactive Features
 
@@ -399,7 +434,7 @@ clonr/
 ├── main.go                           # CLI entry point
 ├── cmd/                              # Commands (Cobra)
 │   ├── root.go                       # Root command
-│   ├── clone.go, list.go, etc.      # Client commands
+│   ├── clone.go, list.go, reauthor.go, etc.  # Client commands
 │   ├── server.go                     # Server commands
 │   ├── service.go                    # Service management commands
 │   ├── gh.go                         # GitHub CLI parent command
@@ -414,6 +449,7 @@ clonr/
 │   │   ├── gh_pr.go                  # PR status logic
 │   │   ├── gh_actions.go             # Actions workflow logic
 │   │   ├── gh_release.go             # Release management logic
+│   │   ├── reauthor.go               # Git history rewriting logic
 │   │   └── common.go                 # Shared utilities (DetectRepository)
 │   ├── database/                     # Database abstraction (BoltDB/SQLite)
 │   ├── model/                        # Data models (Repository, Config)
