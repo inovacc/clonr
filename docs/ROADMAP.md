@@ -356,6 +356,20 @@ CLI: `clonr nerds [repo-name]`
 - [ ] Bulk operations on tagged repos
 - [ ] Team activity dashboards
 
+#### Project Management Integrations ✅ (Completed)
+- `clonr pm jira issues list` - List Jira issues
+- `clonr pm jira issues create` - Create Jira issues
+- `clonr pm jira issues view` - View issue details
+- `clonr pm jira issues transition` - Move issues through workflow
+- `clonr pm jira sprints list` - List sprints
+- `clonr pm jira sprints current` - Show current sprint progress
+- `clonr pm jira boards list` - List Jira boards
+- `clonr pm zenhub board` - View ZenHub board state
+- `clonr pm zenhub epics` - List ZenHub epics
+- `clonr pm zenhub issue` - View ZenHub issue details
+- Multi-source authentication (flags, env vars, config files)
+- JSON output support for all commands
+
 ### v0.6.0 – Sync & Backup
 
 #### Sync Command
@@ -397,6 +411,15 @@ CLI: `clonr nerds [repo-name]`
 - [ ] Azure DevOps support
 - [ ] Gitea/Forgejo support
 
+### Project Management
+- [x] Jira Cloud integration (v0.5.0)
+- [x] ZenHub integration (v0.5.0)
+- [ ] Linear integration
+- [ ] Trello integration
+- [ ] Asana integration
+- [ ] Monday.com integration
+- [ ] ClickUp integration
+
 ### Developer Experience
 - [ ] Shell completions (bash, zsh, fish, powershell)
 - [ ] VS Code extension
@@ -419,6 +442,6 @@ CLI: `clonr nerds [repo-name]`
 | v0.2.0  | ✅ Done | Add, Map, Favorites, Open, Configure, gRPC architecture |
 | v0.3.0  | 🚧 WIP | Status, Nerds, Reauthor, Organization support |
 | v0.4.0  | Planned | Branch management, enhanced statistics |
-| v0.5.0  | Planned | Team features, contributor analytics |
+| v0.5.0  | 🚧 WIP | Team features, PM integrations (Jira, ZenHub) |
 | v0.6.0  | Planned | Sync & backup capabilities |
 | v1.0.0  | Planned | Production ready with plugins and enterprise features |
