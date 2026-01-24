@@ -11,7 +11,7 @@ require (
 	github.com/google/go-github/v67 v67.0.0
 	github.com/google/gops v0.3.29
 	github.com/google/uuid v1.6.0
-	github.com/inovacc/git-nerds v0.0.0-00010101000000-000000000000
+	github.com/inovacc/git-nerds v1.1.1
 	github.com/kardianos/service v1.2.4
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.10.0
@@ -70,5 +70,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	rsc.io/goversion v1.2.0 // indirect
 )
-
-replace github.com/inovacc/git-nerds => /home/dyam/shared/personal/GolandProjects/git-nerds
