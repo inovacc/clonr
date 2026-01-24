@@ -51,7 +51,7 @@ func DetectJiraProject(arg, projectFlag string) (projectKey string, err error) {
 	}
 
 	// 4. No project found
-	return "", fmt.Errorf(`Jira project key required
+	return "", fmt.Errorf(`jira project key required
 
 Specify a project with:
   * clonr pm jira issues list PROJ
@@ -156,6 +156,7 @@ func FormatDuration(d time.Duration) string {
 	if d < time.Hour {
 		mins := int(d.Minutes())
 		secs := int(d.Seconds()) % 60
+
 		if secs > 0 {
 			return fmt.Sprintf("%dm %ds", mins, secs)
 		}
@@ -165,6 +166,7 @@ func FormatDuration(d time.Duration) string {
 
 	hours := int(d.Hours())
 	mins := int(d.Minutes()) % 60
+
 	if mins > 0 {
 		return fmt.Sprintf("%dh %dm", hours, mins)
 	}
@@ -175,6 +177,7 @@ func FormatDuration(d time.Duration) string {
 // GetCurrentGitBranch returns the current git branch name
 func GetCurrentGitBranch() (string, error) {
 	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+
 	output, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("not in a git repository or git not installed")

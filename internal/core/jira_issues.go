@@ -31,11 +31,11 @@ type JiraIssue struct {
 
 // JiraIssuesData contains all issues for a project
 type JiraIssuesData struct {
-	Project     string       `json:"project"`
-	BaseURL     string       `json:"base_url"`
-	FetchedAt   time.Time    `json:"fetched_at"`
-	TotalCount  int          `json:"total_count"`
-	Issues      []JiraIssue  `json:"issues"`
+	Project    string      `json:"project"`
+	BaseURL    string      `json:"base_url"`
+	FetchedAt  time.Time   `json:"fetched_at"`
+	TotalCount int         `json:"total_count"`
+	Issues     []JiraIssue `json:"issues"`
 }
 
 // ListJiraIssuesOptions configures the issue listing behavior
@@ -97,6 +97,7 @@ func ListJiraIssues(client *jira.Client, projectKey string, opts ListJiraIssuesO
 
 	// Convert to our format
 	baseURL := client.BaseURL.String()
+
 	jiraIssues := make([]JiraIssue, 0, len(issues))
 	for _, issue := range issues {
 		jiraIssues = append(jiraIssues, convertJiraIssue(issue, baseURL))
@@ -124,6 +125,7 @@ func buildJQL(projectKey string, opts ListJiraIssuesOptions) string {
 		for i, s := range opts.Status {
 			statuses[i] = fmt.Sprintf("\"%s\"", s)
 		}
+
 		conditions = append(conditions, fmt.Sprintf("status IN (%s)", strings.Join(statuses, ", ")))
 	}
 
@@ -154,6 +156,7 @@ func buildJQL(projectKey string, opts ListJiraIssuesOptions) string {
 		for i, t := range opts.IssueType {
 			types[i] = fmt.Sprintf("\"%s\"", t)
 		}
+
 		conditions = append(conditions, fmt.Sprintf("issuetype IN (%s)", strings.Join(types, ", ")))
 	}
 
@@ -260,9 +263,9 @@ func GetJiraIssue(client *jira.Client, issueKey string, opts GetJiraIssueOptions
 type CreateJiraIssueOptions struct {
 	Summary     string
 	Description string
-	IssueType   string   // Bug, Story, Task, etc.
-	Priority    string   // Highest, High, Medium, Low, Lowest
-	Assignee    string   // Account ID or email
+	IssueType   string // Bug, Story, Task, etc.
+	Priority    string // Highest, High, Medium, Low, Lowest
+	Assignee    string // Account ID or email
 	Labels      []string
 	Sprint      string // Sprint ID
 	Logger      *slog.Logger
@@ -427,13 +430,16 @@ func TransitionJiraIssue(client *jira.Client, issueKey, targetStatus string, opt
 
 	// Find matching transition
 	var transitionID string
+
 	var toState string
+
 	targetLower := strings.ToLower(targetStatus)
 
 	for _, t := range transitions {
 		if strings.ToLower(t.Name) == targetLower || strings.ToLower(t.To.Name) == targetLower {
 			transitionID = t.ID
 			toState = t.To.Name
+
 			break
 		}
 	}

@@ -51,7 +51,9 @@ func CreateZenHubClient(token string, opts ZenHubClientOptions) (*ZenHubClient, 
 }
 
 // doRequest performs an HTTP request to the ZenHub API
-func (c *ZenHubClient) doRequest(ctx context.Context, method, path string, result interface{}) error {
+//
+//nolint:unparam // method is always GET for now, but kept for future extensibility
+func (c *ZenHubClient) doRequest(ctx context.Context, method, path string, result any) error {
 	url := c.baseURL + path
 
 	c.logger.Debug("making ZenHub API request",
@@ -71,6 +73,7 @@ func (c *ZenHubClient) doRequest(ctx context.Context, method, path string, resul
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)
 	}
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()
@@ -91,13 +94,13 @@ func (c *ZenHubClient) doRequest(ctx context.Context, method, path string, resul
 
 // ZenHubIssue represents an issue with ZenHub-specific data
 type ZenHubIssue struct {
-	IssueNumber int      `json:"issue_number"`
-	RepoID      int64    `json:"repo_id"`
-	Estimate    *int     `json:"estimate,omitempty"`
-	PipelineID  string   `json:"pipeline_id,omitempty"`
-	Pipeline    string   `json:"pipeline,omitempty"`
-	IsEpic      bool     `json:"is_epic"`
-	Position    int      `json:"position,omitempty"`
+	IssueNumber int    `json:"issue_number"`
+	RepoID      int64  `json:"repo_id"`
+	Estimate    *int   `json:"estimate,omitempty"`
+	PipelineID  string `json:"pipeline_id,omitempty"`
+	Pipeline    string `json:"pipeline,omitempty"`
+	IsEpic      bool   `json:"is_epic"`
+	Position    int    `json:"position,omitempty"`
 }
 
 // ZenHubPipeline represents a pipeline (column) in a ZenHub board
@@ -127,9 +130,9 @@ type ZenHubBoard struct {
 
 // ZenHubBoardPipeline represents a pipeline with issues
 type ZenHubBoardPipeline struct {
-	ID     string               `json:"id"`
-	Name   string               `json:"name"`
-	Issues []ZenHubBoardIssue   `json:"issues"`
+	ID     string             `json:"id"`
+	Name   string             `json:"name"`
+	Issues []ZenHubBoardIssue `json:"issues"`
 }
 
 // ZenHubBoardIssue represents an issue in a board pipeline

@@ -40,6 +40,7 @@ func Reauthor(opts ReauthorOptions) (*ReauthorResult, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get current directory: %w", err)
 		}
+
 		repoPath = cwd
 	}
 
@@ -78,6 +79,7 @@ func ListAuthors(repoPath string) ([]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get current directory: %w", err)
 		}
+
 		repoPath = cwd
 	}
 
@@ -96,6 +98,7 @@ func CountCommitsByEmail(repoPath, email string) (int, error) {
 		if err != nil {
 			return 0, fmt.Errorf("failed to get current directory: %w", err)
 		}
+
 		repoPath = cwd
 	}
 

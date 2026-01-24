@@ -12,34 +12,34 @@ import (
 
 // ZenHubIssueData combines GitHub issue data with ZenHub-specific fields
 type ZenHubIssueData struct {
-	Number    int        `json:"number"`
-	Title     string     `json:"title"`
-	State     string     `json:"state"`
-	Author    string     `json:"author"`
-	Assignees []string   `json:"assignees,omitempty"`
-	Labels    []string   `json:"labels,omitempty"`
-	Pipeline  string     `json:"pipeline"`
-	Estimate  *int       `json:"estimate,omitempty"`
-	IsEpic    bool       `json:"is_epic"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
-	URL       string     `json:"url"`
+	Number    int       `json:"number"`
+	Title     string    `json:"title"`
+	State     string    `json:"state"`
+	Author    string    `json:"author"`
+	Assignees []string  `json:"assignees,omitempty"`
+	Labels    []string  `json:"labels,omitempty"`
+	Pipeline  string    `json:"pipeline"`
+	Estimate  *int      `json:"estimate,omitempty"`
+	IsEpic    bool      `json:"is_epic"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	URL       string    `json:"url"`
 }
 
 // ZenHubBoardData contains the full board state with issues
 type ZenHubBoardData struct {
-	Repository string                `json:"repository"`
-	RepoID     int64                 `json:"repo_id"`
-	FetchedAt  time.Time             `json:"fetched_at"`
-	Pipelines  []ZenHubPipelineData  `json:"pipelines"`
+	Repository string               `json:"repository"`
+	RepoID     int64                `json:"repo_id"`
+	FetchedAt  time.Time            `json:"fetched_at"`
+	Pipelines  []ZenHubPipelineData `json:"pipelines"`
 }
 
 // ZenHubPipelineData represents a pipeline with its issues
 type ZenHubPipelineData struct {
-	Name       string              `json:"name"`
-	IssueCount int                 `json:"issue_count"`
+	Name        string            `json:"name"`
+	IssueCount  int               `json:"issue_count"`
 	TotalPoints int               `json:"total_points"`
-	Issues     []ZenHubIssueData   `json:"issues,omitempty"`
+	Issues      []ZenHubIssueData `json:"issues,omitempty"`
 }
 
 // ZenHubEpicData represents an epic with its details
@@ -95,11 +95,13 @@ func GetZenHubBoard(client *ZenHubClient, repoID int64, repoName string, opts Ge
 
 		// Calculate total points
 		totalPoints := 0
+
 		for _, issue := range p.Issues {
 			if issue.Estimate != nil {
 				totalPoints += issue.Estimate.Value
 			}
 		}
+
 		pipelineData.TotalPoints = totalPoints
 
 		// Optionally include issue details
@@ -115,8 +117,10 @@ func GetZenHubBoard(client *ZenHubClient, repoID int64, repoName string, opts Ge
 					est := issue.Estimate.Value
 					issueData.Estimate = &est
 				}
+
 				issues = append(issues, issueData)
 			}
+
 			pipelineData.Issues = issues
 		}
 

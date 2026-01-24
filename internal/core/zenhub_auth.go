@@ -79,8 +79,7 @@ func loadZenHubConfigToken() (string, error) {
 	}
 
 	// Handle token reference to env var
-	if strings.HasPrefix(config.Token, "env:") {
-		envVar := strings.TrimPrefix(config.Token, "env:")
+	if envVar, found := strings.CutPrefix(config.Token, "env:"); found {
 		return os.Getenv(envVar), nil
 	}
 
@@ -111,12 +110,12 @@ func GetZenHubDefaultWorkspace() (string, error) {
 
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		return "", nil // No config file, no default workspace
+		return "", err
 	}
 
 	var config ZenHubConfig
 	if err := json.Unmarshal(data, &config); err != nil {
-		return "", nil
+		return "", err
 	}
 
 	return config.DefaultWorkspace, nil

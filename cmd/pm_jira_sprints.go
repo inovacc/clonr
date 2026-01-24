@@ -171,10 +171,12 @@ func runJiraSprintsList(cmd *cobra.Command, args []string) error {
 			if sprint.StartDate != nil {
 				dateStr += sprint.StartDate.Format("Jan 2")
 			}
+
 			dateStr += " - "
 			if sprint.EndDate != nil {
 				dateStr += sprint.EndDate.Format("Jan 2, 2006")
 			}
+
 			_, _ = fmt.Fprintln(os.Stdout, dateStr)
 		}
 
@@ -271,6 +273,7 @@ func runJiraSprintsCurrent(cmd *cobra.Command, args []string) error {
 		} else if current.DaysLeft == 0 {
 			_, _ = fmt.Fprint(os.Stdout, " (ends today)")
 		}
+
 		_, _ = fmt.Fprintln(os.Stdout)
 	}
 
@@ -284,6 +287,7 @@ func runJiraSprintsCurrent(cmd *cobra.Command, args []string) error {
 	// Issues by status
 	if len(current.ByStatus) > 0 {
 		_, _ = fmt.Fprintln(os.Stdout, "\n   Issues by status:")
+
 		for status, count := range current.ByStatus {
 			icon := getJiraStatusIcon(status)
 			_, _ = fmt.Fprintf(os.Stdout, "   %s %s: %d\n", icon, status, count)

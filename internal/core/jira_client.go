@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
@@ -59,7 +60,7 @@ func CreateJiraClient(creds *JiraCredentials, opts JiraClientOptions) (*jira.Cli
 // ValidateJiraConnection validates the Jira connection by making a simple API call
 func ValidateJiraConnection(client *jira.Client) error {
 	// Try to get current user to validate connection
-	_, _, err := client.User.GetCurrentUser(nil)
+	_, _, err := client.User.GetCurrentUser(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to validate Jira connection: %w", err)
 	}

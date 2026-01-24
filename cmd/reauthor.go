@@ -70,22 +70,23 @@ func runReauthor(cmd *cobra.Command, _ []string) error {
 	}
 
 	if count == 0 {
-		fmt.Printf("No commits found with email: %s\n", oldEmail)
+		_, _ = fmt.Fprintf(os.Stdout, "No commits found with email: %s\n", oldEmail)
 		return nil
 	}
 
-	fmt.Printf("Found %d commit(s) with email: %s\n", count, oldEmail)
-	fmt.Printf("\nThis will rewrite history:\n")
-	fmt.Printf("  Old email: %s\n", oldEmail)
-	fmt.Printf("  New email: %s\n", newEmail)
+	_, _ = fmt.Fprintf(os.Stdout, "Found %d commit(s) with email: %s\n", count, oldEmail)
+	_, _ = fmt.Fprintf(os.Stdout, "\nThis will rewrite history:\n")
+	_, _ = fmt.Fprintf(os.Stdout, "  Old email: %s\n", oldEmail)
+	_, _ = fmt.Fprintf(os.Stdout, "  New email: %s\n", newEmail)
+
 	if newName != "" {
-		fmt.Printf("  New name:  %s\n", newName)
+		_, _ = fmt.Fprintf(os.Stdout, "  New name:  %s\n", newName)
 	}
 
 	if !force {
-		fmt.Print("\nWARNING: This operation rewrites git history and cannot be undone.\n")
-		fmt.Print("You will need to force push after this operation.\n")
-		fmt.Print("\nProceed? [y/N]: ")
+		_, _ = fmt.Fprintf(os.Stdout, "\nWARNING: This operation rewrites git history and cannot be undone.\n")
+		_, _ = fmt.Fprintf(os.Stdout, "You will need to force push after this operation.\n")
+		_, _ = fmt.Fprintf(os.Stdout, "\nProceed? [y/N]: ")
 
 		var response string
 		if _, err := fmt.Scanln(&response); err != nil {
@@ -94,12 +95,12 @@ func runReauthor(cmd *cobra.Command, _ []string) error {
 
 		response = strings.TrimSpace(strings.ToLower(response))
 		if response != "y" && response != "yes" {
-			fmt.Println("Operation cancelled.")
+			_, _ = fmt.Fprintln(os.Stdout, "Operation cancelled.")
 			return nil
 		}
 	}
 
-	fmt.Println("\nRewriting history...")
+	_, _ = fmt.Fprintln(os.Stdout, "\nRewriting history...")
 
 	opts := core.ReauthorOptions{
 		OldEmail: oldEmail,
@@ -114,20 +115,20 @@ func runReauthor(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	fmt.Println("\nHistory rewritten successfully!")
-	fmt.Printf("  Commits processed: %d\n", result.CommitsRewritten)
+	_, _ = fmt.Fprintln(os.Stdout, "\nHistory rewritten successfully!")
+	_, _ = fmt.Fprintf(os.Stdout, "  Commits processed: %d\n", result.CommitsRewritten)
 
 	if len(result.BranchesRewritten) > 0 {
-		fmt.Printf("  Branches rewritten: %s\n", strings.Join(result.BranchesRewritten, ", "))
+		_, _ = fmt.Fprintf(os.Stdout, "  Branches rewritten: %s\n", strings.Join(result.BranchesRewritten, ", "))
 	}
 
 	if len(result.TagsRewritten) > 0 {
-		fmt.Printf("  Tags rewritten: %s\n", strings.Join(result.TagsRewritten, ", "))
+		_, _ = fmt.Fprintf(os.Stdout, "  Tags rewritten: %s\n", strings.Join(result.TagsRewritten, ", "))
 	}
 
-	fmt.Println("\nNext steps:")
-	fmt.Println("  1. Review the changes: git log --oneline")
-	fmt.Println("  2. Force push to remote: git push --force --all && git push --force --tags")
+	_, _ = fmt.Fprintln(os.Stdout, "\nNext steps:")
+	_, _ = fmt.Fprintln(os.Stdout, "  1. Review the changes: git log --oneline")
+	_, _ = fmt.Fprintln(os.Stdout, "  2. Force push to remote: git push --force --all && git push --force --tags")
 
 	return nil
 }
@@ -139,12 +140,12 @@ func listAuthorEmails(repoPath string) error {
 	}
 
 	if len(emails) == 0 {
-		fmt.Println("No authors found in repository.")
+		_, _ = fmt.Fprintln(os.Stdout, "No authors found in repository.")
 		return nil
 	}
 
-	fmt.Println("Authors in repository:")
-	fmt.Println()
+	_, _ = fmt.Fprintln(os.Stdout, "Authors in repository:")
+	_, _ = fmt.Fprintln(os.Stdout)
 
 	for _, email := range emails {
 		count, err := core.CountCommitsByEmail(repoPath, email)
@@ -152,7 +153,8 @@ func listAuthorEmails(repoPath string) error {
 			_, _ = fmt.Fprintf(os.Stderr, "  %s (error counting commits)\n", email)
 			continue
 		}
-		fmt.Printf("  %s (%d commits)\n", email, count)
+
+		_, _ = fmt.Fprintf(os.Stdout, "  %s (%d commits)\n", email, count)
 	}
 
 	return nil

@@ -2,10 +2,19 @@ package core
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+)
+
+// Sentinel errors for Jira configuration
+var (
+	// ErrJiraConfigNotFound indicates no Jira configuration file was found
+	ErrJiraConfigNotFound = errors.New("jira config not found")
+	// ErrJiraInstanceNotFound indicates the specified Jira instance was not found in config
+	ErrJiraInstanceNotFound = errors.New("jira instance not found in config")
 )
 
 // JiraTokenSource indicates where the Jira credentials were found
@@ -29,8 +38,8 @@ type JiraCredentials struct {
 
 // JiraConfig represents the Jira configuration file structure
 type JiraConfig struct {
-	DefaultInstance string                    `json:"default_instance,omitempty"`
-	Instances       map[string]JiraInstance   `json:"instances,omitempty"`
+	DefaultInstance string                  `json:"default_instance,omitempty"`
+	Instances       map[string]JiraInstance `json:"instances,omitempty"`
 }
 
 // JiraInstance represents a single Jira instance configuration
@@ -114,7 +123,7 @@ func ResolveJiraCredentials(flagToken, flagEmail, flagURL string) (*JiraCredenti
 
 	// 4. Validate we have all required credentials
 	if creds.Token == "" {
-		return nil, fmt.Errorf(`Jira API token required
+		return nil, fmt.Errorf(`jira API token required
 
 Provide a token via one of:
   * JIRA_API_TOKEN env var     (recommended)
@@ -126,7 +135,7 @@ Create an API token at: https://id.atlassian.com/manage-profile/security/api-tok
 	}
 
 	if creds.Email == "" {
-		return nil, fmt.Errorf(`Jira email required
+		return nil, fmt.Errorf(`jira email required
 
 Provide your Atlassian account email via one of:
   * JIRA_EMAIL env var
@@ -135,7 +144,7 @@ Provide your Atlassian account email via one of:
 	}
 
 	if creds.BaseURL == "" {
-		return nil, fmt.Errorf(`Jira instance URL required
+		return nil, fmt.Errorf(`jira instance URL required
 
 Provide your Jira instance URL via one of:
   * JIRA_URL env var
@@ -172,7 +181,7 @@ func ResolveJiraToken(flagToken string) (token string, source JiraTokenSource, e
 	}
 
 	// 5. No token found
-	return "", JiraTokenSourceNone, fmt.Errorf(`Jira API token required
+	return "", JiraTokenSourceNone, fmt.Errorf(`jira API token required
 
 Provide a token via one of:
   * JIRA_API_TOKEN env var     (recommended)
@@ -193,7 +202,7 @@ func loadJiraConfigCredentials(instanceName string) (*JiraCredentials, error) {
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil
+			return nil, ErrJiraConfigNotFound
 		}
 
 		return nil, fmt.Errorf("failed to read Jira config: %w", err)
@@ -218,12 +227,12 @@ func loadJiraConfigCredentials(instanceName string) (*JiraCredentials, error) {
 	}
 
 	if instanceName == "" {
-		return nil, nil
+		return nil, ErrJiraInstanceNotFound
 	}
 
 	instance, ok := config.Instances[instanceName]
 	if !ok {
-		return nil, nil
+		return nil, ErrJiraInstanceNotFound
 	}
 
 	creds := &JiraCredentials{
@@ -233,8 +242,7 @@ func loadJiraConfigCredentials(instanceName string) (*JiraCredentials, error) {
 	}
 
 	// Handle token reference to env var
-	if strings.HasPrefix(instance.Token, "env:") {
-		envVar := strings.TrimPrefix(instance.Token, "env:")
+	if envVar, found := strings.CutPrefix(instance.Token, "env:"); found {
 		creds.Token = os.Getenv(envVar)
 	} else {
 		creds.Token = instance.Token
@@ -284,12 +292,12 @@ func GetJiraDefaultProject(instanceName string) (string, error) {
 
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		return "", nil // No config file, no default project
+		return "", err
 	}
 
 	var config JiraConfig
 	if err := json.Unmarshal(data, &config); err != nil {
-		return "", nil
+		return "", err
 	}
 
 	if instanceName == "" {

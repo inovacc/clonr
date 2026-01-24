@@ -12,23 +12,23 @@ import (
 
 // JiraSprint represents a Jira sprint with essential fields
 type JiraSprint struct {
-	ID            int        `json:"id"`
-	Name          string     `json:"name"`
-	State         string     `json:"state"` // active, closed, future
-	StartDate     *time.Time `json:"start_date,omitempty"`
-	EndDate       *time.Time `json:"end_date,omitempty"`
-	CompleteDate  *time.Time `json:"complete_date,omitempty"`
-	Goal          string     `json:"goal,omitempty"`
-	BoardID       int        `json:"board_id"`
+	ID           int        `json:"id"`
+	Name         string     `json:"name"`
+	State        string     `json:"state"` // active, closed, future
+	StartDate    *time.Time `json:"start_date,omitempty"`
+	EndDate      *time.Time `json:"end_date,omitempty"`
+	CompleteDate *time.Time `json:"complete_date,omitempty"`
+	Goal         string     `json:"goal,omitempty"`
+	BoardID      int        `json:"board_id"`
 }
 
 // JiraSprintsData contains all sprints for a board
 type JiraSprintsData struct {
-	BoardID    int           `json:"board_id"`
-	BoardName  string        `json:"board_name,omitempty"`
-	FetchedAt  time.Time     `json:"fetched_at"`
-	TotalCount int           `json:"total_count"`
-	Sprints    []JiraSprint  `json:"sprints"`
+	BoardID    int          `json:"board_id"`
+	BoardName  string       `json:"board_name,omitempty"`
+	FetchedAt  time.Time    `json:"fetched_at"`
+	TotalCount int          `json:"total_count"`
+	Sprints    []JiraSprint `json:"sprints"`
 }
 
 // JiraBoard represents a Jira board
@@ -41,9 +41,9 @@ type JiraBoard struct {
 
 // JiraBoardsData contains all boards
 type JiraBoardsData struct {
-	FetchedAt  time.Time    `json:"fetched_at"`
-	TotalCount int          `json:"total_count"`
-	Boards     []JiraBoard  `json:"boards"`
+	FetchedAt  time.Time   `json:"fetched_at"`
+	TotalCount int         `json:"total_count"`
+	Boards     []JiraBoard `json:"boards"`
 }
 
 // ListJiraSprintsOptions configures sprint listing
@@ -103,21 +103,21 @@ func convertJiraSprint(sprint jira.Sprint, boardID int) JiraSprint {
 
 	// Parse dates if they exist
 	if sprint.StartDate != nil {
-		t := time.Time(*sprint.StartDate)
+		t := *sprint.StartDate
 		if !t.IsZero() {
 			js.StartDate = &t
 		}
 	}
 
 	if sprint.EndDate != nil {
-		t := time.Time(*sprint.EndDate)
+		t := *sprint.EndDate
 		if !t.IsZero() {
 			js.EndDate = &t
 		}
 	}
 
 	if sprint.CompleteDate != nil {
-		t := time.Time(*sprint.CompleteDate)
+		t := *sprint.CompleteDate
 		if !t.IsZero() {
 			js.CompleteDate = &t
 		}
@@ -133,11 +133,11 @@ type GetCurrentSprintOptions struct {
 
 // CurrentSprintData contains the current sprint and its issues summary
 type CurrentSprintData struct {
-	Sprint       JiraSprint `json:"sprint"`
-	IssueCount   int        `json:"issue_count"`
-	DaysLeft     int        `json:"days_left,omitempty"`
-	Progress     float64    `json:"progress"` // Percentage of completed issues
-	ByStatus     map[string]int `json:"by_status"`
+	Sprint     JiraSprint     `json:"sprint"`
+	IssueCount int            `json:"issue_count"`
+	DaysLeft   int            `json:"days_left,omitempty"`
+	Progress   float64        `json:"progress"` // Percentage of completed issues
+	ByStatus   map[string]int `json:"by_status"`
 }
 
 // GetCurrentSprint fetches the active sprint for a board
@@ -175,10 +175,7 @@ func GetCurrentSprint(client *jira.Client, boardID int, opts GetCurrentSprintOpt
 	// Calculate days left
 	var daysLeft int
 	if jiraSprint.EndDate != nil {
-		daysLeft = int(time.Until(*jiraSprint.EndDate).Hours() / 24)
-		if daysLeft < 0 {
-			daysLeft = 0
-		}
+		daysLeft = max(int(time.Until(*jiraSprint.EndDate).Hours()/24), 0)
 	}
 
 	// Get issues in sprint
@@ -197,6 +194,7 @@ func GetCurrentSprint(client *jira.Client, boardID int, opts GetCurrentSprintOpt
 	// Count issues by status
 	byStatus := make(map[string]int)
 	completedCount := 0
+
 	for _, issue := range issues {
 		if issue.Fields.Status != nil {
 			statusName := issue.Fields.Status.Name

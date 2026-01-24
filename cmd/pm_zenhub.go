@@ -250,10 +250,12 @@ func runZenHubBoard(cmd *cobra.Command, args []string) error {
 				if issue.Estimate != nil {
 					estStr = fmt.Sprintf(" [%d pts]", *issue.Estimate)
 				}
+
 				epicStr := ""
 				if issue.IsEpic {
 					epicStr = " (Epic)"
 				}
+
 				_, _ = fmt.Fprintf(os.Stdout, "   #%-5d%s%s\n", issue.Number, estStr, epicStr)
 			}
 		}
@@ -363,20 +365,21 @@ func runZenHubIssue(cmd *cobra.Command, args []string) error {
 
 	// Parse arguments - can be "owner/repo 123" or "123" with --repo flag
 	var repoArg string
+
 	var issueNumber int
 
-	if len(args) >= 2 {
+	switch {
+	case len(args) >= 2:
 		repoArg = args[0]
 		if _, err := fmt.Sscanf(args[1], "%d", &issueNumber); err != nil {
 			return fmt.Errorf("invalid issue number: %s", args[1])
 		}
-	} else if len(args) == 1 {
+	case len(args) == 1:
 		if _, err := fmt.Sscanf(args[0], "%d", &issueNumber); err != nil {
-			// First arg might be repo
-			repoArg = args[0]
+			// First arg is not a number, assume it's a repo without issue number
 			return fmt.Errorf("issue number is required\n\nUsage: clonr pm zenhub issue owner/repo <issue-number>")
 		}
-	} else {
+	default:
 		return fmt.Errorf("issue number is required\n\nUsage: clonr pm zenhub issue owner/repo <issue-number>")
 	}
 
@@ -584,12 +587,15 @@ func runZenHubWorkspaces(cmd *cobra.Command, args []string) error {
 	for _, ws := range workspaces.Workspaces {
 		_, _ = fmt.Fprintf(os.Stdout, "🗂️  %s\n", ws.Name)
 		_, _ = fmt.Fprintf(os.Stdout, "   ID: %s\n", ws.ID)
+
 		if ws.Description != "" {
 			_, _ = fmt.Fprintf(os.Stdout, "   Description: %s\n", ws.Description)
 		}
+
 		if len(ws.Repositories) > 0 {
 			_, _ = fmt.Fprintf(os.Stdout, "   Repositories: %d\n", len(ws.Repositories))
 		}
+
 		_, _ = fmt.Fprintf(os.Stdout, "\n")
 	}
 
