@@ -313,4 +313,112 @@ CLI: `clonr nerds [repo-name]`
 ## Acceptance
 
 - All features documented in README with examples
-- Minimal surprise: defaults don’t break current flows; flags are opt-in
+- Minimal surprise: defaults don't break current flows; flags are opt-in
+
+---
+
+## Future Roadmap
+
+### v0.4.0 – Git History & Advanced Analytics
+
+#### Reauthor Command ✅ (Completed)
+- `clonr reauthor --list` - List all unique author emails
+- `clonr reauthor --old-email --new-email` - Rewrite git history
+- `clonr reauthor --new-name` - Also change author name
+- Integration with git-nerds library
+
+#### Branch Management
+- [ ] `clonr branches` - List and manage branches across repositories
+- [ ] Branch cleanup suggestions (stale branches)
+- [ ] Default branch detection and switching
+- [ ] Branch comparison across repos
+
+#### Enhanced Statistics
+- [ ] Commit activity heatmaps
+- [ ] Contributor leaderboards
+- [ ] Code churn analysis
+- [ ] File hotspot detection
+
+### v0.5.0 – Organization & Team Features
+
+#### GitHub Organization Support ✅ (In Progress)
+- `clonr org list` - List organization repositories
+- `clonr org mirror` - Mirror entire organizations
+- Batch operations on org repos
+
+#### Contributors Command
+- [ ] `clonr gh contributors` - Analyze repository contributors
+- [ ] Contribution statistics and rankings
+- [ ] New contributor detection
+
+#### Team Workflows
+- [ ] Repository grouping/tagging
+- [ ] Bulk operations on tagged repos
+- [ ] Team activity dashboards
+
+### v0.6.0 – Sync & Backup
+
+#### Sync Command
+- [ ] `clonr sync` - Two-way sync with remote
+- [ ] Conflict detection and resolution
+- [ ] Scheduled sync jobs
+
+#### Backup & Restore
+- [ ] `clonr backup` - Archive managed repositories
+- [ ] `clonr restore` - Restore from backup
+- [ ] Incremental backups
+- [ ] Cloud storage integration (S3, GCS)
+
+### v1.0.0 – Production Ready
+
+#### Plugin System
+- [ ] Custom command plugins
+- [ ] Hook system for pre/post operations
+- [ ] Plugin marketplace
+
+#### Advanced UI
+- [ ] Web dashboard (optional)
+- [ ] Rich TUI improvements
+- [ ] Notifications and alerts
+
+#### Enterprise Features
+- [ ] Multi-user support
+- [ ] Role-based access control
+- [ ] Audit logging
+- [ ] LDAP/SSO integration
+
+---
+
+## Ideas & Future Exploration
+
+### Integrations
+- [ ] GitLab support
+- [ ] Bitbucket support
+- [ ] Azure DevOps support
+- [ ] Gitea/Forgejo support
+
+### Developer Experience
+- [ ] Shell completions (bash, zsh, fish, powershell)
+- [ ] VS Code extension
+- [ ] JetBrains plugin
+- [ ] Alfred/Raycast workflows
+
+### Advanced Features
+- [ ] Repository templates
+- [ ] Automated PR creation
+- [ ] CI/CD status monitoring
+- [ ] Dependency tracking across repos
+
+---
+
+## Version History
+
+| Version | Status | Highlights |
+|---------|--------|------------|
+| v0.1.1  | ✅ Done | GitHub CLI integration (issues, PRs, actions, releases) |
+| v0.2.0  | ✅ Done | Add, Map, Favorites, Open, Configure, gRPC architecture |
+| v0.3.0  | 🚧 WIP | Status, Nerds, Reauthor, Organization support |
+| v0.4.0  | Planned | Branch management, enhanced statistics |
+| v0.5.0  | Planned | Team features, contributor analytics |
+| v0.6.0  | Planned | Sync & backup capabilities |
+| v1.0.0  | Planned | Production ready with plugins and enterprise features |
