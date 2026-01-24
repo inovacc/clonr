@@ -200,6 +200,49 @@ func GetZenHubIssue(client *ZenHubClient, repoID int64, issueNumber int, opts Ge
 	return issue, nil
 }
 
+// ZenHubWorkspacesData contains all workspaces for a repository
+type ZenHubWorkspacesData struct {
+	Repository string                `json:"repository"`
+	RepoID     int64                 `json:"repo_id"`
+	FetchedAt  time.Time             `json:"fetched_at"`
+	TotalCount int                   `json:"total_count"`
+	Workspaces []ZenHubWorkspaceFull `json:"workspaces"`
+}
+
+// GetZenHubWorkspacesOptions configures workspace fetching
+type GetZenHubWorkspacesOptions struct {
+	Logger *slog.Logger
+}
+
+// GetZenHubWorkspaces fetches all workspaces for a repository
+func GetZenHubWorkspaces(client *ZenHubClient, repoID int64, repoName string, opts GetZenHubWorkspacesOptions) (*ZenHubWorkspacesData, error) {
+	logger := opts.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
+	logger.Debug("fetching ZenHub workspaces",
+		slog.Int64("repo_id", repoID),
+		slog.String("repo", repoName),
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	workspaces, err := client.GetWorkspacesForRepo(ctx, repoID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch workspaces: %w", err)
+	}
+
+	return &ZenHubWorkspacesData{
+		Repository: repoName,
+		RepoID:     repoID,
+		FetchedAt:  time.Now(),
+		TotalCount: len(workspaces),
+		Workspaces: workspaces,
+	}, nil
+}
+
 // GetGitHubRepoID attempts to get a GitHub repository ID
 // This requires a GitHub API call
 func GetGitHubRepoID(token, owner, repo string, logger *slog.Logger) (int64, error) {

@@ -1,6 +1,10 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+
+	"github.com/inovacc/clonr/internal/core"
 	"github.com/spf13/cobra"
 )
 
@@ -67,11 +71,25 @@ Examples:
   clonr pm jira boards list --project PROJ   # List boards for project`,
 }
 
+var jiraAuthCmd = &cobra.Command{
+	Use:   "auth",
+	Short: "Open Jira/Atlassian token page in browser",
+	Long: `Open the Atlassian API token settings page in your default browser.
+
+This command helps you quickly access the token generation page:
+  - Atlassian: https://id.atlassian.com/manage-profile/security/api-tokens
+
+Examples:
+  clonr pm jira auth`,
+	RunE: runJiraAuth,
+}
+
 func init() {
 	pmCmd.AddCommand(jiraCmd)
 	jiraCmd.AddCommand(jiraIssuesCmd)
 	jiraCmd.AddCommand(jiraSprintsCmd)
 	jiraCmd.AddCommand(jiraBoardsCmd)
+	jiraCmd.AddCommand(jiraAuthCmd)
 }
 
 // addJiraCommonFlags adds flags common to all jira subcommands
@@ -79,4 +97,31 @@ func addJiraCommonFlags(cmd *cobra.Command) {
 	addPMCommonFlags(cmd)
 	cmd.Flags().String("url", "", "Jira instance URL (e.g., https://company.atlassian.net)")
 	cmd.Flags().String("email", "", "Jira account email")
+}
+
+func runJiraAuth(_ *cobra.Command, _ []string) error {
+	_, _ = fmt.Fprintf(os.Stdout, "Opening Atlassian API token page: %s\n", core.JiraTokenURL)
+	if err := core.OpenJiraTokenPage(); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Failed to open browser: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stdout, "Please visit: %s\n", core.JiraTokenURL)
+	}
+
+	_, _ = fmt.Fprintf(os.Stdout, "\nAfter creating a token, configure it:\n")
+	_, _ = fmt.Fprintf(os.Stdout, "  export JIRA_API_TOKEN=<token>\n")
+	_, _ = fmt.Fprintf(os.Stdout, "  export JIRA_EMAIL=<your-email>\n")
+	_, _ = fmt.Fprintf(os.Stdout, "  export JIRA_URL=https://company.atlassian.net\n")
+	_, _ = fmt.Fprintf(os.Stdout, "\nOr create ~/.config/clonr/jira.json:\n")
+	_, _ = fmt.Fprintf(os.Stdout, `  {
+    "default_instance": "company",
+    "instances": {
+      "company": {
+        "url": "https://company.atlassian.net",
+        "email": "you@company.com",
+        "token": "your-api-token"
+      }
+    }
+  }
+`)
+
+	return nil
 }

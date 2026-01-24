@@ -5,8 +5,16 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
+)
+
+// Token page URLs
+const (
+	ZenHubTokenURL = "https://app.zenhub.com/settings/tokens"
+	GitHubTokenURL = "https://github.com/settings/tokens"
+	JiraTokenURL   = "https://id.atlassian.com/manage-profile/security/api-tokens"
 )
 
 // DetectJiraProject attempts to determine the Jira project key.
@@ -203,4 +211,35 @@ func TruncateString(s string, maxLen int) string {
 	}
 
 	return s[:maxLen-3] + "..."
+}
+
+// OpenBrowser opens a URL in the default browser (cross-platform)
+func OpenBrowser(url string) error {
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", url)
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+	default: // linux, freebsd, etc.
+		cmd = exec.Command("xdg-open", url)
+	}
+
+	return cmd.Start()
+}
+
+// OpenZenHubTokenPage opens the ZenHub token settings page in the browser
+func OpenZenHubTokenPage() error {
+	return OpenBrowser(ZenHubTokenURL)
+}
+
+// OpenGitHubTokenPage opens the GitHub token settings page in the browser
+func OpenGitHubTokenPage() error {
+	return OpenBrowser(GitHubTokenURL)
+}
+
+// OpenJiraTokenPage opens the Jira/Atlassian token settings page in the browser
+func OpenJiraTokenPage() error {
+	return OpenBrowser(JiraTokenURL)
 }

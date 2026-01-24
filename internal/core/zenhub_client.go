@@ -196,9 +196,22 @@ func (c *ZenHubClient) GetEpics(ctx context.Context, repoID int64) ([]ZenHubEpic
 	return result.Epics, nil
 }
 
-// GetWorkspaces returns all workspaces the user has access to
-func (c *ZenHubClient) GetWorkspaces(ctx context.Context) ([]ZenHubWorkspace, error) {
-	// Note: This requires the v5 API and workspace access
-	// For now, we'll skip this and work with repo-based operations
-	return nil, fmt.Errorf("workspace listing not yet implemented")
+// ZenHubWorkspaceFull represents a workspace with full details
+type ZenHubWorkspaceFull struct {
+	ID           string  `json:"id"`
+	Name         string  `json:"name"`
+	Description  string  `json:"description,omitempty"`
+	Repositories []int64 `json:"repositories,omitempty"`
+}
+
+// GetWorkspacesForRepo returns all workspaces that include a specific repository
+func (c *ZenHubClient) GetWorkspacesForRepo(ctx context.Context, repoID int64) ([]ZenHubWorkspaceFull, error) {
+	path := fmt.Sprintf("/p2/repositories/%d/workspaces", repoID)
+
+	var result []ZenHubWorkspaceFull
+	if err := c.doRequest(ctx, "GET", path, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
