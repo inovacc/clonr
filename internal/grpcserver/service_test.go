@@ -31,6 +31,19 @@ type mockStore struct {
 	getConfigResult     *model.Config
 	getConfigErr        error
 	saveConfigErr       error
+
+	// Profile fields
+	saveProfileErr       error
+	getProfileResult     *model.Profile
+	getProfileErr        error
+	getActiveProfileRes  *model.Profile
+	getActiveProfileErr  error
+	setActiveProfileErr  error
+	listProfilesResult   []model.Profile
+	listProfilesErr      error
+	deleteProfileErr     error
+	profileExistsResult  bool
+	profileExistsErr     error
 }
 
 func (m *mockStore) Ping() error {
@@ -83,6 +96,34 @@ func (m *mockStore) SaveConfig(_ *model.Config) error {
 
 func (m *mockStore) Close() error {
 	return nil
+}
+
+func (m *mockStore) SaveProfile(_ *model.Profile) error {
+	return m.saveProfileErr
+}
+
+func (m *mockStore) GetProfile(_ string) (*model.Profile, error) {
+	return m.getProfileResult, m.getProfileErr
+}
+
+func (m *mockStore) GetActiveProfile() (*model.Profile, error) {
+	return m.getActiveProfileRes, m.getActiveProfileErr
+}
+
+func (m *mockStore) SetActiveProfile(_ string) error {
+	return m.setActiveProfileErr
+}
+
+func (m *mockStore) ListProfiles() ([]model.Profile, error) {
+	return m.listProfilesResult, m.listProfilesErr
+}
+
+func (m *mockStore) DeleteProfile(_ string) error {
+	return m.deleteProfileErr
+}
+
+func (m *mockStore) ProfileExists(_ string) (bool, error) {
+	return m.profileExistsResult, m.profileExistsErr
 }
 
 func TestNewService(t *testing.T) {
