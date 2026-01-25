@@ -20,7 +20,26 @@
       "Bash(go run:*)",
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add non-interactive mode to remove command\n\nAllow removing repositories by URL argument or --url flag without\nrequiring the interactive TUI, useful for scripting and CI workflows.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(task lint:fix)"
+      "Bash(task lint:fix)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git commit:*)",
+      "Bash(wc:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh api:*)",
+      "Bash(/tmp/clonr gh:*)",
+      "Bash(git push:*)",
+      "Bash(twig:*)",
+      "Bash(golangci-lint fmt:*)",
+      "Bash(task build:*)",
+      "Bash(./bin/clonr gh issues list:*)",
+      "Bash(./bin/clonr:*)",
+      "Bash(task test:*)",
+      "Bash(task lint:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gofmt:*)",
+      "Bash(ls:*)"
     ]
   }
 }
