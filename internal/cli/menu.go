@@ -119,6 +119,7 @@ func NewMainMenu() MainMenuModel {
 		menuItem{title: "Remove Repository", description: "Remove repository from management", action: "remove"},
 		menuItem{title: "Update Repositories", description: "Pull latest changes", action: "update"},
 		menuItem{title: "Repository Status", description: "Show git status", action: "status"},
+		menuItem{title: "Show Diff", description: "View git diff", action: "diff"},
 		menuItem{title: "Repository Stats (Nerds)", description: "Show detailed statistics", action: "nerds"},
 		menuItem{title: "Configure", description: "Configure clonr settings", action: "configure"},
 		menuItem{title: "Start Server", description: "Start API server", action: "server"},
