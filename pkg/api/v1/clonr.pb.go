@@ -24,7 +24,7 @@ var File_v1_clonr_proto protoreflect.FileDescriptor
 
 const file_v1_clonr_proto_rawDesc = "" +
 	"\n" +
-	"\x0ev1/clonr.proto\x12\bclonr.v1\x1a\x0fv1/common.proto\x1a\x13v1/repository.proto\x1a\x0fv1/config.proto2\xc3\a\n" +
+	"\x0ev1/clonr.proto\x12\bclonr.v1\x1a\x0fv1/common.proto\x1a\x13v1/repository.proto\x1a\x0fv1/config.proto\x1a\x10v1/profile.proto2\x81\f\n" +
 	"\fClonrService\x12(\n" +
 	"\x04Ping\x12\x0f.clonr.v1.Empty\x1a\x0f.clonr.v1.Empty\x12A\n" +
 	"\bSaveRepo\x12\x19.clonr.v1.SaveRepoRequest\x1a\x1a.clonr.v1.SaveRepoResponse\x12V\n" +
@@ -38,7 +38,15 @@ const file_v1_clonr_proto_rawDesc = "" +
 	"\x0fRemoveRepoByURL\x12 .clonr.v1.RemoveRepoByURLRequest\x1a!.clonr.v1.RemoveRepoByURLResponse\x12D\n" +
 	"\tGetConfig\x12\x1a.clonr.v1.GetConfigRequest\x1a\x1b.clonr.v1.GetConfigResponse\x12G\n" +
 	"\n" +
-	"SaveConfig\x12\x1b.clonr.v1.SaveConfigRequest\x1a\x1c.clonr.v1.SaveConfigResponseB\x88\x01\n" +
+	"SaveConfig\x12\x1b.clonr.v1.SaveConfigRequest\x1a\x1c.clonr.v1.SaveConfigResponse\x12J\n" +
+	"\vSaveProfile\x12\x1c.clonr.v1.SaveProfileRequest\x1a\x1d.clonr.v1.SaveProfileResponse\x12G\n" +
+	"\n" +
+	"GetProfile\x12\x1b.clonr.v1.GetProfileRequest\x1a\x1c.clonr.v1.GetProfileResponse\x12Y\n" +
+	"\x10GetActiveProfile\x12!.clonr.v1.GetActiveProfileRequest\x1a\".clonr.v1.GetActiveProfileResponse\x12Y\n" +
+	"\x10SetActiveProfile\x12!.clonr.v1.SetActiveProfileRequest\x1a\".clonr.v1.SetActiveProfileResponse\x12M\n" +
+	"\fListProfiles\x12\x1d.clonr.v1.ListProfilesRequest\x1a\x1e.clonr.v1.ListProfilesResponse\x12P\n" +
+	"\rDeleteProfile\x12\x1e.clonr.v1.DeleteProfileRequest\x1a\x1f.clonr.v1.DeleteProfileResponse\x12P\n" +
+	"\rProfileExists\x12\x1e.clonr.v1.ProfileExistsRequest\x1a\x1f.clonr.v1.ProfileExistsResponseB\x88\x01\n" +
 	"\fcom.clonr.v1B\n" +
 	"ClonrProtoP\x01Z+github.com/inovacc/clonr/pkg/api/v1;clonrv1\xa2\x02\x03CXX\xaa\x02\bClonr.V1\xca\x02\bClonr\\V1\xe2\x02\x14Clonr\\V1\\GPBMetadata\xea\x02\tClonr::V1b\x06proto3"
 
@@ -55,17 +63,31 @@ var file_v1_clonr_proto_goTypes = []any{
 	(*RemoveRepoByURLRequest)(nil),        // 9: clonr.v1.RemoveRepoByURLRequest
 	(*GetConfigRequest)(nil),              // 10: clonr.v1.GetConfigRequest
 	(*SaveConfigRequest)(nil),             // 11: clonr.v1.SaveConfigRequest
-	(*SaveRepoResponse)(nil),              // 12: clonr.v1.SaveRepoResponse
-	(*RepoExistsByURLResponse)(nil),       // 13: clonr.v1.RepoExistsByURLResponse
-	(*RepoExistsByPathResponse)(nil),      // 14: clonr.v1.RepoExistsByPathResponse
-	(*InsertRepoIfNotExistsResponse)(nil), // 15: clonr.v1.InsertRepoIfNotExistsResponse
-	(*GetAllReposResponse)(nil),           // 16: clonr.v1.GetAllReposResponse
-	(*GetReposResponse)(nil),              // 17: clonr.v1.GetReposResponse
-	(*SetFavoriteResponse)(nil),           // 18: clonr.v1.SetFavoriteResponse
-	(*UpdateRepoTimestampResponse)(nil),   // 19: clonr.v1.UpdateRepoTimestampResponse
-	(*RemoveRepoByURLResponse)(nil),       // 20: clonr.v1.RemoveRepoByURLResponse
-	(*GetConfigResponse)(nil),             // 21: clonr.v1.GetConfigResponse
-	(*SaveConfigResponse)(nil),            // 22: clonr.v1.SaveConfigResponse
+	(*SaveProfileRequest)(nil),            // 12: clonr.v1.SaveProfileRequest
+	(*GetProfileRequest)(nil),             // 13: clonr.v1.GetProfileRequest
+	(*GetActiveProfileRequest)(nil),       // 14: clonr.v1.GetActiveProfileRequest
+	(*SetActiveProfileRequest)(nil),       // 15: clonr.v1.SetActiveProfileRequest
+	(*ListProfilesRequest)(nil),           // 16: clonr.v1.ListProfilesRequest
+	(*DeleteProfileRequest)(nil),          // 17: clonr.v1.DeleteProfileRequest
+	(*ProfileExistsRequest)(nil),          // 18: clonr.v1.ProfileExistsRequest
+	(*SaveRepoResponse)(nil),              // 19: clonr.v1.SaveRepoResponse
+	(*RepoExistsByURLResponse)(nil),       // 20: clonr.v1.RepoExistsByURLResponse
+	(*RepoExistsByPathResponse)(nil),      // 21: clonr.v1.RepoExistsByPathResponse
+	(*InsertRepoIfNotExistsResponse)(nil), // 22: clonr.v1.InsertRepoIfNotExistsResponse
+	(*GetAllReposResponse)(nil),           // 23: clonr.v1.GetAllReposResponse
+	(*GetReposResponse)(nil),              // 24: clonr.v1.GetReposResponse
+	(*SetFavoriteResponse)(nil),           // 25: clonr.v1.SetFavoriteResponse
+	(*UpdateRepoTimestampResponse)(nil),   // 26: clonr.v1.UpdateRepoTimestampResponse
+	(*RemoveRepoByURLResponse)(nil),       // 27: clonr.v1.RemoveRepoByURLResponse
+	(*GetConfigResponse)(nil),             // 28: clonr.v1.GetConfigResponse
+	(*SaveConfigResponse)(nil),            // 29: clonr.v1.SaveConfigResponse
+	(*SaveProfileResponse)(nil),           // 30: clonr.v1.SaveProfileResponse
+	(*GetProfileResponse)(nil),            // 31: clonr.v1.GetProfileResponse
+	(*GetActiveProfileResponse)(nil),      // 32: clonr.v1.GetActiveProfileResponse
+	(*SetActiveProfileResponse)(nil),      // 33: clonr.v1.SetActiveProfileResponse
+	(*ListProfilesResponse)(nil),          // 34: clonr.v1.ListProfilesResponse
+	(*DeleteProfileResponse)(nil),         // 35: clonr.v1.DeleteProfileResponse
+	(*ProfileExistsResponse)(nil),         // 36: clonr.v1.ProfileExistsResponse
 }
 var file_v1_clonr_proto_depIdxs = []int32{
 	0,  // 0: clonr.v1.ClonrService.Ping:input_type -> clonr.v1.Empty
@@ -80,20 +102,34 @@ var file_v1_clonr_proto_depIdxs = []int32{
 	9,  // 9: clonr.v1.ClonrService.RemoveRepoByURL:input_type -> clonr.v1.RemoveRepoByURLRequest
 	10, // 10: clonr.v1.ClonrService.GetConfig:input_type -> clonr.v1.GetConfigRequest
 	11, // 11: clonr.v1.ClonrService.SaveConfig:input_type -> clonr.v1.SaveConfigRequest
-	0,  // 12: clonr.v1.ClonrService.Ping:output_type -> clonr.v1.Empty
-	12, // 13: clonr.v1.ClonrService.SaveRepo:output_type -> clonr.v1.SaveRepoResponse
-	13, // 14: clonr.v1.ClonrService.RepoExistsByURL:output_type -> clonr.v1.RepoExistsByURLResponse
-	14, // 15: clonr.v1.ClonrService.RepoExistsByPath:output_type -> clonr.v1.RepoExistsByPathResponse
-	15, // 16: clonr.v1.ClonrService.InsertRepoIfNotExists:output_type -> clonr.v1.InsertRepoIfNotExistsResponse
-	16, // 17: clonr.v1.ClonrService.GetAllRepos:output_type -> clonr.v1.GetAllReposResponse
-	17, // 18: clonr.v1.ClonrService.GetRepos:output_type -> clonr.v1.GetReposResponse
-	18, // 19: clonr.v1.ClonrService.SetFavoriteByURL:output_type -> clonr.v1.SetFavoriteResponse
-	19, // 20: clonr.v1.ClonrService.UpdateRepoTimestamp:output_type -> clonr.v1.UpdateRepoTimestampResponse
-	20, // 21: clonr.v1.ClonrService.RemoveRepoByURL:output_type -> clonr.v1.RemoveRepoByURLResponse
-	21, // 22: clonr.v1.ClonrService.GetConfig:output_type -> clonr.v1.GetConfigResponse
-	22, // 23: clonr.v1.ClonrService.SaveConfig:output_type -> clonr.v1.SaveConfigResponse
-	12, // [12:24] is the sub-list for method output_type
-	0,  // [0:12] is the sub-list for method input_type
+	12, // 12: clonr.v1.ClonrService.SaveProfile:input_type -> clonr.v1.SaveProfileRequest
+	13, // 13: clonr.v1.ClonrService.GetProfile:input_type -> clonr.v1.GetProfileRequest
+	14, // 14: clonr.v1.ClonrService.GetActiveProfile:input_type -> clonr.v1.GetActiveProfileRequest
+	15, // 15: clonr.v1.ClonrService.SetActiveProfile:input_type -> clonr.v1.SetActiveProfileRequest
+	16, // 16: clonr.v1.ClonrService.ListProfiles:input_type -> clonr.v1.ListProfilesRequest
+	17, // 17: clonr.v1.ClonrService.DeleteProfile:input_type -> clonr.v1.DeleteProfileRequest
+	18, // 18: clonr.v1.ClonrService.ProfileExists:input_type -> clonr.v1.ProfileExistsRequest
+	0,  // 19: clonr.v1.ClonrService.Ping:output_type -> clonr.v1.Empty
+	19, // 20: clonr.v1.ClonrService.SaveRepo:output_type -> clonr.v1.SaveRepoResponse
+	20, // 21: clonr.v1.ClonrService.RepoExistsByURL:output_type -> clonr.v1.RepoExistsByURLResponse
+	21, // 22: clonr.v1.ClonrService.RepoExistsByPath:output_type -> clonr.v1.RepoExistsByPathResponse
+	22, // 23: clonr.v1.ClonrService.InsertRepoIfNotExists:output_type -> clonr.v1.InsertRepoIfNotExistsResponse
+	23, // 24: clonr.v1.ClonrService.GetAllRepos:output_type -> clonr.v1.GetAllReposResponse
+	24, // 25: clonr.v1.ClonrService.GetRepos:output_type -> clonr.v1.GetReposResponse
+	25, // 26: clonr.v1.ClonrService.SetFavoriteByURL:output_type -> clonr.v1.SetFavoriteResponse
+	26, // 27: clonr.v1.ClonrService.UpdateRepoTimestamp:output_type -> clonr.v1.UpdateRepoTimestampResponse
+	27, // 28: clonr.v1.ClonrService.RemoveRepoByURL:output_type -> clonr.v1.RemoveRepoByURLResponse
+	28, // 29: clonr.v1.ClonrService.GetConfig:output_type -> clonr.v1.GetConfigResponse
+	29, // 30: clonr.v1.ClonrService.SaveConfig:output_type -> clonr.v1.SaveConfigResponse
+	30, // 31: clonr.v1.ClonrService.SaveProfile:output_type -> clonr.v1.SaveProfileResponse
+	31, // 32: clonr.v1.ClonrService.GetProfile:output_type -> clonr.v1.GetProfileResponse
+	32, // 33: clonr.v1.ClonrService.GetActiveProfile:output_type -> clonr.v1.GetActiveProfileResponse
+	33, // 34: clonr.v1.ClonrService.SetActiveProfile:output_type -> clonr.v1.SetActiveProfileResponse
+	34, // 35: clonr.v1.ClonrService.ListProfiles:output_type -> clonr.v1.ListProfilesResponse
+	35, // 36: clonr.v1.ClonrService.DeleteProfile:output_type -> clonr.v1.DeleteProfileResponse
+	36, // 37: clonr.v1.ClonrService.ProfileExists:output_type -> clonr.v1.ProfileExistsResponse
+	19, // [19:38] is the sub-list for method output_type
+	0,  // [0:19] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name
 	0,  // [0:0] is the sub-list for extension extendee
 	0,  // [0:0] is the sub-list for field type_name
@@ -107,6 +143,7 @@ func file_v1_clonr_proto_init() {
 	file_v1_common_proto_init()
 	file_v1_repository_proto_init()
 	file_v1_config_proto_init()
+	file_v1_profile_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

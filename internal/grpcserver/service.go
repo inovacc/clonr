@@ -268,3 +268,136 @@ func (s *Service) SaveConfig(ctx context.Context, req *v1.SaveConfigRequest) (*v
 
 	return &v1.SaveConfigResponse{Success: true}, nil
 }
+
+// SaveProfile saves or updates a profile
+func (s *Service) SaveProfile(ctx context.Context, req *v1.SaveProfileRequest) (*v1.SaveProfileResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, status.Error(codes.Canceled, "request canceled")
+	}
+
+	if req.GetProfile() == nil {
+		return nil, status.Error(codes.InvalidArgument, "profile is required")
+	}
+
+	if req.GetProfile().GetName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "profile name is required")
+	}
+
+	profile := ProtoToModelProfile(req.GetProfile())
+	if err := s.db.SaveProfile(profile); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to save profile: %v", err)
+	}
+
+	return &v1.SaveProfileResponse{Success: true}, nil
+}
+
+// GetProfile retrieves a profile by name
+func (s *Service) GetProfile(ctx context.Context, req *v1.GetProfileRequest) (*v1.GetProfileResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, status.Error(codes.Canceled, "request canceled")
+	}
+
+	if req.GetName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "name is required")
+	}
+
+	profile, err := s.db.GetProfile(req.GetName())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get profile: %v", err)
+	}
+
+	if profile == nil {
+		return nil, status.Error(codes.NotFound, "profile not found")
+	}
+
+	return &v1.GetProfileResponse{Profile: ModelToProtoProfile(profile)}, nil
+}
+
+// GetActiveProfile retrieves the currently active profile
+func (s *Service) GetActiveProfile(ctx context.Context, _ *v1.GetActiveProfileRequest) (*v1.GetActiveProfileResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, status.Error(codes.Canceled, "request canceled")
+	}
+
+	profile, err := s.db.GetActiveProfile()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get active profile: %v", err)
+	}
+
+	return &v1.GetActiveProfileResponse{Profile: ModelToProtoProfile(profile)}, nil
+}
+
+// SetActiveProfile sets the active profile by name
+func (s *Service) SetActiveProfile(ctx context.Context, req *v1.SetActiveProfileRequest) (*v1.SetActiveProfileResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, status.Error(codes.Canceled, "request canceled")
+	}
+
+	if req.GetName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "name is required")
+	}
+
+	if err := s.db.SetActiveProfile(req.GetName()); err != nil {
+		if err.Error() == "profile not found" {
+			return nil, status.Error(codes.NotFound, "profile not found")
+		}
+
+		return nil, status.Errorf(codes.Internal, "failed to set active profile: %v", err)
+	}
+
+	return &v1.SetActiveProfileResponse{Success: true}, nil
+}
+
+// ListProfiles retrieves all profiles
+func (s *Service) ListProfiles(ctx context.Context, _ *v1.ListProfilesRequest) (*v1.ListProfilesResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, status.Error(codes.Canceled, "request canceled")
+	}
+
+	profiles, err := s.db.ListProfiles()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list profiles: %v", err)
+	}
+
+	protoProfiles := make([]*v1.Profile, len(profiles))
+	for i, profile := range profiles {
+		protoProfiles[i] = ModelToProtoProfile(&profile)
+	}
+
+	return &v1.ListProfilesResponse{Profiles: protoProfiles}, nil
+}
+
+// DeleteProfile removes a profile by name
+func (s *Service) DeleteProfile(ctx context.Context, req *v1.DeleteProfileRequest) (*v1.DeleteProfileResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, status.Error(codes.Canceled, "request canceled")
+	}
+
+	if req.GetName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "name is required")
+	}
+
+	if err := s.db.DeleteProfile(req.GetName()); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete profile: %v", err)
+	}
+
+	return &v1.DeleteProfileResponse{Success: true}, nil
+}
+
+// ProfileExists checks if a profile exists by name
+func (s *Service) ProfileExists(ctx context.Context, req *v1.ProfileExistsRequest) (*v1.ProfileExistsResponse, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, status.Error(codes.Canceled, "request canceled")
+	}
+
+	if req.GetName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "name is required")
+	}
+
+	exists, err := s.db.ProfileExists(req.GetName())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check profile existence: %v", err)
+	}
+
+	return &v1.ProfileExistsResponse{Exists: exists}, nil
+}

@@ -45,7 +45,7 @@ Examples:
 		jsonOutput, _ := cmd.Flags().GetBool("json")
 
 		// Resolve token
-		token, tokenSource, err := core.ResolveGitHubToken(token)
+		token, tokenSource, err := core.ResolveGitHubToken(token, "")
 		if err != nil {
 			return err
 		}

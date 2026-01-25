@@ -17,6 +17,7 @@ Clonr is a client-server tool for managing Git repositories efficiently. It uses
 - **Nerds**: Display statistics and metrics for all repositories.
 - **Reauthor**: Rewrite git history to change author/committer email and name.
 - **GitHub CLI Integration**: Interact with GitHub issues, PRs, actions, and releases directly from clonr.
+- **Profile Management**: Manage multiple GitHub authentication profiles with OAuth device flow and secure token storage.
 - **Client-Server Architecture**: Persistent gRPC server with centralized database, lightweight CLI client performs git operations locally.
 
 ## Installation
@@ -134,10 +135,41 @@ clonr                          # Interactive menu
 - `clonr reauthor --list`: List all unique author emails in the repository.
 - `clonr server start`: Start the gRPC server.
 - `clonr service`: Manage the server as a system service (install, uninstall, start, stop, status).
+- `clonr profile`: Manage GitHub authentication profiles (see below).
 - `clonr gh`: GitHub CLI integration (see below).
 - `clonr help`: Display help information.
 
 Use `clonr [command] --help` for more details on each command.
+
+### Profile Management
+
+Clonr supports multiple GitHub authentication profiles with secure token storage:
+
+```sh
+# Add a new profile (OAuth device flow)
+clonr profile add work                  # Opens browser for GitHub OAuth
+clonr profile add personal              # Create another profile
+
+# List all profiles
+clonr profile list                      # Shows all profiles with active marker
+
+# Switch active profile
+clonr profile use work                  # Set 'work' as active profile
+
+# View profile details
+clonr profile status                    # Show current profile info
+clonr profile status --validate         # Also validate token with GitHub API
+
+# Remove a profile
+clonr profile remove old-profile        # Delete a profile
+```
+
+**Features:**
+- **OAuth Device Flow**: Browser-based GitHub login (like `gh auth login`)
+- **Secure Storage**: Tokens stored in system keyring (macOS Keychain, Windows Credential Manager, Linux Secret Service)
+- **Encrypted Fallback**: AES-256-GCM encryption when keyring unavailable
+- **Multiple Profiles**: Switch between work/personal GitHub accounts
+- **Auto-detection**: Active profile token used automatically for `gh` commands
 
 ### GitHub CLI Integration
 
@@ -168,7 +200,8 @@ clonr gh release download --tag latest  # Download release assets
 
 **Features:**
 - **Auto-detection**: Commands auto-detect repository from current directory's git config
-- **Token resolution**: Automatically finds GitHub token from `GITHUB_TOKEN`, `GH_TOKEN`, or gh CLI config
+- **Profile support**: Use `--profile` flag to select a specific authentication profile
+- **Token resolution**: Finds GitHub token from (in order): `--token` flag, `--profile` flag, `GITHUB_TOKEN`, `GH_TOKEN`, active clonr profile, gh CLI config
 - **JSON output**: All commands support `--json` flag for scripting
 - **Filtering**: Rich filtering options for each command
 
@@ -437,6 +470,12 @@ clonr/
 │   ├── clone.go, list.go, reauthor.go, etc.  # Client commands
 │   ├── server.go                     # Server commands
 │   ├── service.go                    # Service management commands
+│   ├── profile.go                    # Profile parent command
+│   ├── profile_add.go                # Add profile with OAuth
+│   ├── profile_list.go               # List profiles
+│   ├── profile_use.go                # Set active profile
+│   ├── profile_remove.go             # Remove profile
+│   ├── profile_status.go             # Show profile info
 │   ├── gh.go                         # GitHub CLI parent command
 │   ├── gh_issues.go                  # GitHub issues commands
 │   ├── gh_pr.go                      # GitHub PR status command
@@ -444,7 +483,13 @@ clonr/
 │   └── gh_release.go                 # GitHub release commands
 ├── internal/
 │   ├── cli/                          # Bubbletea UI components
+│   │   └── profile_login.go          # OAuth TUI component
 │   ├── core/                         # Core business logic (uses gRPC client)
+│   │   ├── auth.go                   # Token resolution with profile support
+│   │   ├── profile.go                # Profile management logic
+│   │   ├── oauth.go                  # GitHub OAuth device flow
+│   │   ├── keyring.go                # Secure keyring storage
+│   │   ├── encrypt.go                # AES-256-GCM encryption fallback
 │   │   ├── issues.go                 # Issues logic (list, create)
 │   │   ├── gh_pr.go                  # PR status logic
 │   │   ├── gh_actions.go             # Actions workflow logic

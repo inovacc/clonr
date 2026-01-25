@@ -7,6 +7,7 @@ option go_package = "github.com/inovacc/clonr/pkg/api/v1";
 import "v1/common.proto";
 import "v1/repository.proto";
 import "v1/config.proto";
+import "v1/profile.proto";
 
 // ClonrService defines all database operations for Clonr
 service ClonrService {
@@ -27,4 +28,13 @@ service ClonrService {
   // Configuration operations
   rpc GetConfig(GetConfigRequest) returns (GetConfigResponse);
   rpc SaveConfig(SaveConfigRequest) returns (SaveConfigResponse);
+
+  // Profile operations
+  rpc SaveProfile(SaveProfileRequest) returns (SaveProfileResponse);
+  rpc GetProfile(GetProfileRequest) returns (GetProfileResponse);
+  rpc GetActiveProfile(GetActiveProfileRequest) returns (GetActiveProfileResponse);
+  rpc SetActiveProfile(SetActiveProfileRequest) returns (SetActiveProfileResponse);
+  rpc ListProfiles(ListProfilesRequest) returns (ListProfilesResponse);
+  rpc DeleteProfile(DeleteProfileRequest) returns (DeleteProfileResponse);
+  rpc ProfileExists(ProfileExistsRequest) returns (ProfileExistsResponse);
 }

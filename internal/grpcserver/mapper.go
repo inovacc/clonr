@@ -71,3 +71,41 @@ func ProtoToModelConfig(protoCfg *v1.Config) *model.Config {
 		ServerPort:      int(protoCfg.GetServerPort()),
 	}
 }
+
+// ModelToProtoProfile converts a model.Profile to a proto Profile
+func ModelToProtoProfile(profile *model.Profile) *v1.Profile {
+	if profile == nil {
+		return nil
+	}
+
+	return &v1.Profile{
+		Name:           profile.Name,
+		Host:           profile.Host,
+		User:           profile.User,
+		TokenStorage:   string(profile.TokenStorage),
+		Scopes:         profile.Scopes,
+		Active:         profile.Active,
+		EncryptedToken: profile.EncryptedToken,
+		CreatedAt:      timestamppb.New(profile.CreatedAt),
+		LastUsedAt:     timestamppb.New(profile.LastUsedAt),
+	}
+}
+
+// ProtoToModelProfile converts a proto Profile to a model.Profile
+func ProtoToModelProfile(protoProfile *v1.Profile) *model.Profile {
+	if protoProfile == nil {
+		return nil
+	}
+
+	return &model.Profile{
+		Name:           protoProfile.GetName(),
+		Host:           protoProfile.GetHost(),
+		User:           protoProfile.GetUser(),
+		TokenStorage:   model.TokenStorage(protoProfile.GetTokenStorage()),
+		Scopes:         protoProfile.GetScopes(),
+		Active:         protoProfile.GetActive(),
+		EncryptedToken: protoProfile.GetEncryptedToken(),
+		CreatedAt:      protoProfile.GetCreatedAt().AsTime(),
+		LastUsedAt:     protoProfile.GetLastUsedAt().AsTime(),
+	}
+}

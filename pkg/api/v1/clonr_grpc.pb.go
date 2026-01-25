@@ -31,6 +31,13 @@ const (
 	ClonrService_RemoveRepoByURL_FullMethodName       = "/clonr.v1.ClonrService/RemoveRepoByURL"
 	ClonrService_GetConfig_FullMethodName             = "/clonr.v1.ClonrService/GetConfig"
 	ClonrService_SaveConfig_FullMethodName            = "/clonr.v1.ClonrService/SaveConfig"
+	ClonrService_SaveProfile_FullMethodName           = "/clonr.v1.ClonrService/SaveProfile"
+	ClonrService_GetProfile_FullMethodName            = "/clonr.v1.ClonrService/GetProfile"
+	ClonrService_GetActiveProfile_FullMethodName      = "/clonr.v1.ClonrService/GetActiveProfile"
+	ClonrService_SetActiveProfile_FullMethodName      = "/clonr.v1.ClonrService/SetActiveProfile"
+	ClonrService_ListProfiles_FullMethodName          = "/clonr.v1.ClonrService/ListProfiles"
+	ClonrService_DeleteProfile_FullMethodName         = "/clonr.v1.ClonrService/DeleteProfile"
+	ClonrService_ProfileExists_FullMethodName         = "/clonr.v1.ClonrService/ProfileExists"
 )
 
 // ClonrServiceClient is the client API for ClonrService service.
@@ -54,6 +61,14 @@ type ClonrServiceClient interface {
 	// Configuration operations
 	GetConfig(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*GetConfigResponse, error)
 	SaveConfig(ctx context.Context, in *SaveConfigRequest, opts ...grpc.CallOption) (*SaveConfigResponse, error)
+	// Profile operations
+	SaveProfile(ctx context.Context, in *SaveProfileRequest, opts ...grpc.CallOption) (*SaveProfileResponse, error)
+	GetProfile(ctx context.Context, in *GetProfileRequest, opts ...grpc.CallOption) (*GetProfileResponse, error)
+	GetActiveProfile(ctx context.Context, in *GetActiveProfileRequest, opts ...grpc.CallOption) (*GetActiveProfileResponse, error)
+	SetActiveProfile(ctx context.Context, in *SetActiveProfileRequest, opts ...grpc.CallOption) (*SetActiveProfileResponse, error)
+	ListProfiles(ctx context.Context, in *ListProfilesRequest, opts ...grpc.CallOption) (*ListProfilesResponse, error)
+	DeleteProfile(ctx context.Context, in *DeleteProfileRequest, opts ...grpc.CallOption) (*DeleteProfileResponse, error)
+	ProfileExists(ctx context.Context, in *ProfileExistsRequest, opts ...grpc.CallOption) (*ProfileExistsResponse, error)
 }
 
 type clonrServiceClient struct {
@@ -184,6 +199,76 @@ func (c *clonrServiceClient) SaveConfig(ctx context.Context, in *SaveConfigReque
 	return out, nil
 }
 
+func (c *clonrServiceClient) SaveProfile(ctx context.Context, in *SaveProfileRequest, opts ...grpc.CallOption) (*SaveProfileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SaveProfileResponse)
+	err := c.cc.Invoke(ctx, ClonrService_SaveProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) GetProfile(ctx context.Context, in *GetProfileRequest, opts ...grpc.CallOption) (*GetProfileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProfileResponse)
+	err := c.cc.Invoke(ctx, ClonrService_GetProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) GetActiveProfile(ctx context.Context, in *GetActiveProfileRequest, opts ...grpc.CallOption) (*GetActiveProfileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetActiveProfileResponse)
+	err := c.cc.Invoke(ctx, ClonrService_GetActiveProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) SetActiveProfile(ctx context.Context, in *SetActiveProfileRequest, opts ...grpc.CallOption) (*SetActiveProfileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetActiveProfileResponse)
+	err := c.cc.Invoke(ctx, ClonrService_SetActiveProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) ListProfiles(ctx context.Context, in *ListProfilesRequest, opts ...grpc.CallOption) (*ListProfilesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListProfilesResponse)
+	err := c.cc.Invoke(ctx, ClonrService_ListProfiles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) DeleteProfile(ctx context.Context, in *DeleteProfileRequest, opts ...grpc.CallOption) (*DeleteProfileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteProfileResponse)
+	err := c.cc.Invoke(ctx, ClonrService_DeleteProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) ProfileExists(ctx context.Context, in *ProfileExistsRequest, opts ...grpc.CallOption) (*ProfileExistsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ProfileExistsResponse)
+	err := c.cc.Invoke(ctx, ClonrService_ProfileExists_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ClonrServiceServer is the server API for ClonrService service.
 // All implementations must embed UnimplementedClonrServiceServer
 // for forward compatibility.
@@ -205,6 +290,14 @@ type ClonrServiceServer interface {
 	// Configuration operations
 	GetConfig(context.Context, *GetConfigRequest) (*GetConfigResponse, error)
 	SaveConfig(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error)
+	// Profile operations
+	SaveProfile(context.Context, *SaveProfileRequest) (*SaveProfileResponse, error)
+	GetProfile(context.Context, *GetProfileRequest) (*GetProfileResponse, error)
+	GetActiveProfile(context.Context, *GetActiveProfileRequest) (*GetActiveProfileResponse, error)
+	SetActiveProfile(context.Context, *SetActiveProfileRequest) (*SetActiveProfileResponse, error)
+	ListProfiles(context.Context, *ListProfilesRequest) (*ListProfilesResponse, error)
+	DeleteProfile(context.Context, *DeleteProfileRequest) (*DeleteProfileResponse, error)
+	ProfileExists(context.Context, *ProfileExistsRequest) (*ProfileExistsResponse, error)
 	mustEmbedUnimplementedClonrServiceServer()
 }
 
@@ -250,6 +343,27 @@ func (UnimplementedClonrServiceServer) GetConfig(context.Context, *GetConfigRequ
 }
 func (UnimplementedClonrServiceServer) SaveConfig(context.Context, *SaveConfigRequest) (*SaveConfigResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SaveConfig not implemented")
+}
+func (UnimplementedClonrServiceServer) SaveProfile(context.Context, *SaveProfileRequest) (*SaveProfileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveProfile not implemented")
+}
+func (UnimplementedClonrServiceServer) GetProfile(context.Context, *GetProfileRequest) (*GetProfileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetProfile not implemented")
+}
+func (UnimplementedClonrServiceServer) GetActiveProfile(context.Context, *GetActiveProfileRequest) (*GetActiveProfileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetActiveProfile not implemented")
+}
+func (UnimplementedClonrServiceServer) SetActiveProfile(context.Context, *SetActiveProfileRequest) (*SetActiveProfileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetActiveProfile not implemented")
+}
+func (UnimplementedClonrServiceServer) ListProfiles(context.Context, *ListProfilesRequest) (*ListProfilesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListProfiles not implemented")
+}
+func (UnimplementedClonrServiceServer) DeleteProfile(context.Context, *DeleteProfileRequest) (*DeleteProfileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteProfile not implemented")
+}
+func (UnimplementedClonrServiceServer) ProfileExists(context.Context, *ProfileExistsRequest) (*ProfileExistsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ProfileExists not implemented")
 }
 func (UnimplementedClonrServiceServer) mustEmbedUnimplementedClonrServiceServer() {}
 func (UnimplementedClonrServiceServer) testEmbeddedByValue()                      {}
@@ -488,6 +602,132 @@ func _ClonrService_SaveConfig_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClonrService_SaveProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).SaveProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_SaveProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).SaveProfile(ctx, req.(*SaveProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_GetProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).GetProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_GetProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).GetProfile(ctx, req.(*GetProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_GetActiveProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetActiveProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).GetActiveProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_GetActiveProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).GetActiveProfile(ctx, req.(*GetActiveProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_SetActiveProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetActiveProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).SetActiveProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_SetActiveProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).SetActiveProfile(ctx, req.(*SetActiveProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_ListProfiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProfilesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).ListProfiles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_ListProfiles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).ListProfiles(ctx, req.(*ListProfilesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_DeleteProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).DeleteProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_DeleteProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).DeleteProfile(ctx, req.(*DeleteProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_ProfileExists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProfileExistsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).ProfileExists(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_ProfileExists_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).ProfileExists(ctx, req.(*ProfileExistsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ClonrService_ServiceDesc is the grpc.ServiceDesc for ClonrService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -542,6 +782,34 @@ var ClonrService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SaveConfig",
 			Handler:    _ClonrService_SaveConfig_Handler,
+		},
+		{
+			MethodName: "SaveProfile",
+			Handler:    _ClonrService_SaveProfile_Handler,
+		},
+		{
+			MethodName: "GetProfile",
+			Handler:    _ClonrService_GetProfile_Handler,
+		},
+		{
+			MethodName: "GetActiveProfile",
+			Handler:    _ClonrService_GetActiveProfile_Handler,
+		},
+		{
+			MethodName: "SetActiveProfile",
+			Handler:    _ClonrService_SetActiveProfile_Handler,
+		},
+		{
+			MethodName: "ListProfiles",
+			Handler:    _ClonrService_ListProfiles_Handler,
+		},
+		{
+			MethodName: "DeleteProfile",
+			Handler:    _ClonrService_DeleteProfile_Handler,
+		},
+		{
+			MethodName: "ProfileExists",
+			Handler:    _ClonrService_ProfileExists_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

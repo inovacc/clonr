@@ -29,7 +29,7 @@ func TestResolveGitHubToken_FlagPriority(t *testing.T) {
 	// Flag should have highest priority
 	flagToken := "test-flag-token"
 
-	token, source, err := ResolveGitHubToken(flagToken)
+	token, source, err := ResolveGitHubToken(flagToken, "")
 	if err != nil {
 		t.Fatalf("ResolveGitHubToken() error = %v", err)
 	}
@@ -48,7 +48,7 @@ func TestResolveGitHubToken_EnvGitHub(t *testing.T) {
 	t.Setenv("GITHUB_TOKEN", testToken)
 	t.Setenv("GH_TOKEN", "")
 
-	token, source, err := ResolveGitHubToken("")
+	token, source, err := ResolveGitHubToken("", "")
 	if err != nil {
 		t.Fatalf("ResolveGitHubToken() error = %v", err)
 	}
@@ -68,7 +68,7 @@ func TestResolveGitHubToken_EnvGH(t *testing.T) {
 	t.Setenv("GITHUB_TOKEN", "")
 	t.Setenv("GH_TOKEN", testToken)
 
-	token, source, err := ResolveGitHubToken("")
+	token, source, err := ResolveGitHubToken("", "")
 	if err != nil {
 		t.Fatalf("ResolveGitHubToken() error = %v", err)
 	}
@@ -86,7 +86,7 @@ func TestResolveGitHubToken_NoToken(t *testing.T) {
 	t.Setenv("GITHUB_TOKEN", "")
 	t.Setenv("GH_TOKEN", "")
 
-	token, source, err := ResolveGitHubToken("")
+	token, source, err := ResolveGitHubToken("", "")
 
 	// If no token from gh CLI, should return error
 	if token == "" && source == TokenSourceNone {
@@ -99,7 +99,7 @@ func TestResolveGitHubToken_NoToken(t *testing.T) {
 func TestResolveGitHubTokenForHost_FlagPriority(t *testing.T) {
 	flagToken := "test-host-flag-token"
 
-	token, source, err := ResolveGitHubTokenForHost(flagToken, "github.example.com")
+	token, source, err := ResolveGitHubTokenForHost(flagToken, "", "github.example.com")
 	if err != nil {
 		t.Fatalf("ResolveGitHubTokenForHost() error = %v", err)
 	}
@@ -118,7 +118,7 @@ func TestResolveGitHubTokenForHost_EnvVars(t *testing.T) {
 	t.Setenv("GITHUB_TOKEN", testToken)
 	t.Setenv("GH_TOKEN", "")
 
-	token, source, err := ResolveGitHubTokenForHost("", "github.example.com")
+	token, source, err := ResolveGitHubTokenForHost("", "", "github.example.com")
 	if err != nil {
 		t.Fatalf("ResolveGitHubTokenForHost() error = %v", err)
 	}
@@ -138,7 +138,7 @@ func TestResolveGitHubTokenForHost_GHToken(t *testing.T) {
 	t.Setenv("GITHUB_TOKEN", "")
 	t.Setenv("GH_TOKEN", testToken)
 
-	token, source, err := ResolveGitHubTokenForHost("", "github.example.com")
+	token, source, err := ResolveGitHubTokenForHost("", "", "github.example.com")
 	if err != nil {
 		t.Fatalf("ResolveGitHubTokenForHost() error = %v", err)
 	}
@@ -156,7 +156,7 @@ func TestResolveGitHubTokenForHost_NoToken(t *testing.T) {
 	t.Setenv("GITHUB_TOKEN", "")
 	t.Setenv("GH_TOKEN", "")
 
-	token, source, err := ResolveGitHubTokenForHost("", "nonexistent.host.example.com")
+	token, source, err := ResolveGitHubTokenForHost("", "", "nonexistent.host.example.com")
 
 	// If no token available, should return error
 	if token == "" && source == TokenSourceNone {

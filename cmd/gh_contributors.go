@@ -77,12 +77,13 @@ func init() {
 
 func runContributorsList(cmd *cobra.Command, args []string) error {
 	tokenFlag, _ := cmd.Flags().GetString("token")
+	profileFlag, _ := cmd.Flags().GetString("profile")
 	repoFlag, _ := cmd.Flags().GetString("repo")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 	limit, _ := cmd.Flags().GetInt("limit")
 
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag)
+	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
 	if err != nil {
 		return err
 	}
@@ -138,6 +139,7 @@ func runContributorsList(cmd *cobra.Command, args []string) error {
 
 func runContributorsJourney(cmd *cobra.Command, args []string) error {
 	tokenFlag, _ := cmd.Flags().GetString("token")
+	profileFlag, _ := cmd.Flags().GetString("profile")
 	repoFlag, _ := cmd.Flags().GetString("repo")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 	includeCommits, _ := cmd.Flags().GetBool("commits")
@@ -147,7 +149,7 @@ func runContributorsJourney(cmd *cobra.Command, args []string) error {
 	limit, _ := cmd.Flags().GetInt("limit")
 
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag)
+	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
 	if err != nil {
 		return err
 	}

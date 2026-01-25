@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var (
@@ -372,5 +373,161 @@ func modelToProtoConfig(cfg *model.Config) *v1.Config {
 		Terminal:        cfg.Terminal,
 		MonitorInterval: int32(cfg.MonitorInterval),
 		ServerPort:      int32(cfg.ServerPort),
+	}
+}
+
+// SaveProfile saves or updates a profile via gRPC
+func (c *Client) SaveProfile(profile *model.Profile) error {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.SaveProfile(ctx, &v1.SaveProfileRequest{
+		Profile: modelToProtoProfile(profile),
+	})
+	if err != nil {
+		return handleGRPCError(err)
+	}
+
+	if !resp.GetSuccess() {
+		return fmt.Errorf("operation failed")
+	}
+
+	return nil
+}
+
+// GetProfile retrieves a profile by name
+func (c *Client) GetProfile(name string) (*model.Profile, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.GetProfile(ctx, &v1.GetProfileRequest{
+		Name: name,
+	})
+	if err != nil {
+		return nil, handleGRPCError(err)
+	}
+
+	return protoToModelProfile(resp.GetProfile()), nil
+}
+
+// GetActiveProfile retrieves the currently active profile
+func (c *Client) GetActiveProfile() (*model.Profile, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.GetActiveProfile(ctx, &v1.GetActiveProfileRequest{})
+	if err != nil {
+		return nil, handleGRPCError(err)
+	}
+
+	return protoToModelProfile(resp.GetProfile()), nil
+}
+
+// SetActiveProfile sets the active profile by name
+func (c *Client) SetActiveProfile(name string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.SetActiveProfile(ctx, &v1.SetActiveProfileRequest{
+		Name: name,
+	})
+	if err != nil {
+		return handleGRPCError(err)
+	}
+
+	if !resp.GetSuccess() {
+		return fmt.Errorf("operation failed")
+	}
+
+	return nil
+}
+
+// ListProfiles retrieves all profiles
+func (c *Client) ListProfiles() ([]model.Profile, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.ListProfiles(ctx, &v1.ListProfilesRequest{})
+	if err != nil {
+		return nil, handleGRPCError(err)
+	}
+
+	profiles := make([]model.Profile, len(resp.GetProfiles()))
+	for i, pr := range resp.GetProfiles() {
+		profiles[i] = *protoToModelProfile(pr)
+	}
+
+	return profiles, nil
+}
+
+// DeleteProfile removes a profile by name
+func (c *Client) DeleteProfile(name string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.DeleteProfile(ctx, &v1.DeleteProfileRequest{
+		Name: name,
+	})
+	if err != nil {
+		return handleGRPCError(err)
+	}
+
+	if !resp.GetSuccess() {
+		return fmt.Errorf("operation failed")
+	}
+
+	return nil
+}
+
+// ProfileExists checks if a profile exists by name
+func (c *Client) ProfileExists(name string) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.ProfileExists(ctx, &v1.ProfileExistsRequest{
+		Name: name,
+	})
+	if err != nil {
+		return false, handleGRPCError(err)
+	}
+
+	return resp.GetExists(), nil
+}
+
+// protoToModelProfile converts a proto Profile to model.Profile
+func protoToModelProfile(pr *v1.Profile) *model.Profile {
+	if pr == nil {
+		return nil
+	}
+
+	return &model.Profile{
+		Name:           pr.GetName(),
+		Host:           pr.GetHost(),
+		User:           pr.GetUser(),
+		TokenStorage:   model.TokenStorage(pr.GetTokenStorage()),
+		Scopes:         pr.GetScopes(),
+		Active:         pr.GetActive(),
+		EncryptedToken: pr.GetEncryptedToken(),
+		CreatedAt:      pr.GetCreatedAt().AsTime(),
+		LastUsedAt:     pr.GetLastUsedAt().AsTime(),
+	}
+}
+
+// modelToProtoProfile converts a model.Profile to proto Profile
+func modelToProtoProfile(profile *model.Profile) *v1.Profile {
+	if profile == nil {
+		return nil
+	}
+
+	return &v1.Profile{
+		Name:           profile.Name,
+		Host:           profile.Host,
+		User:           profile.User,
+		TokenStorage:   string(profile.TokenStorage),
+		Scopes:         profile.Scopes,
+		Active:         profile.Active,
+		EncryptedToken: profile.EncryptedToken,
+		CreatedAt:      timestamppb.New(profile.CreatedAt),
+		LastUsedAt:     timestamppb.New(profile.LastUsedAt),
 	}
 }

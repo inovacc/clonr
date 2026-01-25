@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package clonr.v1;
+
+option go_package = "github.com/inovacc/clonr/pkg/api/v1";
+
+import "google/protobuf/timestamp.proto";
+
+// Profile represents a GitHub authentication profile
+message Profile {
+  string name = 1;
+  string host = 2;
+  string user = 3;
+  string token_storage = 4;
+  repeated string scopes = 5;
+  bool active = 6;
+  bytes encrypted_token = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp last_used_at = 9;
+}
+
+// SaveProfile RPC messages
+message SaveProfileRequest {
+  Profile profile = 1;
+}
+
+message SaveProfileResponse {
+  bool success = 1;
+}
+
+// GetProfile RPC messages
+message GetProfileRequest {
+  string name = 1;
+}
+
+message GetProfileResponse {
+  Profile profile = 1;
+}
+
+// GetActiveProfile RPC messages
+message GetActiveProfileRequest {}
+
+message GetActiveProfileResponse {
+  Profile profile = 1;
+}
+
+// SetActiveProfile RPC messages
+message SetActiveProfileRequest {
+  string name = 1;
+}
+
+message SetActiveProfileResponse {
+  bool success = 1;
+}
+
+// ListProfiles RPC messages
+message ListProfilesRequest {}
+
+message ListProfilesResponse {
+  repeated Profile profiles = 1;
+}
+
+// DeleteProfile RPC messages
+message DeleteProfileRequest {
+  string name = 1;
+}
+
+message DeleteProfileResponse {
+  bool success = 1;
+}
+
+// ProfileExists RPC messages
+message ProfileExistsRequest {
+  string name = 1;
+}
+
+message ProfileExistsResponse {
+  bool exists = 1;
+}

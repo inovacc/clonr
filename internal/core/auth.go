@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/cli/go-gh/v2/pkg/auth"
+	"github.com/inovacc/clonr/internal/grpcclient"
+	"github.com/inovacc/clonr/internal/model"
 )
 
 // TokenSource indicates where the token was found
@@ -12,6 +14,7 @@ type TokenSource string
 
 const (
 	TokenSourceFlag      TokenSource = "flag"
+	TokenSourceProfile   TokenSource = "profile"
 	TokenSourceEnvGitHub TokenSource = "GITHUB_TOKEN"
 	TokenSourceEnvGH     TokenSource = "GH_TOKEN"
 	TokenSourceGHCLI     TokenSource = "gh-cli"
@@ -21,66 +24,139 @@ const (
 // ResolveGitHubToken attempts to find a GitHub token from multiple sources.
 // Priority order:
 //  1. flagToken (explicit --token flag)
-//  2. GITHUB_TOKEN environment variable
-//  3. GH_TOKEN environment variable
-//  4. gh CLI auth (keyring + config file)
-func ResolveGitHubToken(flagToken string) (token string, source TokenSource, err error) {
+//  2. profileName (explicit --profile flag)
+//  3. GITHUB_TOKEN environment variable
+//  4. GH_TOKEN environment variable
+//  5. Active clonr profile token
+//  6. gh CLI auth (keyring + config file)
+func ResolveGitHubToken(flagToken, profileName string) (token string, source TokenSource, err error) {
+	return ResolveGitHubTokenForHost(flagToken, profileName, "github.com")
+}
+
+// ResolveGitHubTokenForHost resolves token for a specific host (enterprise support).
+// Priority order:
+//  1. flagToken (explicit --token flag)
+//  2. profileName (explicit --profile flag)
+//  3. GITHUB_TOKEN environment variable
+//  4. GH_TOKEN environment variable
+//  5. Active clonr profile token
+//  6. gh CLI auth for the specific host
+func ResolveGitHubTokenForHost(flagToken, profileName, host string) (token string, source TokenSource, err error) {
 	// 1. Flag has highest priority
 	if flagToken != "" {
 		return flagToken, TokenSourceFlag, nil
 	}
 
-	// 2. Check GITHUB_TOKEN env var
+	// 2. Explicit profile flag
+	if profileName != "" {
+		token, err = getProfileToken(profileName, host)
+		if err == nil && token != "" {
+			return token, TokenSourceProfile, nil
+		}
+		// If profile specified but token retrieval failed, return error
+		if err != nil {
+			return "", TokenSourceNone, fmt.Errorf("failed to get token from profile '%s': %w", profileName, err)
+		}
+	}
+
+	// 3. Check GITHUB_TOKEN env var
 	if token = os.Getenv("GITHUB_TOKEN"); token != "" {
 		return token, TokenSourceEnvGitHub, nil
 	}
 
-	// 3. Check GH_TOKEN env var
+	// 4. Check GH_TOKEN env var
 	if token = os.Getenv("GH_TOKEN"); token != "" {
 		return token, TokenSourceEnvGH, nil
 	}
 
-	// 4. Try gh CLI auth (keyring + config file)
-	if token, _ = auth.TokenForHost("github.com"); token != "" {
+	// 5. Try active clonr profile
+	token, err = getActiveProfileToken(host)
+	if err == nil && token != "" {
+		return token, TokenSourceProfile, nil
+	}
+
+	// 6. Try gh CLI auth (keyring + config file)
+	if token, _ = auth.TokenForHost(host); token != "" {
 		return token, TokenSourceGHCLI, nil
 	}
 
-	// 5. No token found
+	// No token found
 	return "", TokenSourceNone, fmt.Errorf(`GitHub token required
 
 Provide a token via one of:
-  * gh auth login          (recommended - auto-detected)
+  * clonr profile add <name>  (recommended - creates a profile with OAuth)
+  * gh auth login             (auto-detected from gh CLI)
   * GITHUB_TOKEN env var
   * --token flag
 
 Create a token at: https://github.com/settings/tokens`)
 }
 
-// ResolveGitHubTokenForHost resolves token for a specific host (enterprise support).
-// Priority order:
-//  1. flagToken (explicit --token flag)
-//  2. GITHUB_TOKEN environment variable
-//  3. GH_TOKEN environment variable
-//  4. gh CLI auth for the specific host
-func ResolveGitHubTokenForHost(flagToken, host string) (token string, source TokenSource, err error) {
-	// 1. Flag has highest priority
-	if flagToken != "" {
-		return flagToken, TokenSourceFlag, nil
+// getProfileToken retrieves a token from a specific profile
+func getProfileToken(profileName, host string) (string, error) {
+	client, err := grpcclient.GetClient()
+	if err != nil {
+		return "", err
 	}
 
-	// 2. Check environment variables
-	if token = os.Getenv("GITHUB_TOKEN"); token != "" {
-		return token, TokenSourceEnvGitHub, nil
+	profile, err := client.GetProfile(profileName)
+	if err != nil {
+		return "", err
 	}
 
-	if token = os.Getenv("GH_TOKEN"); token != "" {
-		return token, TokenSourceEnvGH, nil
+	if profile == nil {
+		return "", ErrProfileNotFound
 	}
 
-	// 3. Try gh CLI auth for specific host
-	if token, _ = auth.TokenForHost(host); token != "" {
-		return token, TokenSourceGHCLI, nil
+	// Check host matches
+	if host != "" && host != "github.com" && profile.Host != host {
+		return "", fmt.Errorf("profile '%s' is for host '%s', not '%s'", profileName, profile.Host, host)
 	}
 
-	return "", TokenSourceNone, fmt.Errorf("no GitHub token found for host: %s", host)
+	return tokenFromProfile(profile)
+}
+
+// getActiveProfileToken retrieves the token from the active profile
+func getActiveProfileToken(host string) (string, error) {
+	client, err := grpcclient.GetClient()
+	if err != nil {
+		// Server not running, skip profile token
+		return "", nil
+	}
+
+	profile, err := client.GetActiveProfile()
+	if err != nil {
+		return "", nil
+	}
+
+	if profile == nil {
+		return "", nil
+	}
+
+	// Check host matches (for enterprise support)
+	if host != "" && host != "github.com" && profile.Host != host {
+		return "", nil
+	}
+
+	return tokenFromProfile(profile)
+}
+
+// tokenFromProfile retrieves token based on storage type
+func tokenFromProfile(profile *model.Profile) (string, error) {
+	if profile == nil {
+		return "", ErrTokenNotFound
+	}
+
+	switch profile.TokenStorage {
+	case model.TokenStorageKeyring:
+		return GetToken(profile.Name, profile.Host)
+	case model.TokenStorageInsecure:
+		if len(profile.EncryptedToken) == 0 {
+			return "", ErrTokenNotFound
+		}
+
+		return DecryptToken(profile.EncryptedToken, profile.Name, profile.Host)
+	default:
+		return "", ErrTokenNotFound
+	}
 }

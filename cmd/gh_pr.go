@@ -62,6 +62,7 @@ func init() {
 func runPRStatus(cmd *cobra.Command, args []string) error {
 	// Get flags
 	tokenFlag, _ := cmd.Flags().GetString("token")
+	profileFlag, _ := cmd.Flags().GetString("profile")
 	repoFlag, _ := cmd.Flags().GetString("repo")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 	state, _ := cmd.Flags().GetString("state")
@@ -72,7 +73,7 @@ func runPRStatus(cmd *cobra.Command, args []string) error {
 	limit, _ := cmd.Flags().GetInt("limit")
 
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag)
+	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
 	if err != nil {
 		return err
 	}

@@ -122,6 +122,7 @@ func NewMainMenu() MainMenuModel {
 		menuItem{title: "Show Diff", description: "View git diff", action: "diff"},
 		menuItem{title: "Repository Stats (Nerds)", description: "Show detailed statistics", action: "nerds"},
 		menuItem{title: "Configure", description: "Configure clonr settings", action: "configure"},
+		menuItem{title: "Manage Profiles", description: "GitHub authentication profiles", action: "profile"},
 		menuItem{title: "Start Server", description: "Start API server", action: "server"},
 		menuItem{title: "Exit", description: "Exit clonr", action: "exit"},
 	}

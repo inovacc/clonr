@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	boltBucketRepos  = "repos"  // key: URL -> Repository JSON
-	boltBucketPaths  = "paths"  // key: Path -> URL string
-	boltBucketConfig = "config" // key: "config" -> Config JSON
+	boltBucketRepos    = "repos"    // key: URL -> Repository JSON
+	boltBucketPaths    = "paths"    // key: Path -> URL string
+	boltBucketConfig   = "config"   // key: "config" -> Config JSON
+	boltBucketProfiles = "profiles" // key: name -> Profile JSON
 )
 
 type Bolt struct {
@@ -43,6 +44,10 @@ func NewBolt(path string) (*Bolt, error) {
 		}
 
 		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketConfig)); err != nil {
+			return err
+		}
+
+		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketProfiles)); err != nil {
 			return err
 		}
 
@@ -79,6 +84,10 @@ func initDB() (Store, error) {
 		}
 
 		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketConfig)); err != nil {
+			return err
+		}
+
+		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketProfiles)); err != nil {
 			return err
 		}
 
@@ -366,4 +375,160 @@ func (b *Bolt) SaveConfig(cfg *model.Config) error {
 
 		return bucket.Put([]byte("config"), data)
 	})
+}
+
+// SaveProfile saves or updates a profile
+func (b *Bolt) SaveProfile(profile *model.Profile) error {
+	if profile == nil {
+		return errors.New("profile is required")
+	}
+
+	if profile.Name == "" {
+		return errors.New("profile name is required")
+	}
+
+	data, err := json.Marshal(profile)
+	if err != nil {
+		return err
+	}
+
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketProfiles))
+
+		return bucket.Put([]byte(profile.Name), data)
+	})
+}
+
+// GetProfile retrieves a profile by name
+func (b *Bolt) GetProfile(name string) (*model.Profile, error) {
+	var profile *model.Profile
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketProfiles))
+		v := bucket.Get([]byte(name))
+
+		if v == nil {
+			return nil
+		}
+
+		var p model.Profile
+		if err := json.Unmarshal(v, &p); err != nil {
+			return err
+		}
+
+		profile = &p
+
+		return nil
+	})
+
+	return profile, err
+}
+
+// GetActiveProfile retrieves the currently active profile
+func (b *Bolt) GetActiveProfile() (*model.Profile, error) {
+	var profile *model.Profile
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketProfiles))
+
+		return bucket.ForEach(func(k, v []byte) error {
+			var p model.Profile
+			if err := json.Unmarshal(v, &p); err != nil {
+				return err
+			}
+
+			if p.Active {
+				profile = &p
+
+				return nil
+			}
+
+			return nil
+		})
+	})
+
+	return profile, err
+}
+
+// SetActiveProfile sets the active profile by name
+func (b *Bolt) SetActiveProfile(name string) error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketProfiles))
+
+		// First, verify the profile exists
+		v := bucket.Get([]byte(name))
+		if v == nil {
+			return errors.New("profile not found")
+		}
+
+		// Deactivate all profiles and activate the specified one
+		if err := bucket.ForEach(func(k, val []byte) error {
+			var p model.Profile
+			if err := json.Unmarshal(val, &p); err != nil {
+				return err
+			}
+
+			p.Active = string(k) == name
+
+			if p.Active {
+				p.LastUsedAt = time.Now()
+			}
+
+			data, err := json.Marshal(&p)
+			if err != nil {
+				return err
+			}
+
+			return bucket.Put(k, data)
+		}); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+// ListProfiles retrieves all profiles
+func (b *Bolt) ListProfiles() ([]model.Profile, error) {
+	var profiles []model.Profile
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketProfiles))
+
+		return bucket.ForEach(func(k, v []byte) error {
+			var p model.Profile
+			if err := json.Unmarshal(v, &p); err != nil {
+				return err
+			}
+
+			profiles = append(profiles, p)
+
+			return nil
+		})
+	})
+
+	return profiles, err
+}
+
+// DeleteProfile removes a profile by name
+func (b *Bolt) DeleteProfile(name string) error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketProfiles))
+
+		return bucket.Delete([]byte(name))
+	})
+}
+
+// ProfileExists checks if a profile exists by name
+func (b *Bolt) ProfileExists(name string) (bool, error) {
+	var exists bool
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketProfiles))
+		exists = bucket.Get([]byte(name)) != nil
+
+		return nil
+	})
+
+	return exists, err
 }

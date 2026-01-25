@@ -24,10 +24,31 @@ Commands automatically detect the repository from:
 ### Authentication
 
 Token resolution priority:
-1. `--token` flag
-2. `GITHUB_TOKEN` environment variable
-3. `GH_TOKEN` environment variable
-4. `gh` CLI configuration file (`~/.config/gh/hosts.yml`)
+1. `--token` flag (explicit token)
+2. `--profile` flag (use token from specified clonr profile)
+3. `GITHUB_TOKEN` environment variable
+4. `GH_TOKEN` environment variable
+5. Active clonr profile token (if set via `clonr profile use`)
+6. `gh` CLI configuration file (`~/.config/gh/hosts.yml`)
+
+#### Using Profiles
+
+Clonr supports multiple GitHub authentication profiles for switching between accounts:
+
+```sh
+# Create profiles
+clonr profile add work       # OAuth flow for work account
+clonr profile add personal   # OAuth flow for personal account
+
+# Set active profile (used automatically)
+clonr profile use work
+
+# Or specify per-command
+clonr gh issues list --profile personal
+clonr gh pr status --profile work
+```
+
+See `clonr profile --help` for more details.
 
 ### Output Formats
 
@@ -39,6 +60,7 @@ Token resolution priority:
 | Flag | Description |
 |------|-------------|
 | `--token` | GitHub token (default: auto-detect) |
+| `--profile` | Use token from specified clonr profile |
 | `--repo` | Repository in owner/repo format |
 | `--json` | Output as JSON |
 
@@ -343,10 +365,13 @@ Commands automatically handle GitHub API rate limits with exponential backoff. I
 If authentication fails, ensure you have a valid GitHub token configured:
 
 ```sh
-# Set via environment variable
+# Option 1: Create a clonr profile (recommended)
+clonr profile add myprofile   # Opens browser for OAuth
+
+# Option 2: Set via environment variable
 export GITHUB_TOKEN=ghp_xxxxxxxxxxxx
 
-# Or use gh CLI to authenticate
+# Option 3: Use gh CLI to authenticate
 gh auth login
 ```
 
@@ -383,8 +408,20 @@ The GitHub CLI integration uses:
 | `cmd/gh_pr.go` | PR status command |
 | `cmd/gh_actions.go` | Actions status command |
 | `cmd/gh_release.go` | Release list, create, download commands |
+| `cmd/profile.go` | Profile parent command |
+| `cmd/profile_add.go` | Add profile with OAuth |
+| `cmd/profile_list.go` | List all profiles |
+| `cmd/profile_use.go` | Set active profile |
+| `cmd/profile_remove.go` | Remove a profile |
+| `cmd/profile_status.go` | Show profile info |
+| `internal/core/auth.go` | Token resolution with profile support |
+| `internal/core/profile.go` | Profile management logic |
+| `internal/core/oauth.go` | GitHub OAuth device flow |
+| `internal/core/keyring.go` | Secure keyring storage |
+| `internal/core/encrypt.go` | AES-256-GCM encryption fallback |
 | `internal/core/issues.go` | Issues business logic |
 | `internal/core/gh_pr.go` | PR status logic |
 | `internal/core/gh_actions.go` | Actions workflow logic |
 | `internal/core/gh_release.go` | Release management logic |
 | `internal/core/common.go` | DetectRepository and parseGitHubURL helpers |
+| `internal/cli/profile_login.go` | OAuth TUI component |

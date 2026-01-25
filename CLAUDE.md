@@ -105,6 +105,7 @@ The project heavily uses [Bubbletea](https://github.com/charmbracelet/bubbletea)
 - `internal/cli/configure.go` - Configuration wizard with form navigation
 - `internal/cli/repolist.go` - Repository list with filtering and actions
 - `internal/cli/clone.go` - Clone progress UI
+- `internal/cli/profile_login.go` - OAuth device flow TUI
 
 All Bubbletea models follow the standard Init/Update/View pattern. When implementing new TUIs:
 
@@ -131,16 +132,28 @@ clonr/
 │   ├── root.go                       # Root command
 │   ├── clone.go, list.go, etc.      # Client commands
 │   ├── server.go                     # Server commands (clonr server start)
-│   └── service.go                    # Service management (clonr service --install)
+│   ├── service.go                    # Service management (clonr service --install)
+│   ├── profile.go                    # Profile parent command
+│   ├── profile_add.go                # Add profile with OAuth
+│   ├── profile_list.go               # List profiles
+│   ├── profile_use.go                # Set active profile
+│   ├── profile_remove.go             # Remove profile
+│   └── profile_status.go             # Show profile info
 ├── docs/                             # Project documentation
 │   ├── GRPC_IMPLEMENTATION_GUIDE.md  # gRPC implementation details
 │   ├── ROADMAP.md                    # Project roadmap
 │   └── ...                           # Other documentation
 ├── internal/
 │   ├── cli/                          # Bubbletea TUI components
+│   │   └── profile_login.go          # OAuth device flow TUI
 │   ├── core/                         # Business logic (uses gRPC client)
+│   │   ├── auth.go                   # Token resolution with profile support
+│   │   ├── profile.go                # Profile management logic
+│   │   ├── oauth.go                  # GitHub OAuth device flow
+│   │   ├── keyring.go                # Secure keyring storage
+│   │   └── encrypt.go                # AES-256-GCM encryption fallback
 │   ├── database/                     # Database abstraction (server-side)
-│   ├── model/                        # Data models (Repository, Config)
+│   ├── model/                        # Data models (Repository, Config, Profile)
 │   ├── grpcserver/                   # gRPC server implementation
 │   │   ├── server.go                 # Server setup
 │   │   ├── serverinfo.go             # Server info file & PID checking

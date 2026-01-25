@@ -23,6 +23,15 @@ type Store interface {
 	RemoveRepoByURL(u *url.URL) error
 	GetConfig() (*model.Config, error)
 	SaveConfig(cfg *model.Config) error
+
+	// Profile operations
+	SaveProfile(profile *model.Profile) error
+	GetProfile(name string) (*model.Profile, error)
+	GetActiveProfile() (*model.Profile, error)
+	SetActiveProfile(name string) error
+	ListProfiles() ([]model.Profile, error)
+	DeleteProfile(name string) error
+	ProfileExists(name string) (bool, error)
 }
 
 var (

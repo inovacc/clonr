@@ -101,6 +101,7 @@ func init() {
 func runReleaseList(cmd *cobra.Command, args []string) error {
 	// Get flags
 	tokenFlag, _ := cmd.Flags().GetString("token")
+	profileFlag, _ := cmd.Flags().GetString("profile")
 	repoFlag, _ := cmd.Flags().GetString("repo")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 	limit, _ := cmd.Flags().GetInt("limit")
@@ -112,7 +113,7 @@ func runReleaseList(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag)
+	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
 	if err != nil {
 		return err
 	}
@@ -161,6 +162,7 @@ func runReleaseList(cmd *cobra.Command, args []string) error {
 func runReleaseCreate(cmd *cobra.Command, args []string) error {
 	// Get flags
 	tokenFlag, _ := cmd.Flags().GetString("token")
+	profileFlag, _ := cmd.Flags().GetString("profile")
 	repoFlag, _ := cmd.Flags().GetString("repo")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 	title, _ := cmd.Flags().GetString("title")
@@ -198,7 +200,7 @@ func runReleaseCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag)
+	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
 	if err != nil {
 		return err
 	}
@@ -258,6 +260,7 @@ func runReleaseCreate(cmd *cobra.Command, args []string) error {
 func runReleaseDownload(cmd *cobra.Command, args []string) error {
 	// Get flags
 	tokenFlag, _ := cmd.Flags().GetString("token")
+	profileFlag, _ := cmd.Flags().GetString("profile")
 	repoFlag, _ := cmd.Flags().GetString("repo")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 	tag, _ := cmd.Flags().GetString("tag")
@@ -271,7 +274,7 @@ func runReleaseDownload(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag)
+	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
 	if err != nil {
 		return err
 	}

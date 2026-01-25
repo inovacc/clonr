@@ -107,6 +107,7 @@ func init() {
 func runIssuesList(cmd *cobra.Command, args []string) error {
 	// Get flags
 	tokenFlag, _ := cmd.Flags().GetString("token")
+	profileFlag, _ := cmd.Flags().GetString("profile")
 	repoFlag, _ := cmd.Flags().GetString("repo")
 	outputJson, _ := cmd.Flags().GetBool("json")
 	state, _ := cmd.Flags().GetString("state")
@@ -124,7 +125,7 @@ func runIssuesList(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag)
+	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
 	if err != nil {
 		return err
 	}
@@ -212,6 +213,7 @@ func runIssuesList(cmd *cobra.Command, args []string) error {
 func runIssuesCreate(cmd *cobra.Command, args []string) error {
 	// Get flags
 	tokenFlag, _ := cmd.Flags().GetString("token")
+	profileFlag, _ := cmd.Flags().GetString("profile")
 	repoFlag, _ := cmd.Flags().GetString("repo")
 	outputJson, _ := cmd.Flags().GetBool("json")
 	title, _ := cmd.Flags().GetString("title")
@@ -231,7 +233,7 @@ func runIssuesCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag)
+	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
 	if err != nil {
 		return err
 	}
@@ -285,6 +287,7 @@ func runIssuesCreate(cmd *cobra.Command, args []string) error {
 func runIssuesClose(cmd *cobra.Command, args []string) error {
 	// Get flags
 	tokenFlag, _ := cmd.Flags().GetString("token")
+	profileFlag, _ := cmd.Flags().GetString("profile")
 	repoFlag, _ := cmd.Flags().GetString("repo")
 	outputJson, _ := cmd.Flags().GetBool("json")
 	comment, _ := cmd.Flags().GetString("comment")
@@ -306,7 +309,7 @@ func runIssuesClose(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag)
+	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
 	if err != nil {
 		return err
 	}

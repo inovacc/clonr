@@ -61,6 +61,7 @@ func init() {
 func runActionsStatus(cmd *cobra.Command, args []string) error {
 	// Get flags
 	tokenFlag, _ := cmd.Flags().GetString("token")
+	profileFlag, _ := cmd.Flags().GetString("profile")
 	repoFlag, _ := cmd.Flags().GetString("repo")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 	branch, _ := cmd.Flags().GetString("branch")
@@ -71,7 +72,7 @@ func runActionsStatus(cmd *cobra.Command, args []string) error {
 	includeJobs, _ := cmd.Flags().GetBool("jobs")
 
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag)
+	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
 	if err != nil {
 		return err
 	}

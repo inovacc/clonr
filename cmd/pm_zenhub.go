@@ -272,7 +272,7 @@ func runZenHubBoard(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve GitHub token for repo ID lookup
-	ghToken, _, err := core.ResolveGitHubToken(ghTokenFlag)
+	ghToken, _, err := core.ResolveGitHubToken(ghTokenFlag, "")
 	if err != nil {
 		return fmt.Errorf("GitHub token required for repository ID lookup: %w", err)
 	}
@@ -382,7 +382,7 @@ func runZenHubEpics(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve GitHub token
-	ghToken, _, err := core.ResolveGitHubToken(ghTokenFlag)
+	ghToken, _, err := core.ResolveGitHubToken(ghTokenFlag, "")
 	if err != nil {
 		return fmt.Errorf("GitHub token required for repository ID lookup: %w", err)
 	}
@@ -488,7 +488,7 @@ func runZenHubIssue(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve GitHub token
-	ghToken, _, err := core.ResolveGitHubToken(ghTokenFlag)
+	ghToken, _, err := core.ResolveGitHubToken(ghTokenFlag, "")
 	if err != nil {
 		return fmt.Errorf("GitHub token required for repository ID lookup: %w", err)
 	}
@@ -622,7 +622,7 @@ func runZenHubWorkspaces(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve GitHub token
-	ghToken, _, err := core.ResolveGitHubToken(ghTokenFlag)
+	ghToken, _, err := core.ResolveGitHubToken(ghTokenFlag, "")
 	if err != nil {
 		return fmt.Errorf("GitHub token required for repository ID lookup: %w", err)
 	}
@@ -732,7 +732,7 @@ func runZenHubIssues(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve GitHub token
-	ghToken, _, err := core.ResolveGitHubToken(ghTokenFlag)
+	ghToken, _, err := core.ResolveGitHubToken(ghTokenFlag, "")
 	if err != nil {
 		return fmt.Errorf("GitHub token required: %w", err)
 	}
@@ -965,7 +965,7 @@ func runZenHubEpicDetail(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve GitHub token
-	ghToken, _, err := core.ResolveGitHubToken(ghTokenFlag)
+	ghToken, _, err := core.ResolveGitHubToken(ghTokenFlag, "")
 	if err != nil {
 		return fmt.Errorf("GitHub token required: %w", err)
 	}
@@ -1127,7 +1127,7 @@ func runZenHubMove(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve GitHub token
-	ghToken, _, err := core.ResolveGitHubToken(ghTokenFlag)
+	ghToken, _, err := core.ResolveGitHubToken(ghTokenFlag, "")
 	if err != nil {
 		return fmt.Errorf("GitHub token required: %w", err)
 	}

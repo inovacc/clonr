@@ -105,7 +105,7 @@ func runMirror(cmd *cobra.Command, args []string) error {
 	logger := setupMirrorLogger(logLevel, jsonOutput)
 
 	// Resolve token from multiple sources
-	token, tokenSource, err := core.ResolveGitHubToken(token)
+	token, tokenSource, err := core.ResolveGitHubToken(token, "")
 	if err != nil {
 		return err
 	}
