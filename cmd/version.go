@@ -106,4 +106,3 @@ func printVersion() {
 	fmt.Printf("Go Version: %s\n", GoVersion)
 	fmt.Printf("OS/Arch:    %s/%s\n", GOOS, GOARCH)
 }
-

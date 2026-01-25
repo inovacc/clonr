@@ -158,13 +158,13 @@ type ZenHubIssueEstimate struct {
 
 // ZenHubIssue represents an issue with ZenHub-specific data
 type ZenHubIssue struct {
-	IssueNumber int                  `json:"issue_number"`
-	RepoID      int64                `json:"repo_id"`
-	Estimate    *ZenHubIssueEstimate `json:"estimate,omitempty"`
-	Pipeline    *ZenHubIssuePipeline `json:"pipeline,omitempty"`
+	IssueNumber int                   `json:"issue_number"`
+	RepoID      int64                 `json:"repo_id"`
+	Estimate    *ZenHubIssueEstimate  `json:"estimate,omitempty"`
+	Pipeline    *ZenHubIssuePipeline  `json:"pipeline,omitempty"`
 	Pipelines   []ZenHubIssuePipeline `json:"pipelines,omitempty"`
-	IsEpic      bool                 `json:"is_epic"`
-	Position    int                  `json:"position,omitempty"`
+	IsEpic      bool                  `json:"is_epic"`
+	Position    int                   `json:"position,omitempty"`
 }
 
 // ZenHubPipeline represents a pipeline (column) in a ZenHub board
@@ -285,8 +285,8 @@ func (c *ZenHubClient) GetWorkspacesForRepo(ctx context.Context, repoID int64) (
 
 // ZenHubEpicIssue represents a child issue in an epic
 type ZenHubEpicIssue struct {
-	IssueNumber int   `json:"issue_number"`
-	RepoID      int64 `json:"repo_id"`
+	IssueNumber int    `json:"issue_number"`
+	RepoID      int64  `json:"repo_id"`
 	IssueURL    string `json:"issue_url,omitempty"`
 }
 
@@ -295,9 +295,9 @@ type ZenHubEpicDetail struct {
 	TotalEpicEstimates struct {
 		Value int `json:"value"`
 	} `json:"total_epic_estimates"`
-	Estimate *Value            `json:"estimate,omitempty"`
+	Estimate *Value               `json:"estimate,omitempty"`
 	Pipeline *ZenHubIssuePipeline `json:"pipeline,omitempty"`
-	Issues   []ZenHubEpicIssue `json:"issues"`
+	Issues   []ZenHubEpicIssue    `json:"issues"`
 }
 
 // GetEpicData returns detailed epic info including child issues
