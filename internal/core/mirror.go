@@ -672,26 +672,11 @@ func MirrorUpdateRepo(repoURL, path string, strategy DirtyRepoStrategy, logger *
 		return fmt.Errorf("git pull failed: %v - %s", err, string(output))
 	}
 
-	// Update timestamp in database
-	client, err := grpcclient.GetClient()
-	if err != nil {
-		return fmt.Errorf("failed to connect to server: %w", err)
-	}
-
-	if err := client.UpdateRepoTimestamp(repoURL); err != nil {
-		return fmt.Errorf("failed to update timestamp: %w", err)
-	}
-
-	// Refresh git statistics after pulling new changes (non-blocking)
-	_ = FetchAndSaveGitStats(repoURL, path, FetchGitStatsOptions{
-		IncludeTemporal: true,
-		IncludeBranches: true,
-	})
-
+	// Note: Stats gathering is handled by SaveMirroredRepo to avoid duplicate runs
 	return nil
 }
 
-// SaveMirroredRepo saves the repo to database
+// SaveMirroredRepo saves the repo to database and gathers statistics
 func SaveMirroredRepo(repoURL, path string) error {
 	client, err := grpcclient.GetClient()
 	if err != nil {
@@ -704,29 +689,31 @@ func SaveMirroredRepo(repoURL, path string) error {
 	}
 
 	// Try to insert the repo
+	isNewRepo := true
 	err = client.InsertRepoIfNotExists(u, path)
 	if err != nil {
 		// If it already exists, that's okay - just update the timestamp
 		if strings.Contains(err.Error(), "already exists") {
+			isNewRepo = false
 			if err := client.UpdateRepoTimestamp(repoURL); err != nil {
 				return fmt.Errorf("failed to update timestamp: %w", err)
 			}
-
-			return nil
+		} else {
+			return fmt.Errorf("failed to save repo: %w", err)
 		}
-
-		return fmt.Errorf("failed to save repo: %w", err)
 	}
 
-	// Fetch and save GitHub issues (non-blocking, errors are logged but don't fail mirror)
-	token := GetGitHubToken()
-	if token != "" {
-		_ = FetchAndSaveIssues(repoURL, path, FetchIssuesOptions{
-			Token: token,
-		})
+	// Fetch issues only for new repos (avoid re-fetching on updates)
+	if isNewRepo {
+		token := GetGitHubToken()
+		if token != "" {
+			_ = FetchAndSaveIssues(repoURL, path, FetchIssuesOptions{
+				Token: token,
+			})
+		}
 	}
 
-	// Gather and save git statistics using git-nerds (non-blocking)
+	// Gather and save git statistics (always run - handles both new and updated repos)
 	_ = FetchAndSaveGitStats(repoURL, path, FetchGitStatsOptions{
 		IncludeTemporal: true,
 		IncludeBranches: true,
