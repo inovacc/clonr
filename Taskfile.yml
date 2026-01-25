@@ -28,17 +28,9 @@ tasks:
       - go run scripts/proto/generate.go
 
   # === BUILD TASKS ===
-  build:
-    desc: Build clonr binary (simple go build)
-    deps: [proto]
-    cmds:
-      - echo "Building clonr..."
-      - go build -o {{.BIN_DIR}}/{{.BIN_NAME}}{{exeExt}} {{.MAIN_PACKAGE}}
-      - echo "Build complete! Binary at {{.BIN_DIR}}/{{.BIN_NAME}}{{exeExt}}"
-
   install:
     desc: Install clonr binary to GOPATH/bin
-    deps: [proto]
+    deps: [ generate ]
     cmds:
       - echo "Installing clonr..."
       - go install {{.MAIN_PACKAGE}}
@@ -46,7 +38,6 @@ tasks:
 
   build:dev:
     desc: Build development snapshot with goreleaser
-    deps: [ generate ]
     env:
       GITHUB_OWNER: "{{.GITHUB_OWNER}}"
     cmds:
@@ -54,7 +45,6 @@ tasks:
 
   build:prod:
     desc: Build production snapshot with goreleaser
-    deps: [ generate ]
     env:
       GITHUB_OWNER: "{{.GITHUB_OWNER}}"
     cmds:
@@ -124,8 +114,6 @@ tasks:
     cmds:
       - go run {{.MAIN_PACKAGE}}
 
-
-
   # === DEPENDENCY MANAGEMENT ===
   deps:
     desc: Download and tidy dependencies
@@ -169,7 +157,6 @@ tasks:
       GITHUB_OWNER: "{{.GITHUB_OWNER}}"
     cmds:
       - goreleaser release --clean
-
 
   release:snapshot:
     desc: Create a snapshot release (no git tag required)
