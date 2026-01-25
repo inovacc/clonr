@@ -20,15 +20,15 @@ type Contributor struct {
 
 // ContributorJourney represents a contributor's activity in a repository
 type ContributorJourney struct {
-	Contributor    Contributor          `json:"contributor"`
-	Commits        []ContributorCommit  `json:"commits"`
-	PullRequests   []ContributorPR      `json:"pull_requests"`
-	Issues         []ContributorIssue   `json:"issues"`
-	TotalCommits   int                  `json:"total_commits"`
-	TotalPRs       int                  `json:"total_prs"`
-	TotalIssues    int                  `json:"total_issues"`
-	FirstActivity  *time.Time           `json:"first_activity,omitempty"`
-	LastActivity   *time.Time           `json:"last_activity,omitempty"`
+	Contributor   Contributor         `json:"contributor"`
+	Commits       []ContributorCommit `json:"commits"`
+	PullRequests  []ContributorPR     `json:"pull_requests"`
+	Issues        []ContributorIssue  `json:"issues"`
+	TotalCommits  int                 `json:"total_commits"`
+	TotalPRs      int                 `json:"total_prs"`
+	TotalIssues   int                 `json:"total_issues"`
+	FirstActivity *time.Time          `json:"first_activity,omitempty"`
+	LastActivity  *time.Time          `json:"last_activity,omitempty"`
 }
 
 // ContributorCommit represents a commit by a contributor

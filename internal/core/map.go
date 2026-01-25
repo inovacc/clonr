@@ -23,14 +23,14 @@ type MapOptions struct {
 
 // MapResult contains the result of a mapping operation
 type MapResult struct {
-	ScannedDir   string           `json:"scanned_dir"`
-	Found        []MappedRepo     `json:"found"`
-	AlreadyAdded []MappedRepo     `json:"already_added"`
-	Errors       []MappedRepoErr  `json:"errors,omitempty"`
-	TotalFound   int              `json:"total_found"`
-	TotalAdded   int              `json:"total_added"`
-	TotalSkipped int              `json:"total_skipped"`
-	TotalErrors  int              `json:"total_errors"`
+	ScannedDir   string          `json:"scanned_dir"`
+	Found        []MappedRepo    `json:"found"`
+	AlreadyAdded []MappedRepo    `json:"already_added"`
+	Errors       []MappedRepoErr `json:"errors,omitempty"`
+	TotalFound   int             `json:"total_found"`
+	TotalAdded   int             `json:"total_added"`
+	TotalSkipped int             `json:"total_skipped"`
+	TotalErrors  int             `json:"total_errors"`
 }
 
 // MappedRepo represents a discovered repository
@@ -56,17 +56,17 @@ var DefaultExcludeDirs = []string{
 	".venv",
 	"venv",
 	".tox",
-	"target",        // Rust/Java
-	"build",         // Various build outputs
-	"dist",          // Distribution folders
-	".gradle",       // Gradle
-	".m2",           // Maven
-	"Pods",          // CocoaPods
-	".pub-cache",    // Dart/Flutter
-	".cargo",        // Rust cargo
-	".rustup",       // Rust toolchain
-	"Library",       // macOS Library folder
-	"Applications",  // macOS Applications
+	"target",       // Rust/Java
+	"build",        // Various build outputs
+	"dist",         // Distribution folders
+	".gradle",      // Gradle
+	".m2",          // Maven
+	"Pods",         // CocoaPods
+	".pub-cache",   // Dart/Flutter
+	".cargo",       // Rust cargo
+	".rustup",      // Rust toolchain
+	"Library",      // macOS Library folder
+	"Applications", // macOS Applications
 }
 
 // MapRepos scans a directory for Git repositories and registers them
