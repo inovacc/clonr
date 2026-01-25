@@ -92,15 +92,27 @@ func (c *ZenHubClient) doRequest(ctx context.Context, method, path string, resul
 	return nil
 }
 
+// ZenHubIssuePipeline represents the pipeline info for an issue
+type ZenHubIssuePipeline struct {
+	Name        string `json:"name"`
+	PipelineID  string `json:"pipeline_id,omitempty"`
+	WorkspaceID string `json:"workspace_id,omitempty"`
+}
+
+// ZenHubIssueEstimate represents the estimate for an issue
+type ZenHubIssueEstimate struct {
+	Value int `json:"value"`
+}
+
 // ZenHubIssue represents an issue with ZenHub-specific data
 type ZenHubIssue struct {
-	IssueNumber int    `json:"issue_number"`
-	RepoID      int64  `json:"repo_id"`
-	Estimate    *int   `json:"estimate,omitempty"`
-	PipelineID  string `json:"pipeline_id,omitempty"`
-	Pipeline    string `json:"pipeline,omitempty"`
-	IsEpic      bool   `json:"is_epic"`
-	Position    int    `json:"position,omitempty"`
+	IssueNumber int                  `json:"issue_number"`
+	RepoID      int64                `json:"repo_id"`
+	Estimate    *ZenHubIssueEstimate `json:"estimate,omitempty"`
+	Pipeline    *ZenHubIssuePipeline `json:"pipeline,omitempty"`
+	Pipelines   []ZenHubIssuePipeline `json:"pipelines,omitempty"`
+	IsEpic      bool                 `json:"is_epic"`
+	Position    int                  `json:"position,omitempty"`
 }
 
 // ZenHubPipeline represents a pipeline (column) in a ZenHub board

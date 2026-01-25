@@ -451,13 +451,18 @@ func runZenHubIssue(cmd *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintf(os.Stdout, "\nZenHub Issue: %s/%s#%d\n\n", owner, repo, issueNumber)
 
 	if issue.Estimate != nil {
-		_, _ = fmt.Fprintf(os.Stdout, "Estimate:  %d points\n", *issue.Estimate)
+		_, _ = fmt.Fprintf(os.Stdout, "Estimate:  %d points\n", issue.Estimate.Value)
 	} else {
 		_, _ = fmt.Fprintf(os.Stdout, "Estimate:  Not set\n")
 	}
 
-	if issue.Pipeline != "" {
-		_, _ = fmt.Fprintf(os.Stdout, "Pipeline:  %s\n", issue.Pipeline)
+	if issue.Pipeline != nil {
+		_, _ = fmt.Fprintf(os.Stdout, "Pipeline:  %s\n", issue.Pipeline.Name)
+	} else if len(issue.Pipelines) > 0 {
+		_, _ = fmt.Fprintf(os.Stdout, "Pipelines:\n")
+		for _, p := range issue.Pipelines {
+			_, _ = fmt.Fprintf(os.Stdout, "  - %s\n", p.Name)
+		}
 	}
 
 	if issue.IsEpic {
