@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -81,6 +82,57 @@ func (c *ZenHubClient) doRequest(ctx context.Context, method, path string, resul
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(body))
+	}
+
+	if result != nil {
+		if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
+			return fmt.Errorf("failed to decode response: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// doRequestWithBody performs an HTTP request with a JSON body to the ZenHub API
+func (c *ZenHubClient) doRequestWithBody(ctx context.Context, method, path string, body any, result any) error {
+	url := c.baseURL + path
+
+	c.logger.Debug("making ZenHub API request with body",
+		slog.String("method", method),
+		slog.String("path", path),
+	)
+
+	var bodyReader io.Reader
+
+	if body != nil {
+		bodyBytes, err := json.Marshal(body)
+		if err != nil {
+			return fmt.Errorf("failed to marshal request body: %w", err)
+		}
+
+		bodyReader = bytes.NewReader(bodyBytes)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("X-Authentication-Token", c.token)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("request failed: %w", err)
+	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode >= 400 {
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("API error (status %d): %s", resp.StatusCode, string(respBody))
 	}
 
 	if result != nil {
@@ -229,4 +281,75 @@ func (c *ZenHubClient) GetWorkspacesForRepo(ctx context.Context, repoID int64) (
 	}
 
 	return result, nil
+}
+
+// ZenHubEpicIssue represents a child issue in an epic
+type ZenHubEpicIssue struct {
+	IssueNumber int   `json:"issue_number"`
+	RepoID      int64 `json:"repo_id"`
+	IssueURL    string `json:"issue_url,omitempty"`
+}
+
+// ZenHubEpicDetail represents detailed epic data including children
+type ZenHubEpicDetail struct {
+	TotalEpicEstimates struct {
+		Value int `json:"value"`
+	} `json:"total_epic_estimates"`
+	Estimate *Value            `json:"estimate,omitempty"`
+	Pipeline *ZenHubIssuePipeline `json:"pipeline,omitempty"`
+	Issues   []ZenHubEpicIssue `json:"issues"`
+}
+
+// GetEpicData returns detailed epic info including child issues
+func (c *ZenHubClient) GetEpicData(ctx context.Context, repoID int64, epicNumber int) (*ZenHubEpicDetail, error) {
+	path := fmt.Sprintf("/p1/repositories/%d/epics/%d", repoID, epicNumber)
+
+	var result ZenHubEpicDetail
+	if err := c.doRequest(ctx, "GET", path, &result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+// MoveIssueRequest represents a request to move an issue to a pipeline
+type MoveIssueRequest struct {
+	PipelineID string `json:"pipeline_id"`
+	Position   string `json:"position"` // "top", "bottom", or numeric index
+}
+
+// MoveIssueToPipeline moves an issue to a different pipeline
+func (c *ZenHubClient) MoveIssueToPipeline(ctx context.Context, repoID int64, issueNumber int, pipelineID string, position string) error {
+	path := fmt.Sprintf("/p1/repositories/%d/issues/%d/moves", repoID, issueNumber)
+
+	reqBody := MoveIssueRequest{
+		PipelineID: pipelineID,
+		Position:   position,
+	}
+
+	if err := c.doRequestWithBody(ctx, "POST", path, reqBody, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SetIssueEstimateRequest represents a request to set an issue estimate
+type SetIssueEstimateRequest struct {
+	Estimate int `json:"estimate"`
+}
+
+// SetIssueEstimate sets the estimate (story points) for an issue
+func (c *ZenHubClient) SetIssueEstimate(ctx context.Context, repoID int64, issueNumber int, estimate int) error {
+	path := fmt.Sprintf("/p1/repositories/%d/issues/%d/estimate", repoID, issueNumber)
+
+	reqBody := SetIssueEstimateRequest{
+		Estimate: estimate,
+	}
+
+	if err := c.doRequestWithBody(ctx, "PUT", path, reqBody, nil); err != nil {
+		return err
+	}
+
+	return nil
 }
