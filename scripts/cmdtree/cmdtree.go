@@ -62,7 +62,7 @@ func main() {
 
 	rootCmd := cmd.GetRootCmd()
 
-	_, _ = fmt.Fprintln(w, "# Clonr Command Tree")
+	_, _ = fmt.Fprintln(w, "# Command Tree")
 	_, _ = fmt.Fprintln(w)
 	_, _ = fmt.Fprintln(w, "```")
 	_, _ = fmt.Fprintln(w, rootCmd.Use)
