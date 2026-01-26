@@ -1,0 +1,9 @@
+{
+  "go_version": "go1.25.6",
+  "goos": "linux",
+  "goarch": "amd64",
+  "version": "v0.1.0",
+  "git_hash": "50b54d41c7aa94c15e37b887ee71c16a5846ccf3",
+  "build_time": "2026-01-26T01:40:54Z",
+  "build_hash": "520de17b853c8a6b7b96e40109bfc3667bb094f2a804e8377cb063fd22d9af87"
+}
