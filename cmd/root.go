@@ -12,7 +12,7 @@ var rootCmd = &cobra.Command{
 	Long: `Clonr is a command-line tool for managing Git repositories efficiently.
 It provides an interactive interface for cloning, organizing, and working with
 multiple repositories.`,
-	Version: Version(),
+	Version: Version,
 }
 
 func Execute() {

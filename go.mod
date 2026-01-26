@@ -12,6 +12,7 @@ require (
 	github.com/google/go-github/v67 v67.0.0
 	github.com/google/gops v0.3.29
 	github.com/google/uuid v1.6.0
+	github.com/inovacc/genversioninfo v0.3.0
 	github.com/inovacc/git-nerds v1.1.1
 	github.com/kardianos/service v1.2.4
 	github.com/spf13/cobra v1.10.2
@@ -44,7 +45,6 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/inovacc/genversioninfo v0.2.1 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
