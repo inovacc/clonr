@@ -85,7 +85,7 @@ clonr
 +-- stats                                    # Show git statistics for a repository
 +-- status                                   # Show git status of repositories
 +-- unfavorite                               # Remove favorite mark from a repository
-+-- update                                   # Pull latest changes for all or specif...
++-- update                                   # Check for and install updates
 \-- version                                  # Print version information
 `
 

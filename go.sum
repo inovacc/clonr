@@ -1,5 +1,7 @@
 al.essio.dev/pkg/shellescape v1.5.1 h1:86HrALUujYS/h+GtqoB26SBEdkWfmMI6FubjXlsXyho=
 al.essio.dev/pkg/shellescape v1.5.1/go.mod h1:6sIqp7X2P6mThCQ7twERpZTuigpr6KbZWtls1U8I890=
+github.com/Masterminds/semver/v3 v3.4.0 h1:Zog+i5UMtVoCU8oKka5P7i9q9HgrJeGzI9SA1Xbatp0=
+github.com/Masterminds/semver/v3 v3.4.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
 github.com/andygrunwald/go-jira/v2 v2.0.0-20260113181222-a17356f7cb78 h1:ZX6jJNbpPeKNc5thBeI08AMBd0Ox/eudP0laZGsohtQ=
 github.com/andygrunwald/go-jira/v2 v2.0.0-20260113181222-a17356f7cb78/go.mod h1:iJN0Xoo8/6ZRrANYLVXg77qdhn3a/TUIdLLgTxLaoII=
 github.com/atotto/clipboard v0.1.4 h1:EH0zSVneZPSuFR11BlR9YppQTVDbh5+16AmcJi4g1z4=
@@ -74,6 +76,8 @@ github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
+github.com/inovacc/autoupdater v0.0.0-20260125193502-7dd6c3172dbf h1:1nb72XLupBAM7Xwd1W6FE2wKN/IJmqHDICyjcTCvFKs=
+github.com/inovacc/autoupdater v0.0.0-20260125193502-7dd6c3172dbf/go.mod h1:M6nz7kyZX3wo0nfz0VKrRf7COlcEkRd/6XqaIACcu80=
 github.com/inovacc/genversioninfo v0.3.0 h1:fcKUU3VxomdFpXDv9i0bo5fY00HaH+G2uwHrbnWrZ0g=
 github.com/inovacc/genversioninfo v0.3.0/go.mod h1:D/gIs1RRaspk/Eztcu5VVppQruWziFGfsbxvL+milik=
 github.com/inovacc/git-nerds v1.1.1 h1:r4dB+D7MB2ay2oIK/yRXgBi0CpQ3KM6n4wIcv0fKC+I=
