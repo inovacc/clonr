@@ -111,7 +111,7 @@ changelog:
 # Release configuration
 release:
   github:
-    owner: "{{ .Env.GITHUB_OWNER }}"
+    owner: "{{ .Env.GITHUB_REPOSITORY_OWNER }}"
     name: "{{ .ProjectName }}"
   draft: false
   prerelease: auto
@@ -126,7 +126,7 @@ release:
     #### Linux/macOS (bash/zsh)
     ```bash
     # Download and install
-    curl -sfL https://github.com/{{ .Env.GITHUB_OWNER }}/{{ .ProjectName }}/releases/download/{{ .Tag }}/{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.tar.gz | tar xz
+    curl -sfL https://github.com/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}/releases/download/{{ .Tag }}/{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.tar.gz | tar xz
     sudo mv {{ .ProjectName }} /usr/local/bin/
     ```
 
@@ -138,15 +138,15 @@ release:
 
     ### Docker
     ```bash
-    docker pull ghcr.io/{{ .Env.GITHUB_OWNER }}/{{ .ProjectName }}:{{ .Version }}
+    docker pull ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .Version }}
     ```
 
   footer: |
     ---
 
-    **Full Changelog**: https://github.com/{{ .Env.GITHUB_OWNER }}/{{ .ProjectName }}/compare/{{ .PreviousTag }}...{{ .Tag }}
+    **Full Changelog**: https://github.com/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}/compare/{{ .PreviousTag }}...{{ .Tag }}
 
-    **Docker Images**: https://github.com/{{ .Env.GITHUB_OWNER }}/{{ .ProjectName }}/pkgs/container/{{ .ProjectName }}
+    **Docker Images**: https://github.com/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}/pkgs/container/{{ .ProjectName }}
 
     Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
 
