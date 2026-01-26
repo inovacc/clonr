@@ -321,6 +321,20 @@ CLI: `clonr nerds [repo-name]`
 
 ### v0.4.0 – Git History & Advanced Analytics
 
+#### Auto-Update Feature
+- [ ] `clonr update` - Check for and install updates
+- [ ] Automatic update check on startup (configurable)
+- [ ] GitHub Releases integration via [autoupdater](https://github.com/inovacc/autoupdater)
+- [ ] GoReleaser detection and parsing
+- [ ] Semantic version comparison
+- [ ] Platform-specific asset selection (OS/arch)
+- [ ] SHA256 checksum verification
+- [ ] Archive extraction (.tar.gz, .tgz, .zip)
+- [ ] Download progress display
+- [ ] Graceful shutdown with state preservation
+- [ ] `--check-only` flag to only check without installing
+- [ ] `--force` flag to reinstall current version
+
 #### Reauthor Command ✅ (Completed)
 - `clonr reauthor --list` - List all unique author emails
 - `clonr reauthor --old-email --new-email` - Rewrite git history
