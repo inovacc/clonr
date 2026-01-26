@@ -151,13 +151,14 @@ announce:
 metadata:
   mod_timestamp: "{{ .CommitTimestamp }}"
 
-sboms:
-  - id: binaries-sbom
-    artifacts: binary
-    cmd: syft
-    args:
-      - "$artifact"
-      - "--output"
-      - "cyclonedx-json=$document"
-    documents:
-      - "sbom_{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.json"
+# SBOM generation disabled - conflicts with autoupdater asset matching
+# sboms:
+#   - id: binaries-sbom
+#     artifacts: binary
+#     cmd: syft
+#     args:
+#       - "$artifact"
+#       - "--output"
+#       - "cyclonedx-json=$document"
+#     documents:
+#       - "sbom_{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.json"
