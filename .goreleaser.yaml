@@ -160,4 +160,4 @@ sboms:
       - "--output"
       - "cyclonedx-json=$document"
     documents:
-      - "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.sbom.json"
+      - "{{ .Binary }}_{{ .Version }}.sbom.json"
