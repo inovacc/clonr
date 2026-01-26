@@ -12,7 +12,7 @@ require (
 	github.com/google/go-github/v67 v67.0.0
 	github.com/google/gops v0.3.29
 	github.com/google/uuid v1.6.0
-	github.com/inovacc/autoupdater v0.0.0-20260125193502-7dd6c3172dbf
+	github.com/inovacc/autoupdater v0.0.0-20260126034954-f6c929fb45c4
 	github.com/inovacc/genversioninfo v0.3.0
 	github.com/inovacc/git-nerds v1.1.1
 	github.com/kardianos/service v1.2.4
@@ -69,11 +69,12 @@ require (
 	github.com/trivago/tgo v1.0.7 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
+	golang.org/x/crypto v0.47.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
-	golang.org/x/text v0.32.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
