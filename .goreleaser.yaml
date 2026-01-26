@@ -3,6 +3,11 @@
 
 version: 2
 
+# Git configuration
+git:
+  # Allow dirty working directory (hooks may modify go.sum)
+  allow_dirty: true
+
 # Hooks to run before building
 before:
   hooks:
