@@ -182,4 +182,4 @@ tasks:
   cmdtree:save:
     desc: Generate command tree and save to docs/COMMANDS.md
     cmds:
-      - go run scripts/cmdtree/cmdtree.go -o docs/COMMANDS.md
+      - go run scripts/cmdtree/cmdtree.go -out-tree docs/COMMANDS.md -out-go cmd/cmdtree.go

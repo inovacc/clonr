@@ -1,10 +1,11 @@
-# Clonr Command Tree
+# Command Tree
 
 ```
 clonr
 +-- add                                      # Register an existing local Git reposi...
 +-- branches                                 # List and manage git branches
 +-- clone                                    # Clone a Git repository
++-- cmdtree                                  # Display command tree visualization
 +-- config                                   # Manage clonr configuration
 |   \-- editor                               # Manage custom editors
 |       +-- add                              # Add a new custom editor
@@ -77,6 +78,5 @@ clonr
 +-- stats                                    # Show git statistics for a repository
 +-- status                                   # Show git status of repositories
 +-- unfavorite                               # Remove favorite mark from a repository
-+-- update                                   # Pull latest changes for all or specif...
++-- update                                   # Check for and install updates
 \-- version                                  # Print version information
-```
