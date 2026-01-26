@@ -6,8 +6,8 @@ version: 2
 # Hooks to run before building
 before:
   hooks:
-    # Generate version information (skip proto to avoid BSR rate limits)
-    - go run scripts/genversion/genversion.go
+    # Generate version information
+    - go generate ./...
     # Tidy dependencies
     - go mod tidy
     # Verify dependencies
