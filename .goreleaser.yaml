@@ -111,8 +111,8 @@ changelog:
 # Release configuration
 release:
   github:
-    owner: "{{ .Env.GITHUB_REPOSITORY_OWNER }}"
-    name: "{{ .ProjectName }}"
+    owner: inovacc
+    name: clonr
   draft: false
   prerelease: auto
   mode: append
@@ -127,7 +127,7 @@ release:
 
     #### Linux (amd64)
     ```bash
-    curl -sfL https://github.com/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}/releases/download/{{ .Tag }}/{{ .ProjectName }}_linux_amd64_v1_{{ .Version }}.tar.gz | tar xz
+    curl -sfL https://github.com/inovacc/{{ .ProjectName }}/releases/download/{{ .Tag }}/{{ .ProjectName }}_linux_amd64_v1_{{ .Version }}.tar.gz | tar xz
     sudo mv {{ .ProjectName }}_linux_amd64_v1 /usr/local/bin/{{ .ProjectName }}
     ```
 
@@ -137,9 +137,9 @@ release:
   footer: |
     ---
 
-    **Full Changelog**: https://github.com/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}/compare/{{ .PreviousTag }}...{{ .Tag }}
+    **Full Changelog**: https://github.com/inovacc/{{ .ProjectName }}/compare/{{ .PreviousTag }}...{{ .Tag }}
 
-    **Docker Images**: https://github.com/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}/pkgs/container/{{ .ProjectName }}
+    **Docker Images**: https://github.com/inovacc/{{ .ProjectName }}/pkgs/container/{{ .ProjectName }}
 
     Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
 
