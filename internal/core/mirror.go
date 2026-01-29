@@ -690,11 +690,13 @@ func SaveMirroredRepo(repoURL, path string) error {
 
 	// Try to insert the repo
 	isNewRepo := true
+
 	err = client.InsertRepoIfNotExists(u, path)
 	if err != nil {
 		// If it already exists, that's okay - just update the timestamp
 		if strings.Contains(err.Error(), "already exists") {
 			isNewRepo = false
+
 			if err := client.UpdateRepoTimestamp(repoURL); err != nil {
 				return fmt.Errorf("failed to update timestamp: %w", err)
 			}

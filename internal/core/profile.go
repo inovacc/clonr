@@ -42,7 +42,7 @@ func NewProfileManager() (*ProfileManager, error) {
 // CreateProfile creates a new profile with OAuth authentication
 func (pm *ProfileManager) CreateProfile(ctx context.Context, name, host string, scopes []string) (*model.Profile, string, error) {
 	// Check if profile already exists
-	exists, err := pm.client.ProfileExists(name)
+	exists, err := pm.client.ProfileExists(name) //nolint:contextcheck // client manages its own timeout
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to check profile existence: %w", err)
 	}
@@ -93,7 +93,7 @@ func (pm *ProfileManager) CreateProfile(ctx context.Context, name, host string, 
 	}
 
 	// Check if this is the first profile (make it active)
-	profiles, err := pm.client.ListProfiles()
+	profiles, err := pm.client.ListProfiles() //nolint:contextcheck // client manages its own timeout
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to list profiles: %w", err)
 	}
@@ -114,7 +114,7 @@ func (pm *ProfileManager) CreateProfile(ctx context.Context, name, host string, 
 	}
 
 	// Save profile
-	if err := pm.client.SaveProfile(profile); err != nil {
+	if err := pm.client.SaveProfile(profile); err != nil { //nolint:contextcheck // client manages its own timeout
 		// Clean up token on failure
 		if tokenStorage == model.TokenStorageKeyring {
 			_ = DeleteToken(name, host)
@@ -191,11 +191,9 @@ func (pm *ProfileManager) DeleteProfile(name string) error {
 	}
 
 	// Delete token from keyring if applicable
+	// Ignore errors - profile deletion is more important and token might already be deleted
 	if profile.TokenStorage == model.TokenStorageKeyring {
-		if err := DeleteToken(name, profile.Host); err != nil {
-			// Log but don't fail - profile deletion is more important
-			// Token might have already been deleted
-		}
+		_ = DeleteToken(name, profile.Host)
 	}
 
 	return pm.client.DeleteProfile(name)
@@ -257,7 +255,7 @@ func (pm *ProfileManager) getTokenFromProfile(profile *model.Profile) (string, e
 
 // ValidateProfileToken checks if a profile's token is still valid
 func (pm *ProfileManager) ValidateProfileToken(ctx context.Context, name string) (bool, error) {
-	profile, err := pm.client.GetProfile(name)
+	profile, err := pm.client.GetProfile(name) //nolint:contextcheck // client manages its own timeout
 	if err != nil {
 		return false, fmt.Errorf("failed to get profile: %w", err)
 	}
@@ -281,7 +279,7 @@ func (pm *ProfileManager) ValidateProfileToken(ctx context.Context, name string)
 
 // RefreshProfile refreshes a profile's OAuth token
 func (pm *ProfileManager) RefreshProfile(ctx context.Context, name string) error {
-	profile, err := pm.client.GetProfile(name)
+	profile, err := pm.client.GetProfile(name) //nolint:contextcheck // client manages its own timeout
 	if err != nil {
 		return fmt.Errorf("failed to get profile: %w", err)
 	}
@@ -316,5 +314,5 @@ func (pm *ProfileManager) RefreshProfile(ctx context.Context, name string) error
 	profile.User = result.Username
 	profile.LastUsedAt = time.Now()
 
-	return pm.client.SaveProfile(profile)
+	return pm.client.SaveProfile(profile) //nolint:contextcheck // client manages its own timeout
 }

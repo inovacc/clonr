@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -70,9 +71,9 @@ func runProfileAdd(_ *cobra.Command, args []string) error {
 		scopes = model.DefaultScopes()
 	}
 
-	fmt.Printf("Creating profile: %s\n", name)
-	fmt.Printf("Host: %s\n", profileAddHost)
-	fmt.Printf("Scopes: %s\n\n", strings.Join(scopes, ", "))
+	_, _ = fmt.Fprintf(os.Stdout, "Creating profile: %s\n", name)
+	_, _ = fmt.Fprintf(os.Stdout, "Host: %s\n", profileAddHost)
+	_, _ = fmt.Fprintf(os.Stdout, "Scopes: %s\n\n", strings.Join(scopes, ", "))
 
 	// Run OAuth flow
 	flow := core.NewOAuthFlow(profileAddHost, scopes)
@@ -83,12 +84,12 @@ func runProfileAdd(_ *cobra.Command, args []string) error {
 		deviceCode = code
 		verificationURL = url
 
-		fmt.Println("GitHub OAuth Authentication")
-		fmt.Println(strings.Repeat("-", 40))
-		fmt.Printf("\n1. Copy this code: %s\n\n", code)
-		fmt.Printf("2. Open: %s\n\n", url)
-		fmt.Println("3. Paste the code and authorize clonr")
-		fmt.Println("\nWaiting for authorization...")
+		_, _ = fmt.Fprintln(os.Stdout, "GitHub OAuth Authentication")
+		_, _ = fmt.Fprintln(os.Stdout, strings.Repeat("-", 40))
+		_, _ = fmt.Fprintf(os.Stdout, "\n1. Copy this code: %s\n\n", code)
+		_, _ = fmt.Fprintf(os.Stdout, "2. Open: %s\n\n", url)
+		_, _ = fmt.Fprintln(os.Stdout, "3. Paste the code and authorize clonr")
+		_, _ = fmt.Fprintln(os.Stdout, "\nWaiting for authorization...")
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -148,15 +149,15 @@ func runProfileAdd(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to save profile: %w", err)
 	}
 
-	fmt.Println("\nSuccess!")
-	fmt.Printf("Profile: %s\n", profile.Name)
-	fmt.Printf("User: %s\n", profile.User)
-	fmt.Printf("Storage: %s\n", tokenStorage)
+	_, _ = fmt.Fprintln(os.Stdout, "\nSuccess!")
+	_, _ = fmt.Fprintf(os.Stdout, "Profile: %s\n", profile.Name)
+	_, _ = fmt.Fprintf(os.Stdout, "User: %s\n", profile.User)
+	_, _ = fmt.Fprintf(os.Stdout, "Storage: %s\n", tokenStorage)
 
 	if isFirstProfile {
-		fmt.Println("\nThis profile is now active.")
+		_, _ = fmt.Fprintln(os.Stdout, "\nThis profile is now active.")
 	} else {
-		fmt.Printf("\nTo use this profile: clonr profile use %s\n", name)
+		_, _ = fmt.Fprintf(os.Stdout, "\nTo use this profile: clonr profile use %s\n", name)
 	}
 
 	// Return device code info for potential further use

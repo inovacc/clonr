@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/inovacc/autoupdater"
 	"github.com/spf13/cobra"
@@ -65,44 +66,61 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create updater: %w", err)
 	}
 
-	fmt.Printf("Current version: %s\n", Version)
-	fmt.Println("Checking for updates...")
+	_, _ = fmt.Fprintf(os.Stdout, "Current version: %s\n", Version)
+	_, _ = fmt.Fprintln(os.Stdout, "Checking for updates...")
 
 	// Check for updates
 	release, err := updater.Check(ctx)
 	if err != nil {
 		if errors.Is(err, autoupdater.ErrNoUpdateAvailable) {
 			if updateForce {
-				fmt.Println("No newer version available, but --force specified.")
-				fmt.Println("Reinstalling current version...")
+				_, _ = fmt.Fprintln(os.Stdout, "No newer version available, but --force specified.")
+				_, _ = fmt.Fprintln(os.Stdout, "Reinstalling current version...")
+
 				return forceReinstall(ctx)
 			}
-			fmt.Println("Already up to date!")
+
+			_, _ = fmt.Fprintln(os.Stdout, "Already up to date!")
+
 			return nil
 		}
+
 		if errors.Is(err, autoupdater.ErrAssetNotFound) {
 			return fmt.Errorf("no release asset found for your platform")
 		}
+		// Check for rate limit error
+		if isRateLimitError(err) {
+			_, _ = fmt.Fprintln(os.Stdout, "\nGitHub API rate limit exceeded (60 requests/hour for unauthenticated users).")
+			_, _ = fmt.Fprintln(os.Stdout, "\nOptions:")
+			_, _ = fmt.Fprintln(os.Stdout, "  1. Wait ~1 hour for the rate limit to reset")
+			_, _ = fmt.Fprintln(os.Stdout, "  2. Set GITHUB_TOKEN environment variable for higher limits (5000/hour)")
+			_, _ = fmt.Fprintln(os.Stdout, "  3. Download manually from: https://github.com/inovacc/clonr/releases")
+
+			return nil
+		}
+
 		return fmt.Errorf("failed to check for updates: %w", err)
 	}
 
-	fmt.Printf("\nUpdate available: %s -> %s\n", Version, release.Version)
+	_, _ = fmt.Fprintf(os.Stdout, "\nUpdate available: %s -> %s\n", Version, release.Version)
 
 	if release.IsGoReleaser {
-		fmt.Println("Release type: GoReleaser")
+		_, _ = fmt.Fprintln(os.Stdout, "Release type: GoReleaser")
 	}
 
 	if updateCheckOnly {
-		fmt.Println("\nUse 'clonr update' without --check to install.")
+		_, _ = fmt.Fprintln(os.Stdout, "\nUse 'clonr update' without --check to install.")
 		return nil
 	}
 
 	// Apply update
-	fmt.Println("\nDownloading and installing...")
+	_, _ = fmt.Fprintln(os.Stdout, "\nDownloading and installing...")
+
 	if err := updater.Apply(ctx, release); err != nil {
 		if errors.Is(err, autoupdater.ErrVerificationFailed) {
 			return fmt.Errorf("checksum verification failed - download may be corrupted")
 		}
+
 		return fmt.Errorf("failed to apply update: %w", err)
 	}
 
@@ -126,7 +144,8 @@ func forceReinstall(ctx context.Context) error {
 		return fmt.Errorf("failed to find release: %w", err)
 	}
 
-	fmt.Printf("Reinstalling version %s...\n", release.Version)
+	_, _ = fmt.Fprintf(os.Stdout, "Reinstalling version %s...\n", release.Version)
+
 	if err := forceUpdater.Apply(ctx, release); err != nil {
 		return fmt.Errorf("failed to reinstall: %w", err)
 	}
@@ -154,16 +173,29 @@ func (h *updateHooks) OnProgress(downloaded, total int64) {
 		percent := int(float64(downloaded) / float64(total) * 100)
 		if percent != h.lastPercent {
 			h.lastPercent = percent
-			_, _ = fmt.Printf("\rDownloading: %3d%% (%d/%d bytes)", percent, downloaded, total)
+			_, _ = fmt.Fprintf(os.Stdout, "\rDownloading: %3d%% (%d/%d bytes)", percent, downloaded, total)
 		}
 	}
 }
 
 func (h *updateHooks) OnUpdateComplete(newVersion string) {
-	_, _ = fmt.Printf("\n\nSuccessfully updated to %s!\n", newVersion)
-	fmt.Println("Please restart clonr to use the new version.")
+	_, _ = fmt.Fprintf(os.Stdout, "\n\nSuccessfully updated to %s!\n", newVersion)
+	_, _ = fmt.Fprintln(os.Stdout, "Please restart clonr to use the new version.")
 }
 
 func (h *updateHooks) OnUpdateError(err error) {
-	_, _ = fmt.Printf("\nUpdate failed: %v\n", err)
+	_, _ = fmt.Fprintf(os.Stdout, "\nUpdate failed: %v\n", err)
+}
+
+// isRateLimitError checks if the error is a GitHub API rate limit error.
+func isRateLimitError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	errStr := err.Error()
+
+	return strings.Contains(errStr, "rate limit") ||
+		strings.Contains(errStr, "403") ||
+		strings.Contains(errStr, "forbidden")
 }

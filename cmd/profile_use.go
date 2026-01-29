@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/inovacc/clonr/internal/core"
 	"github.com/spf13/cobra"
@@ -45,18 +46,18 @@ func runProfileUse(_ *cobra.Command, args []string) error {
 	}
 
 	if currentActive != nil && currentActive.Name == name {
-		fmt.Printf("Profile '%s' is already active.\n", name)
+		_, _ = fmt.Fprintf(os.Stdout, "Profile '%s' is already active.\n", name)
 
 		return nil
 	}
 
-	fmt.Printf("Switched to profile: %s\n", name)
+	_, _ = fmt.Fprintf(os.Stdout, "Switched to profile: %s\n", name)
 
 	// Show profile info
 	profile, err := pm.GetProfile(name)
 	if err == nil && profile != nil {
-		fmt.Printf("User: %s\n", profile.User)
-		fmt.Printf("Host: %s\n", profile.Host)
+		_, _ = fmt.Fprintf(os.Stdout, "User: %s\n", profile.User)
+		_, _ = fmt.Fprintf(os.Stdout, "Host: %s\n", profile.Host)
 	}
 
 	return nil

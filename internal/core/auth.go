@@ -121,12 +121,12 @@ func getActiveProfileToken(host string) (string, error) {
 	client, err := grpcclient.GetClient()
 	if err != nil {
 		// Server not running, skip profile token
-		return "", nil
+		return "", nil //nolint:nilerr // intentionally ignore error when server not running
 	}
 
 	profile, err := client.GetActiveProfile()
 	if err != nil {
-		return "", nil
+		return "", nil //nolint:nilerr // intentionally ignore error to fallback to other auth methods
 	}
 
 	if profile == nil {

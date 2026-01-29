@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -54,8 +55,8 @@ func runProfileStatus(_ *cobra.Command, args []string) error {
 		profile, err = pm.GetActiveProfile()
 		if err != nil {
 			if err == core.ErrNoActiveProfile {
-				fmt.Println("No active profile.")
-				fmt.Println("\nCreate a profile with: clonr profile add <name>")
+				_, _ = fmt.Fprintln(os.Stdout, "No active profile.")
+				_, _ = fmt.Fprintln(os.Stdout, "\nCreate a profile with: clonr profile add <name>")
 
 				return nil
 			}
@@ -65,46 +66,49 @@ func runProfileStatus(_ *cobra.Command, args []string) error {
 	}
 
 	if profile == nil {
-		fmt.Println("No profile found.")
+		_, _ = fmt.Fprintln(os.Stdout, "No profile found.")
 
 		return nil
 	}
 
-	fmt.Printf("Profile: %s\n", profile.Name)
-	fmt.Printf("Host: %s\n", profile.Host)
-	fmt.Printf("User: %s\n", profile.User)
+	_, _ = fmt.Fprintf(os.Stdout, "Profile: %s\n", profile.Name)
+	_, _ = fmt.Fprintf(os.Stdout, "Host: %s\n", profile.Host)
+	_, _ = fmt.Fprintf(os.Stdout, "User: %s\n", profile.User)
 
 	storage := string(profile.TokenStorage)
-	if profile.TokenStorage == model.TokenStorageKeyring {
+	switch profile.TokenStorage {
+	case model.TokenStorageKeyring:
 		storage = "secure (system keyring)"
-	} else if profile.TokenStorage == model.TokenStorageInsecure {
+	case model.TokenStorageInsecure:
 		storage = "encrypted (database)"
 	}
 
-	fmt.Printf("Storage: %s\n", storage)
-	fmt.Printf("Scopes: %s\n", strings.Join(profile.Scopes, ", "))
-	fmt.Printf("Active: %t\n", profile.Active)
-	fmt.Printf("Created: %s\n", profile.CreatedAt.Format(time.RFC3339))
+	_, _ = fmt.Fprintf(os.Stdout, "Storage: %s\n", storage)
+	_, _ = fmt.Fprintf(os.Stdout, "Scopes: %s\n", strings.Join(profile.Scopes, ", "))
+	_, _ = fmt.Fprintf(os.Stdout, "Active: %t\n", profile.Active)
+	_, _ = fmt.Fprintf(os.Stdout, "Created: %s\n", profile.CreatedAt.Format(time.RFC3339))
 
 	if !profile.LastUsedAt.IsZero() {
-		fmt.Printf("Last used: %s\n", profile.LastUsedAt.Format(time.RFC3339))
+		_, _ = fmt.Fprintf(os.Stdout, "Last used: %s\n", profile.LastUsedAt.Format(time.RFC3339))
 	}
 
 	// Validate token if requested
 	if profileStatusValidate {
-		fmt.Println("\nValidating token...")
+		_, _ = fmt.Fprintln(os.Stdout, "\nValidating token...")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
 		valid, err := pm.ValidateProfileToken(ctx, profile.Name)
-		if err != nil {
-			fmt.Printf("Validation error: %v\n", err)
-		} else if valid {
-			fmt.Println("Token is valid.")
-		} else {
-			fmt.Println("Token is invalid or expired.")
-			fmt.Printf("Re-authenticate with: clonr profile remove %s && clonr profile add %s\n", profile.Name, profile.Name)
+
+		switch {
+		case err != nil:
+			_, _ = fmt.Fprintf(os.Stdout, "Validation error: %v\n", err)
+		case valid:
+			_, _ = fmt.Fprintln(os.Stdout, "Token is valid.")
+		default:
+			_, _ = fmt.Fprintln(os.Stdout, "Token is invalid or expired.")
+			_, _ = fmt.Fprintf(os.Stdout, "Re-authenticate with: clonr profile remove %s && clonr profile add %s\n", profile.Name, profile.Name)
 		}
 	}
 

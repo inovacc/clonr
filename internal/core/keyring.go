@@ -73,6 +73,7 @@ func GetToken(profileName, host string) (string, error) {
 
 	go func() {
 		key := keyringKey(profileName, host)
+
 		token, err := keyring.Get(keyringService, key)
 		resultCh <- result{token: token, err: err}
 	}()

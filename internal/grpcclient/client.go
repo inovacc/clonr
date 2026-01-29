@@ -45,7 +45,6 @@ func lazyLoad() {
 	addr := discoverServerAddress()
 
 	// Use grpc.NewClient (v1.78.0+) instead of deprecated DialContext
-	// This uses lazy connection establishment
 	conn, err := grpc.NewClient(addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
@@ -54,27 +53,37 @@ func lazyLoad() {
 		return
 	}
 
-	// Perform health check to trigger connection (per guide)
-	// This is the proper way to verify server is reachable in v1.78.0+
+	// Perform health check to trigger connection
 	healthClient := healthpb.NewHealthClient(conn)
 
 	healthCtx, healthCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer healthCancel()
 
 	resp, err := healthClient.Check(healthCtx, &healthpb.HealthCheckRequest{})
-	if err != nil {
+	if err != nil || resp.GetStatus() != healthpb.HealthCheckResponse_SERVING {
 		_ = conn.Close()
-		errClient = fmt.Errorf("server not reachable at %s: %w\n\nNo clonr server found running.\nStart the server with:\n  clonr service --start    (recommended)\n  clonr server start", addr, err)
 
-		return
-	}
+		// Server not running - try to start one automatically
+		if startErr := startOnDemandServer(defaultServerPort); startErr != nil {
+			errClient = fmt.Errorf("failed to start on-demand server: %w", startErr)
+			return
+		}
 
-	// Verify server is healthy
-	if resp.GetStatus() != healthpb.HealthCheckResponse_SERVING {
-		_ = conn.Close()
-		errClient = fmt.Errorf("server not healthy at %s: status=%v\n\nThe server may be shutting down or not fully initialized.\nStart the server with:\n  clonr service --start    (recommended)\n  clonr server start", addr, resp.GetStatus())
+		// Wait for server to be ready
+		addr = fmt.Sprintf("localhost:%d", defaultServerPort)
+		if waitErr := waitForServer(addr); waitErr != nil {
+			errClient = fmt.Errorf("server started but not ready: %w", waitErr)
+			return
+		}
 
-		return
+		// Reconnect to the now-running server
+		conn, err = grpc.NewClient(addr,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
+		if err != nil {
+			errClient = fmt.Errorf("failed to connect to started server: %w", err)
+			return
+		}
 	}
 
 	client = &Client{

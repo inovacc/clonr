@@ -137,8 +137,8 @@ func GetAllEditors() ([]EditorInfo, error) {
 	}
 
 	// Start with default editors
-	allEditors := make([]EditorInfo, len(DefaultEditors))
-	copy(allEditors, DefaultEditors)
+	allEditors := make([]EditorInfo, 0, len(DefaultEditors)+len(customEditors))
+	allEditors = append(allEditors, DefaultEditors...)
 
 	// Add custom editors
 	for _, e := range customEditors {

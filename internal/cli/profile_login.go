@@ -120,7 +120,7 @@ func (m *ProfileLoginModel) startOAuth() tea.Msg {
 			}
 
 			// Get client to check if first profile
-			client, clientErr := pm.ListProfiles()
+			client, clientErr := pm.ListProfiles() //nolint:contextcheck // client manages its own timeout
 			isFirstProfile := clientErr == nil && len(client) == 0
 
 			profile := &model.Profile{
@@ -157,6 +157,7 @@ func (m *ProfileLoginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case spinner.TickMsg:
 		var cmd tea.Cmd
+
 		m.spinner, cmd = m.spinner.Update(msg)
 
 		return m, cmd

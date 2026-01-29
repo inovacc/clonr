@@ -354,6 +354,17 @@ CLI: `clonr nerds [repo-name]`
 - [ ] Code churn analysis
 - [ ] File hotspot detection
 
+#### Security: Gitleaks Integration
+- [ ] `clonr pull --check-leaks` - Scan for secrets after pulling changes
+- [ ] `clonr push --check-leaks` - Scan for secrets before pushing commits
+- [ ] Pre-commit hook integration for leak detection
+- [ ] Configurable secret patterns and rules
+- [ ] `.gitleaks.toml` support for custom configurations
+- [ ] Interactive prompt to abort push if leaks detected
+- [ ] `clonr security scan [repo]` - Manual scan for secrets in repository
+- [ ] Report generation for found secrets (JSON/table output)
+- [ ] Integration with [gitleaks](https://github.com/gitleaks/gitleaks) library
+
 ### v0.5.0 – Organization & Team Features
 
 #### GitHub Organization Support ✅ (In Progress)
@@ -440,6 +451,13 @@ CLI: `clonr nerds [repo-name]`
 - [ ] VS Code extension
 - [ ] JetBrains plugin
 - [ ] Alfred/Raycast workflows
+
+### Security
+- [ ] Gitleaks integration for secret detection (v0.4.0)
+- [ ] Pre-push/pre-pull secret scanning
+- [ ] Automated security audits
+- [ ] Dependency vulnerability scanning
+- [ ] License compliance checking
 
 ### Advanced Features
 - [ ] Repository templates

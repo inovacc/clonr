@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -14,6 +15,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+)
+
+const (
+	defaultServerPort  = 50051
+	serverStartRetries = 20
+	serverRetryDelay   = 500 * time.Millisecond
 )
 
 // ClientConfig holds client configuration for connecting to the server
@@ -148,6 +155,47 @@ func isServerRunning(address string) bool {
 	}
 
 	return resp.GetStatus() == healthpb.HealthCheckResponse_SERVING
+}
+
+// startOnDemandServer spawns a detached clonr server process
+func startOnDemandServer(port int) error {
+	exePath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to get executable path: %w", err)
+	}
+
+	args := []string{
+		"server", "start",
+		"--port", fmt.Sprintf("%d", port),
+	}
+
+	cmd := exec.Command(exePath, args...)
+	cmd.Stdin = nil
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	setProcAttr(cmd)
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start server process: %w", err)
+	}
+
+	// Don't wait - let it run independently
+	go func() { _ = cmd.Wait() }()
+
+	return nil
+}
+
+// waitForServer polls until server is ready or timeout
+func waitForServer(address string) error {
+	for range serverStartRetries {
+		time.Sleep(serverRetryDelay)
+
+		if isServerRunning(address) {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("server failed to start after %d retries", serverStartRetries)
 }
 
 // SaveServerAddress saves the server address to the config file

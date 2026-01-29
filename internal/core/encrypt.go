@@ -101,7 +101,11 @@ func getOrCreateKey() ([]byte, error) {
 
 // deriveKey creates a profile-specific key from the master key
 func deriveKey(masterKey []byte, profileName, host string) []byte {
-	data := append(masterKey, []byte(profileName+":"+host)...)
+	suffix := []byte(profileName + ":" + host)
+	data := make([]byte, 0, len(masterKey)+len(suffix))
+	data = append(data, masterKey...)
+	data = append(data, suffix...)
+
 	hash := sha256.Sum256(data)
 
 	return hash[:]

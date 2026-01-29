@@ -39,8 +39,8 @@ func runProfileList(_ *cobra.Command, _ []string) error {
 	}
 
 	if len(profiles) == 0 {
-		fmt.Println("No profiles configured.")
-		fmt.Println("\nCreate a profile with: clonr profile add <name>")
+		_, _ = fmt.Fprintln(os.Stdout, "No profiles configured.")
+		_, _ = fmt.Fprintln(os.Stdout, "\nCreate a profile with: clonr profile add <name>")
 
 		return nil
 	}
@@ -57,9 +57,10 @@ func runProfileList(_ *cobra.Command, _ []string) error {
 		}
 
 		storage := string(p.TokenStorage)
-		if storage == "keyring" {
+		switch storage {
+		case "keyring":
 			storage = "secure"
-		} else if storage == "insecure_storage" {
+		case "insecure_storage":
 			storage = "encrypted"
 		}
 
@@ -79,8 +80,8 @@ func runProfileList(_ *cobra.Command, _ []string) error {
 	// Show scopes info for active profile
 	for _, p := range profiles {
 		if p.Active {
-			fmt.Printf("\nActive profile: %s\n", p.Name)
-			fmt.Printf("Scopes: %s\n", strings.Join(p.Scopes, ", "))
+			_, _ = fmt.Fprintf(os.Stdout, "\nActive profile: %s\n", p.Name)
+			_, _ = fmt.Fprintf(os.Stdout, "Scopes: %s\n", strings.Join(p.Scopes, ", "))
 
 			break
 		}

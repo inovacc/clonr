@@ -70,10 +70,16 @@ func (f *OAuthFlow) OnDeviceCode(callback func(code, verificationURL string)) {
 
 // Run executes the OAuth device flow and returns the result
 func (f *OAuthFlow) Run(ctx context.Context) (*OAuthResult, error) {
+	// Create the oauth host
+	host, err := oauth.NewGitHubHost(f.getGitHubHost())
+	if err != nil {
+		return nil, fmt.Errorf("invalid GitHub host: %w", err)
+	}
+
 	// Create the oauth flow using cli/oauth
 	flow := &oauth.Flow{
-		Host:     oauth.GitHubHost(f.getGitHubHost()),
-		Scopes:   f.config.Scopes,
+		Host:   host,
+		Scopes: f.config.Scopes,
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},

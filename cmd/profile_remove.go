@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/inovacc/clonr/internal/core"
 	"github.com/spf13/cobra"
@@ -49,8 +50,8 @@ func runProfileRemove(_ *cobra.Command, args []string) error {
 
 	// Warn if deleting active profile
 	if profile.Active && !profileRemoveForce {
-		fmt.Printf("Warning: '%s' is the active profile.\n", name)
-		fmt.Print("Are you sure you want to delete it? (y/N): ")
+		_, _ = fmt.Fprintf(os.Stdout, "Warning: '%s' is the active profile.\n", name)
+		_, _ = fmt.Fprint(os.Stdout, "Are you sure you want to delete it? (y/N): ")
 
 		var confirm string
 		if _, err := fmt.Scanln(&confirm); err != nil {
@@ -58,7 +59,7 @@ func runProfileRemove(_ *cobra.Command, args []string) error {
 		}
 
 		if confirm != "y" && confirm != "Y" {
-			fmt.Println("Cancelled.")
+			_, _ = fmt.Fprintln(os.Stdout, "Cancelled.")
 
 			return nil
 		}
@@ -68,13 +69,13 @@ func runProfileRemove(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to delete profile: %w", err)
 	}
 
-	fmt.Printf("Profile '%s' deleted.\n", name)
+	_, _ = fmt.Fprintf(os.Stdout, "Profile '%s' deleted.\n", name)
 
 	// If we deleted the active profile, suggest setting a new one
 	if profile.Active {
 		profiles, listErr := pm.ListProfiles()
 		if listErr == nil && len(profiles) > 0 {
-			fmt.Printf("\nTo set a new active profile: clonr profile use %s\n", profiles[0].Name)
+			_, _ = fmt.Fprintf(os.Stdout, "\nTo set a new active profile: clonr profile use %s\n", profiles[0].Name)
 		}
 	}
 
