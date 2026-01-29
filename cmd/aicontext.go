@@ -15,7 +15,7 @@ import (
 type AIContextOptions struct {
 	JSON     bool   // --json: output as structured JSON
 	Compact  bool   // --compact: omit examples and long descriptions
-	Category string // --category: filter to specific category
+	Category string // --category: filter to a specific category
 }
 
 // AIContext represents the complete AI context document
@@ -69,7 +69,7 @@ type AIArchitecture struct {
 	Structure   map[string]string `json:"structure"`
 }
 
-// aiCategoryMap maps command names to categories
+// aiCategoryMap maps command names to categorize
 var aiCategoryMap = map[string]string{
 	// Repository Management
 	"clone": "Repository Management", "add": "Repository Management",
