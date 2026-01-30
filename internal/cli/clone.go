@@ -18,19 +18,20 @@ var (
 )
 
 type CloneModel struct {
-	spinner spinner.Model
-	url     string
-	path    string
-	cloning bool
-	done    bool
-	err     error
+	spinner  spinner.Model
+	url      string
+	path     string
+	token    string
+	cloning  bool
+	done     bool
+	err      error
 }
 
 type cloneCompleteMsg struct {
 	err error
 }
 
-func NewCloneModel(url, path string) CloneModel {
+func NewCloneModel(url, path, token string) CloneModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = spinnerStyle
@@ -39,6 +40,7 @@ func NewCloneModel(url, path string) CloneModel {
 		spinner: s,
 		url:     url,
 		path:    path,
+		token:   token,
 		cloning: true,
 	}
 }
@@ -48,7 +50,14 @@ func (m CloneModel) Init() tea.Cmd {
 }
 
 func (m CloneModel) cloneRepo() tea.Msg {
-	cmd := exec.Command("git", "clone", m.url, m.path)
+	cloneURL := m.url
+
+	// Inject token into URL for authentication if provided
+	if m.token != "" {
+		cloneURL = injectTokenIntoURL(m.url, m.token)
+	}
+
+	cmd := exec.Command("git", "clone", cloneURL, m.path)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -56,6 +65,20 @@ func (m CloneModel) cloneRepo() tea.Msg {
 	}
 
 	return cloneCompleteMsg{err: nil}
+}
+
+// injectTokenIntoURL adds authentication token to HTTPS URLs
+func injectTokenIntoURL(rawURL, token string) string {
+	// Only inject token for HTTPS URLs
+	if len(rawURL) > 8 && rawURL[:8] == "https://" {
+		return "https://" + token + "@" + rawURL[8:]
+	}
+
+	if len(rawURL) > 7 && rawURL[:7] == "http://" {
+		return "http://" + token + "@" + rawURL[7:]
+	}
+
+	return rawURL
 }
 
 func (m CloneModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

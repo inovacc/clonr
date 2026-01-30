@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var cloneToken string
+
 var cloneCmd = &cobra.Command{
 	Use:   "clone <url> [destination]",
 	Short: "Clone a Git repository",
@@ -29,7 +31,10 @@ Use --force to remove and re-clone if the repository already exists in the datab
 			return err
 		}
 
-		m := cli.NewCloneModel(repoURL.String(), targetPath)
+		// Resolve token for authentication (from flag, profile, or environment)
+		token, _, _ := core.ResolveGitHubTokenForHost(cloneToken, "", repoURL.Host)
+
+		m := cli.NewCloneModel(repoURL.String(), targetPath, token)
 		p := tea.NewProgram(m)
 
 		finalModel, err := p.Run()
@@ -49,4 +54,5 @@ Use --force to remove and re-clone if the repository already exists in the datab
 func init() {
 	rootCmd.AddCommand(cloneCmd)
 	cloneCmd.Flags().BoolP("force", "f", false, "Force clone even if repository/directory already exists (removes existing)")
+	cloneCmd.Flags().StringVar(&cloneToken, "token", "", "GitHub token for authentication (uses active profile if not specified)")
 }

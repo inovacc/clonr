@@ -15,13 +15,16 @@ import (
 
 var profileAddCmd = &cobra.Command{
 	Use:   "add <name>",
-	Short: "Create a new profile with GitHub OAuth",
+	Short: "Create a new profile with GitHub OAuth or PAT",
 	Long: `Create a new GitHub authentication profile.
 
-This will start an OAuth device flow where you:
+By default, this will start an OAuth device flow where you:
 1. Copy the displayed code
 2. Open the GitHub URL in your browser
 3. Paste the code and authorize clonr
+
+Alternatively, you can provide a Personal Access Token (PAT) directly
+using the --token flag to skip the OAuth flow.
 
 The token will be stored securely in your system keyring if available,
 or encrypted in the database as a fallback.
@@ -29,7 +32,8 @@ or encrypted in the database as a fallback.
 Examples:
   clonr profile add work
   clonr profile add personal --host github.com
-  clonr profile add enterprise --host github.mycompany.com`,
+  clonr profile add enterprise --host github.mycompany.com
+  clonr profile add myprofile --token ghp_xxxxxxxxxxxx`,
 	Args: cobra.ExactArgs(1),
 	RunE: runProfileAdd,
 }
@@ -37,6 +41,7 @@ Examples:
 var (
 	profileAddHost   string
 	profileAddScopes []string
+	profileAddToken  string
 )
 
 func init() {
@@ -44,6 +49,7 @@ func init() {
 
 	profileAddCmd.Flags().StringVar(&profileAddHost, "host", "github.com", "GitHub host (for enterprise)")
 	profileAddCmd.Flags().StringSliceVar(&profileAddScopes, "scopes", nil, "OAuth scopes (default: repo,read:org,gist,read:user,user:email)")
+	profileAddCmd.Flags().StringVar(&profileAddToken, "token", "", "Personal Access Token (skip OAuth flow)")
 }
 
 func runProfileAdd(_ *cobra.Command, args []string) error {
@@ -73,47 +79,69 @@ func runProfileAdd(_ *cobra.Command, args []string) error {
 
 	_, _ = fmt.Fprintf(os.Stdout, "Creating profile: %s\n", name)
 	_, _ = fmt.Fprintf(os.Stdout, "Host: %s\n", profileAddHost)
-	_, _ = fmt.Fprintf(os.Stdout, "Scopes: %s\n\n", strings.Join(scopes, ", "))
 
-	// Run OAuth flow
-	flow := core.NewOAuthFlow(profileAddHost, scopes)
+	var token, username string
 
-	var deviceCode, verificationURL string
+	// Check if PAT was provided
+	if profileAddToken != "" {
+		_, _ = fmt.Fprintln(os.Stdout, "Using provided Personal Access Token...")
 
-	flow.OnDeviceCode(func(code, url string) {
-		deviceCode = code
-		verificationURL = url
+		// Validate token and get username
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
 
-		_, _ = fmt.Fprintln(os.Stdout, "GitHub OAuth Authentication")
-		_, _ = fmt.Fprintln(os.Stdout, strings.Repeat("-", 40))
-		_, _ = fmt.Fprintf(os.Stdout, "\n1. Copy this code: %s\n\n", code)
-		_, _ = fmt.Fprintf(os.Stdout, "2. Open: %s\n\n", url)
-		_, _ = fmt.Fprintln(os.Stdout, "3. Paste the code and authorize clonr")
-		_, _ = fmt.Fprintln(os.Stdout, "\nWaiting for authorization...")
-	})
+		valid, user, err := core.ValidateToken(ctx, profileAddToken, profileAddHost)
+		if err != nil {
+			return fmt.Errorf("failed to validate token: %w", err)
+		}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
+		if !valid {
+			return fmt.Errorf("invalid or expired token")
+		}
 
-	result, err := flow.Run(ctx)
-	if err != nil {
-		return fmt.Errorf("OAuth authentication failed: %w", err)
+		token = profileAddToken
+		username = user
+		_, _ = fmt.Fprintf(os.Stdout, "Token validated for user: %s\n", username)
+	} else {
+		_, _ = fmt.Fprintf(os.Stdout, "Scopes: %s\n\n", strings.Join(scopes, ", "))
+
+		// Run OAuth flow
+		flow := core.NewOAuthFlow(profileAddHost, scopes)
+
+		flow.OnDeviceCode(func(code, url string) {
+			_, _ = fmt.Fprintln(os.Stdout, "GitHub OAuth Authentication")
+			_, _ = fmt.Fprintln(os.Stdout, strings.Repeat("-", 40))
+			_, _ = fmt.Fprintf(os.Stdout, "\n1. Copy this code: %s\n\n", code)
+			_, _ = fmt.Fprintf(os.Stdout, "2. Open: %s\n\n", url)
+			_, _ = fmt.Fprintln(os.Stdout, "3. Paste the code and authorize clonr")
+			_, _ = fmt.Fprintln(os.Stdout, "\nWaiting for authorization...")
+		})
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+
+		result, err := flow.Run(ctx)
+		if err != nil {
+			return fmt.Errorf("OAuth authentication failed: %w", err)
+		}
+
+		token = result.Token
+		username = result.Username
+		scopes = result.Scopes
 	}
 
 	// Store token
 	var tokenStorage model.TokenStorage
-
 	var encryptedToken []byte
 
-	if err := core.SetToken(name, profileAddHost, result.Token); err != nil {
+	if err := core.SetToken(name, profileAddHost, token); err != nil {
 		// Keyring not available, use encrypted storage
-		encryptedToken, encErr := core.EncryptToken(result.Token, name, profileAddHost)
-		if encErr != nil {
-			return fmt.Errorf("failed to encrypt token: %w", encErr)
+		encryptedToken, err = core.EncryptToken(token, name, profileAddHost)
+		if err != nil {
+			return fmt.Errorf("failed to encrypt token: %w", err)
 		}
 
 		tokenStorage = model.TokenStorageInsecure
-		_ = encryptedToken
 	} else {
 		tokenStorage = model.TokenStorageKeyring
 	}
@@ -130,9 +158,9 @@ func runProfileAdd(_ *cobra.Command, args []string) error {
 	profile := &model.Profile{
 		Name:           name,
 		Host:           profileAddHost,
-		User:           result.Username,
+		User:           username,
 		TokenStorage:   tokenStorage,
-		Scopes:         result.Scopes,
+		Scopes:         scopes,
 		Active:         isFirstProfile,
 		EncryptedToken: encryptedToken,
 		CreatedAt:      time.Now(),
@@ -159,10 +187,6 @@ func runProfileAdd(_ *cobra.Command, args []string) error {
 	} else {
 		_, _ = fmt.Fprintf(os.Stdout, "\nTo use this profile: clonr profile use %s\n", name)
 	}
-
-	// Return device code info for potential further use
-	_ = deviceCode
-	_ = verificationURL
 
 	return nil
 }
