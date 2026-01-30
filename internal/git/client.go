@@ -333,6 +333,164 @@ type CommitOptions struct {
 	All bool // Stage all modified files before committing
 }
 
+// StashOptions configures stash behavior
+type StashOptions struct {
+	Message     string
+	IncludeUntracked bool
+	KeepIndex   bool
+}
+
+// CheckoutOptions configures checkout behavior
+type CheckoutOptions struct {
+	Create bool // Create new branch
+	Force  bool // Force checkout
+}
+
+// MergeOptions configures merge behavior
+type MergeOptions struct {
+	NoFastForward bool
+	Squash        bool
+	Message       string
+}
+
+// Stash stashes changes
+func (c *Client) Stash(ctx context.Context, opts StashOptions) error {
+	args := []string{"stash", "push"}
+
+	if opts.Message != "" {
+		args = append(args, "-m", opts.Message)
+	}
+
+	if opts.IncludeUntracked {
+		args = append(args, "--include-untracked")
+	}
+
+	if opts.KeepIndex {
+		args = append(args, "--keep-index")
+	}
+
+	cmd := c.Command(ctx, args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return &GitError{Stderr: string(output), err: err}
+	}
+
+	return nil
+}
+
+// StashPop pops the latest stash
+func (c *Client) StashPop(ctx context.Context) error {
+	cmd := c.Command(ctx, "stash", "pop")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return &GitError{Stderr: string(output), err: err}
+	}
+	return nil
+}
+
+// StashList lists all stashes
+func (c *Client) StashList(ctx context.Context) (string, error) {
+	cmd := c.Command(ctx, "stash", "list")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", &GitError{err: err}
+	}
+	return string(output), nil
+}
+
+// StashDrop drops a stash
+func (c *Client) StashDrop(ctx context.Context, stash string) error {
+	args := []string{"stash", "drop"}
+	if stash != "" {
+		args = append(args, stash)
+	}
+
+	cmd := c.Command(ctx, args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return &GitError{Stderr: string(output), err: err}
+	}
+	return nil
+}
+
+// Checkout checks out a branch or commit
+func (c *Client) Checkout(ctx context.Context, target string, opts CheckoutOptions) error {
+	args := []string{"checkout"}
+
+	if opts.Create {
+		args = append(args, "-b")
+	}
+
+	if opts.Force {
+		args = append(args, "-f")
+	}
+
+	args = append(args, target)
+
+	cmd := c.Command(ctx, args...)
+	cmd.Stdout = c.Stdout
+	cmd.Stderr = c.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return &GitError{err: err}
+	}
+
+	return nil
+}
+
+// Merge merges a branch
+func (c *Client) Merge(ctx context.Context, branch string, opts MergeOptions) error {
+	args := []string{"merge"}
+
+	if opts.NoFastForward {
+		args = append(args, "--no-ff")
+	}
+
+	if opts.Squash {
+		args = append(args, "--squash")
+	}
+
+	if opts.Message != "" {
+		args = append(args, "-m", opts.Message)
+	}
+
+	args = append(args, branch)
+
+	cmd := c.Command(ctx, args...)
+	cmd.Stdout = c.Stdout
+	cmd.Stderr = c.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return &GitError{err: err}
+	}
+
+	return nil
+}
+
+// ListBranches lists branches
+func (c *Client) ListBranches(ctx context.Context, all bool) ([]string, error) {
+	args := []string{"branch", "--format=%(refname:short)"}
+	if all {
+		args = append(args, "-a")
+	}
+
+	cmd := c.Command(ctx, args...)
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, &GitError{err: err}
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	branches := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if line = strings.TrimSpace(line); line != "" {
+			branches = append(branches, line)
+		}
+	}
+
+	return branches, nil
+}
+
 // GitError represents a git command error
 type GitError struct {
 	ExitCode int
