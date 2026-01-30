@@ -111,11 +111,26 @@ func extractHostFromURL(url string) string {
 }
 
 func injectTokenIntoGitURL(rawURL, token string) string {
+	var scheme, rest string
+
 	if strings.HasPrefix(rawURL, "https://") {
-		return "https://" + token + "@" + strings.TrimPrefix(rawURL, "https://")
+		scheme = "https://"
+		rest = strings.TrimPrefix(rawURL, "https://")
+	} else if strings.HasPrefix(rawURL, "http://") {
+		scheme = "http://"
+		rest = strings.TrimPrefix(rawURL, "http://")
+	} else {
+		return rawURL
 	}
-	if strings.HasPrefix(rawURL, "http://") {
-		return "http://" + token + "@" + strings.TrimPrefix(rawURL, "http://")
+
+	// Remove existing credentials if present (user:pass@host or user@host)
+	if idx := strings.Index(rest, "@"); idx != -1 {
+		// Check if @ appears before the first /
+		slashIdx := strings.Index(rest, "/")
+		if slashIdx == -1 || idx < slashIdx {
+			rest = rest[idx+1:]
+		}
 	}
-	return rawURL
+
+	return scheme + token + "@" + rest
 }

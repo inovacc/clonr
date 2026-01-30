@@ -69,16 +69,40 @@ func (m CloneModel) cloneRepo() tea.Msg {
 
 // injectTokenIntoURL adds authentication token to HTTPS URLs
 func injectTokenIntoURL(rawURL, token string) string {
-	// Only inject token for HTTPS URLs
+	var scheme, rest string
+
 	if len(rawURL) > 8 && rawURL[:8] == "https://" {
-		return "https://" + token + "@" + rawURL[8:]
+		scheme = "https://"
+		rest = rawURL[8:]
+	} else if len(rawURL) > 7 && rawURL[:7] == "http://" {
+		scheme = "http://"
+		rest = rawURL[7:]
+	} else {
+		return rawURL
 	}
 
-	if len(rawURL) > 7 && rawURL[:7] == "http://" {
-		return "http://" + token + "@" + rawURL[7:]
+	// Remove existing credentials if present (user:pass@host or user@host)
+	for i := 0; i < len(rest); i++ {
+		if rest[i] == '@' {
+			// Check if @ appears before the first /
+			slashFound := false
+			for j := 0; j < i; j++ {
+				if rest[j] == '/' {
+					slashFound = true
+					break
+				}
+			}
+			if !slashFound {
+				rest = rest[i+1:]
+				break
+			}
+		}
+		if rest[i] == '/' {
+			break
+		}
 	}
 
-	return rawURL
+	return scheme + token + "@" + rest
 }
 
 func (m CloneModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
