@@ -16,12 +16,14 @@ message Repository {
   google.protobuf.Timestamp cloned_at = 6;
   google.protobuf.Timestamp updated_at = 7;
   google.protobuf.Timestamp last_checked = 8;
+  string workspace = 9;
 }
 
 // SaveRepo RPC messages
 message SaveRepoRequest {
   string url = 1;
   string path = 2;
+  string workspace = 3;
 }
 
 message SaveRepoResponse {
@@ -66,6 +68,7 @@ message GetAllReposResponse {
 // GetRepos RPC messages
 message GetReposRequest {
   bool favorites_only = 1;
+  string workspace = 2;  // empty = all workspaces
 }
 
 message GetReposResponse {

@@ -38,6 +38,15 @@ const (
 	ClonrService_ListProfiles_FullMethodName          = "/clonr.v1.ClonrService/ListProfiles"
 	ClonrService_DeleteProfile_FullMethodName         = "/clonr.v1.ClonrService/DeleteProfile"
 	ClonrService_ProfileExists_FullMethodName         = "/clonr.v1.ClonrService/ProfileExists"
+	ClonrService_SaveWorkspace_FullMethodName         = "/clonr.v1.ClonrService/SaveWorkspace"
+	ClonrService_GetWorkspace_FullMethodName          = "/clonr.v1.ClonrService/GetWorkspace"
+	ClonrService_GetActiveWorkspace_FullMethodName    = "/clonr.v1.ClonrService/GetActiveWorkspace"
+	ClonrService_SetActiveWorkspace_FullMethodName    = "/clonr.v1.ClonrService/SetActiveWorkspace"
+	ClonrService_ListWorkspaces_FullMethodName        = "/clonr.v1.ClonrService/ListWorkspaces"
+	ClonrService_DeleteWorkspace_FullMethodName       = "/clonr.v1.ClonrService/DeleteWorkspace"
+	ClonrService_WorkspaceExists_FullMethodName       = "/clonr.v1.ClonrService/WorkspaceExists"
+	ClonrService_GetReposByWorkspace_FullMethodName   = "/clonr.v1.ClonrService/GetReposByWorkspace"
+	ClonrService_UpdateRepoWorkspace_FullMethodName   = "/clonr.v1.ClonrService/UpdateRepoWorkspace"
 )
 
 // ClonrServiceClient is the client API for ClonrService service.
@@ -69,6 +78,16 @@ type ClonrServiceClient interface {
 	ListProfiles(ctx context.Context, in *ListProfilesRequest, opts ...grpc.CallOption) (*ListProfilesResponse, error)
 	DeleteProfile(ctx context.Context, in *DeleteProfileRequest, opts ...grpc.CallOption) (*DeleteProfileResponse, error)
 	ProfileExists(ctx context.Context, in *ProfileExistsRequest, opts ...grpc.CallOption) (*ProfileExistsResponse, error)
+	// Workspace operations
+	SaveWorkspace(ctx context.Context, in *SaveWorkspaceRequest, opts ...grpc.CallOption) (*SaveWorkspaceResponse, error)
+	GetWorkspace(ctx context.Context, in *GetWorkspaceRequest, opts ...grpc.CallOption) (*GetWorkspaceResponse, error)
+	GetActiveWorkspace(ctx context.Context, in *GetActiveWorkspaceRequest, opts ...grpc.CallOption) (*GetActiveWorkspaceResponse, error)
+	SetActiveWorkspace(ctx context.Context, in *SetActiveWorkspaceRequest, opts ...grpc.CallOption) (*SetActiveWorkspaceResponse, error)
+	ListWorkspaces(ctx context.Context, in *ListWorkspacesRequest, opts ...grpc.CallOption) (*ListWorkspacesResponse, error)
+	DeleteWorkspace(ctx context.Context, in *DeleteWorkspaceRequest, opts ...grpc.CallOption) (*DeleteWorkspaceResponse, error)
+	WorkspaceExists(ctx context.Context, in *WorkspaceExistsRequest, opts ...grpc.CallOption) (*WorkspaceExistsResponse, error)
+	GetReposByWorkspace(ctx context.Context, in *GetReposByWorkspaceRequest, opts ...grpc.CallOption) (*GetReposByWorkspaceResponse, error)
+	UpdateRepoWorkspace(ctx context.Context, in *UpdateRepoWorkspaceRequest, opts ...grpc.CallOption) (*UpdateRepoWorkspaceResponse, error)
 }
 
 type clonrServiceClient struct {
@@ -269,6 +288,96 @@ func (c *clonrServiceClient) ProfileExists(ctx context.Context, in *ProfileExist
 	return out, nil
 }
 
+func (c *clonrServiceClient) SaveWorkspace(ctx context.Context, in *SaveWorkspaceRequest, opts ...grpc.CallOption) (*SaveWorkspaceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SaveWorkspaceResponse)
+	err := c.cc.Invoke(ctx, ClonrService_SaveWorkspace_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) GetWorkspace(ctx context.Context, in *GetWorkspaceRequest, opts ...grpc.CallOption) (*GetWorkspaceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetWorkspaceResponse)
+	err := c.cc.Invoke(ctx, ClonrService_GetWorkspace_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) GetActiveWorkspace(ctx context.Context, in *GetActiveWorkspaceRequest, opts ...grpc.CallOption) (*GetActiveWorkspaceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetActiveWorkspaceResponse)
+	err := c.cc.Invoke(ctx, ClonrService_GetActiveWorkspace_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) SetActiveWorkspace(ctx context.Context, in *SetActiveWorkspaceRequest, opts ...grpc.CallOption) (*SetActiveWorkspaceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetActiveWorkspaceResponse)
+	err := c.cc.Invoke(ctx, ClonrService_SetActiveWorkspace_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) ListWorkspaces(ctx context.Context, in *ListWorkspacesRequest, opts ...grpc.CallOption) (*ListWorkspacesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListWorkspacesResponse)
+	err := c.cc.Invoke(ctx, ClonrService_ListWorkspaces_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) DeleteWorkspace(ctx context.Context, in *DeleteWorkspaceRequest, opts ...grpc.CallOption) (*DeleteWorkspaceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteWorkspaceResponse)
+	err := c.cc.Invoke(ctx, ClonrService_DeleteWorkspace_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) WorkspaceExists(ctx context.Context, in *WorkspaceExistsRequest, opts ...grpc.CallOption) (*WorkspaceExistsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WorkspaceExistsResponse)
+	err := c.cc.Invoke(ctx, ClonrService_WorkspaceExists_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) GetReposByWorkspace(ctx context.Context, in *GetReposByWorkspaceRequest, opts ...grpc.CallOption) (*GetReposByWorkspaceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetReposByWorkspaceResponse)
+	err := c.cc.Invoke(ctx, ClonrService_GetReposByWorkspace_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) UpdateRepoWorkspace(ctx context.Context, in *UpdateRepoWorkspaceRequest, opts ...grpc.CallOption) (*UpdateRepoWorkspaceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateRepoWorkspaceResponse)
+	err := c.cc.Invoke(ctx, ClonrService_UpdateRepoWorkspace_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ClonrServiceServer is the server API for ClonrService service.
 // All implementations must embed UnimplementedClonrServiceServer
 // for forward compatibility.
@@ -298,6 +407,16 @@ type ClonrServiceServer interface {
 	ListProfiles(context.Context, *ListProfilesRequest) (*ListProfilesResponse, error)
 	DeleteProfile(context.Context, *DeleteProfileRequest) (*DeleteProfileResponse, error)
 	ProfileExists(context.Context, *ProfileExistsRequest) (*ProfileExistsResponse, error)
+	// Workspace operations
+	SaveWorkspace(context.Context, *SaveWorkspaceRequest) (*SaveWorkspaceResponse, error)
+	GetWorkspace(context.Context, *GetWorkspaceRequest) (*GetWorkspaceResponse, error)
+	GetActiveWorkspace(context.Context, *GetActiveWorkspaceRequest) (*GetActiveWorkspaceResponse, error)
+	SetActiveWorkspace(context.Context, *SetActiveWorkspaceRequest) (*SetActiveWorkspaceResponse, error)
+	ListWorkspaces(context.Context, *ListWorkspacesRequest) (*ListWorkspacesResponse, error)
+	DeleteWorkspace(context.Context, *DeleteWorkspaceRequest) (*DeleteWorkspaceResponse, error)
+	WorkspaceExists(context.Context, *WorkspaceExistsRequest) (*WorkspaceExistsResponse, error)
+	GetReposByWorkspace(context.Context, *GetReposByWorkspaceRequest) (*GetReposByWorkspaceResponse, error)
+	UpdateRepoWorkspace(context.Context, *UpdateRepoWorkspaceRequest) (*UpdateRepoWorkspaceResponse, error)
 	mustEmbedUnimplementedClonrServiceServer()
 }
 
@@ -364,6 +483,33 @@ func (UnimplementedClonrServiceServer) DeleteProfile(context.Context, *DeletePro
 }
 func (UnimplementedClonrServiceServer) ProfileExists(context.Context, *ProfileExistsRequest) (*ProfileExistsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ProfileExists not implemented")
+}
+func (UnimplementedClonrServiceServer) SaveWorkspace(context.Context, *SaveWorkspaceRequest) (*SaveWorkspaceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveWorkspace not implemented")
+}
+func (UnimplementedClonrServiceServer) GetWorkspace(context.Context, *GetWorkspaceRequest) (*GetWorkspaceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetWorkspace not implemented")
+}
+func (UnimplementedClonrServiceServer) GetActiveWorkspace(context.Context, *GetActiveWorkspaceRequest) (*GetActiveWorkspaceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetActiveWorkspace not implemented")
+}
+func (UnimplementedClonrServiceServer) SetActiveWorkspace(context.Context, *SetActiveWorkspaceRequest) (*SetActiveWorkspaceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetActiveWorkspace not implemented")
+}
+func (UnimplementedClonrServiceServer) ListWorkspaces(context.Context, *ListWorkspacesRequest) (*ListWorkspacesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListWorkspaces not implemented")
+}
+func (UnimplementedClonrServiceServer) DeleteWorkspace(context.Context, *DeleteWorkspaceRequest) (*DeleteWorkspaceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteWorkspace not implemented")
+}
+func (UnimplementedClonrServiceServer) WorkspaceExists(context.Context, *WorkspaceExistsRequest) (*WorkspaceExistsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method WorkspaceExists not implemented")
+}
+func (UnimplementedClonrServiceServer) GetReposByWorkspace(context.Context, *GetReposByWorkspaceRequest) (*GetReposByWorkspaceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetReposByWorkspace not implemented")
+}
+func (UnimplementedClonrServiceServer) UpdateRepoWorkspace(context.Context, *UpdateRepoWorkspaceRequest) (*UpdateRepoWorkspaceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateRepoWorkspace not implemented")
 }
 func (UnimplementedClonrServiceServer) mustEmbedUnimplementedClonrServiceServer() {}
 func (UnimplementedClonrServiceServer) testEmbeddedByValue()                      {}
@@ -728,6 +874,168 @@ func _ClonrService_ProfileExists_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClonrService_SaveWorkspace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveWorkspaceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).SaveWorkspace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_SaveWorkspace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).SaveWorkspace(ctx, req.(*SaveWorkspaceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_GetWorkspace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetWorkspaceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).GetWorkspace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_GetWorkspace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).GetWorkspace(ctx, req.(*GetWorkspaceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_GetActiveWorkspace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetActiveWorkspaceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).GetActiveWorkspace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_GetActiveWorkspace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).GetActiveWorkspace(ctx, req.(*GetActiveWorkspaceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_SetActiveWorkspace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetActiveWorkspaceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).SetActiveWorkspace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_SetActiveWorkspace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).SetActiveWorkspace(ctx, req.(*SetActiveWorkspaceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_ListWorkspaces_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListWorkspacesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).ListWorkspaces(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_ListWorkspaces_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).ListWorkspaces(ctx, req.(*ListWorkspacesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_DeleteWorkspace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteWorkspaceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).DeleteWorkspace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_DeleteWorkspace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).DeleteWorkspace(ctx, req.(*DeleteWorkspaceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_WorkspaceExists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WorkspaceExistsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).WorkspaceExists(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_WorkspaceExists_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).WorkspaceExists(ctx, req.(*WorkspaceExistsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_GetReposByWorkspace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetReposByWorkspaceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).GetReposByWorkspace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_GetReposByWorkspace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).GetReposByWorkspace(ctx, req.(*GetReposByWorkspaceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_UpdateRepoWorkspace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateRepoWorkspaceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).UpdateRepoWorkspace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_UpdateRepoWorkspace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).UpdateRepoWorkspace(ctx, req.(*UpdateRepoWorkspaceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ClonrService_ServiceDesc is the grpc.ServiceDesc for ClonrService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -810,6 +1118,42 @@ var ClonrService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ProfileExists",
 			Handler:    _ClonrService_ProfileExists_Handler,
+		},
+		{
+			MethodName: "SaveWorkspace",
+			Handler:    _ClonrService_SaveWorkspace_Handler,
+		},
+		{
+			MethodName: "GetWorkspace",
+			Handler:    _ClonrService_GetWorkspace_Handler,
+		},
+		{
+			MethodName: "GetActiveWorkspace",
+			Handler:    _ClonrService_GetActiveWorkspace_Handler,
+		},
+		{
+			MethodName: "SetActiveWorkspace",
+			Handler:    _ClonrService_SetActiveWorkspace_Handler,
+		},
+		{
+			MethodName: "ListWorkspaces",
+			Handler:    _ClonrService_ListWorkspaces_Handler,
+		},
+		{
+			MethodName: "DeleteWorkspace",
+			Handler:    _ClonrService_DeleteWorkspace_Handler,
+		},
+		{
+			MethodName: "WorkspaceExists",
+			Handler:    _ClonrService_WorkspaceExists_Handler,
+		},
+		{
+			MethodName: "GetReposByWorkspace",
+			Handler:    _ClonrService_GetReposByWorkspace_Handler,
+		},
+		{
+			MethodName: "UpdateRepoWorkspace",
+			Handler:    _ClonrService_UpdateRepoWorkspace_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -114,12 +114,18 @@ func (c *Client) Ping() error {
 
 // SaveRepo saves a repository to the database via gRPC
 func (c *Client) SaveRepo(u *url.URL, path string) error {
+	return c.SaveRepoWithWorkspace(u, path, "")
+}
+
+// SaveRepoWithWorkspace saves a repository with workspace to the database via gRPC
+func (c *Client) SaveRepoWithWorkspace(u *url.URL, path string, workspace string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 
 	resp, err := c.service.SaveRepo(ctx, &v1.SaveRepoRequest{
-		Url:  u.String(),
-		Path: path,
+		Url:       u.String(),
+		Path:      path,
+		Workspace: workspace,
 	})
 	if err != nil {
 		return handleGRPCError(err)
@@ -206,11 +212,12 @@ func (c *Client) GetAllRepos() ([]model.Repository, error) {
 }
 
 // GetRepos retrieves repositories with optional filtering
-func (c *Client) GetRepos(favoritesOnly bool) ([]model.Repository, error) {
+func (c *Client) GetRepos(workspace string, favoritesOnly bool) ([]model.Repository, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 
 	resp, err := c.service.GetRepos(ctx, &v1.GetReposRequest{
+		Workspace:     workspace,
 		FavoritesOnly: favoritesOnly,
 	})
 	if err != nil {
@@ -356,6 +363,7 @@ func protoToModelRepository(pr *v1.Repository) model.Repository {
 		UID:         pr.GetUid(),
 		URL:         pr.GetUrl(),
 		Path:        pr.GetPath(),
+		Workspace:   pr.GetWorkspace(),
 		Favorite:    pr.GetFavorite(),
 		ClonedAt:    pr.GetClonedAt().AsTime(),
 		UpdatedAt:   pr.GetUpdatedAt().AsTime(),
@@ -538,5 +546,190 @@ func modelToProtoProfile(profile *model.Profile) *v1.Profile {
 		EncryptedToken: profile.EncryptedToken,
 		CreatedAt:      timestamppb.New(profile.CreatedAt),
 		LastUsedAt:     timestamppb.New(profile.LastUsedAt),
+	}
+}
+
+// SaveWorkspace saves or updates a workspace via gRPC
+func (c *Client) SaveWorkspace(workspace *model.Workspace) error {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.SaveWorkspace(ctx, &v1.SaveWorkspaceRequest{
+		Workspace: modelToProtoWorkspace(workspace),
+	})
+	if err != nil {
+		return handleGRPCError(err)
+	}
+
+	if !resp.GetSuccess() {
+		return fmt.Errorf("operation failed")
+	}
+
+	return nil
+}
+
+// GetWorkspace retrieves a workspace by name
+func (c *Client) GetWorkspace(name string) (*model.Workspace, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.GetWorkspace(ctx, &v1.GetWorkspaceRequest{
+		Name: name,
+	})
+	if err != nil {
+		return nil, handleGRPCError(err)
+	}
+
+	return protoToModelWorkspace(resp.GetWorkspace()), nil
+}
+
+// GetActiveWorkspace retrieves the currently active workspace
+func (c *Client) GetActiveWorkspace() (*model.Workspace, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.GetActiveWorkspace(ctx, &v1.GetActiveWorkspaceRequest{})
+	if err != nil {
+		return nil, handleGRPCError(err)
+	}
+
+	return protoToModelWorkspace(resp.GetWorkspace()), nil
+}
+
+// SetActiveWorkspace sets the active workspace by name
+func (c *Client) SetActiveWorkspace(name string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.SetActiveWorkspace(ctx, &v1.SetActiveWorkspaceRequest{
+		Name: name,
+	})
+	if err != nil {
+		return handleGRPCError(err)
+	}
+
+	if !resp.GetSuccess() {
+		return fmt.Errorf("operation failed")
+	}
+
+	return nil
+}
+
+// ListWorkspaces retrieves all workspaces
+func (c *Client) ListWorkspaces() ([]model.Workspace, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.ListWorkspaces(ctx, &v1.ListWorkspacesRequest{})
+	if err != nil {
+		return nil, handleGRPCError(err)
+	}
+
+	workspaces := make([]model.Workspace, len(resp.GetWorkspaces()))
+	for i, pw := range resp.GetWorkspaces() {
+		workspaces[i] = *protoToModelWorkspace(pw)
+	}
+
+	return workspaces, nil
+}
+
+// DeleteWorkspace removes a workspace by name
+func (c *Client) DeleteWorkspace(name string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.DeleteWorkspace(ctx, &v1.DeleteWorkspaceRequest{
+		Name: name,
+	})
+	if err != nil {
+		return handleGRPCError(err)
+	}
+
+	if !resp.GetSuccess() {
+		return fmt.Errorf("operation failed")
+	}
+
+	return nil
+}
+
+// WorkspaceExists checks if a workspace exists by name
+func (c *Client) WorkspaceExists(name string) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.WorkspaceExists(ctx, &v1.WorkspaceExistsRequest{
+		Name: name,
+	})
+	if err != nil {
+		return false, handleGRPCError(err)
+	}
+
+	return resp.GetExists(), nil
+}
+
+// GetReposByWorkspace retrieves all repository URLs in a workspace
+func (c *Client) GetReposByWorkspace(workspace string) ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.GetReposByWorkspace(ctx, &v1.GetReposByWorkspaceRequest{
+		Workspace: workspace,
+	})
+	if err != nil {
+		return nil, handleGRPCError(err)
+	}
+
+	return resp.GetUrls(), nil
+}
+
+// UpdateRepoWorkspace updates the workspace for a repository
+func (c *Client) UpdateRepoWorkspace(urlStr string, workspace string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.UpdateRepoWorkspace(ctx, &v1.UpdateRepoWorkspaceRequest{
+		Url:       urlStr,
+		Workspace: workspace,
+	})
+	if err != nil {
+		return handleGRPCError(err)
+	}
+
+	if !resp.GetSuccess() {
+		return fmt.Errorf("operation failed")
+	}
+
+	return nil
+}
+
+// protoToModelWorkspace converts a proto Workspace to model.Workspace
+func protoToModelWorkspace(pw *v1.Workspace) *model.Workspace {
+	if pw == nil {
+		return nil
+	}
+
+	return &model.Workspace{
+		Name:        pw.GetName(),
+		Description: pw.GetDescription(),
+		Path:        pw.GetPath(),
+		Active:      pw.GetActive(),
+		CreatedAt:   pw.GetCreatedAt().AsTime(),
+		UpdatedAt:   pw.GetUpdatedAt().AsTime(),
+	}
+}
+
+// modelToProtoWorkspace converts a model.Workspace to proto Workspace
+func modelToProtoWorkspace(workspace *model.Workspace) *v1.Workspace {
+	if workspace == nil {
+		return nil
+	}
+
+	return &v1.Workspace{
+		Name:        workspace.Name,
+		Description: workspace.Description,
+		Path:        workspace.Path,
+		Active:      workspace.Active,
+		CreatedAt:   timestamppb.New(workspace.CreatedAt),
+		UpdatedAt:   timestamppb.New(workspace.UpdatedAt),
 	}
 }

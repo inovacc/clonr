@@ -13,11 +13,12 @@ import (
 type Store interface {
 	Ping() error
 	SaveRepo(u *url.URL, path string) error
+	SaveRepoWithWorkspace(u *url.URL, path string, workspace string) error
 	RepoExistsByURL(u *url.URL) (bool, error)
 	RepoExistsByPath(path string) (bool, error)
 	InsertRepoIfNotExists(u *url.URL, path string) error
 	GetAllRepos() ([]model.Repository, error)
-	GetRepos(favoritesOnly bool) ([]model.Repository, error)
+	GetRepos(workspace string, favoritesOnly bool) ([]model.Repository, error)
 	SetFavoriteByURL(urlStr string, fav bool) error
 	UpdateRepoTimestamp(urlStr string) error
 	RemoveRepoByURL(u *url.URL) error
@@ -32,6 +33,17 @@ type Store interface {
 	ListProfiles() ([]model.Profile, error)
 	DeleteProfile(name string) error
 	ProfileExists(name string) (bool, error)
+
+	// Workspace operations
+	SaveWorkspace(workspace *model.Workspace) error
+	GetWorkspace(name string) (*model.Workspace, error)
+	GetActiveWorkspace() (*model.Workspace, error)
+	SetActiveWorkspace(name string) error
+	ListWorkspaces() ([]model.Workspace, error)
+	DeleteWorkspace(name string) error
+	WorkspaceExists(name string) (bool, error)
+	GetReposByWorkspace(workspace string) ([]string, error)
+	UpdateRepoWorkspace(urlStr string, workspace string) error
 }
 
 var (

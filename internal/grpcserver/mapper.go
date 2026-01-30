@@ -17,6 +17,7 @@ func ModelToProtoRepository(repo *model.Repository) *v1.Repository {
 		Uid:         repo.UID,
 		Url:         repo.URL,
 		Path:        repo.Path,
+		Workspace:   repo.Workspace,
 		Favorite:    repo.Favorite,
 		ClonedAt:    timestamppb.New(repo.ClonedAt),
 		UpdatedAt:   timestamppb.New(repo.UpdatedAt),
@@ -35,6 +36,7 @@ func ProtoToModelRepository(protoRepo *v1.Repository) model.Repository {
 		UID:         protoRepo.GetUid(),
 		URL:         protoRepo.GetUrl(),
 		Path:        protoRepo.GetPath(),
+		Workspace:   protoRepo.GetWorkspace(),
 		Favorite:    protoRepo.GetFavorite(),
 		ClonedAt:    protoRepo.GetClonedAt().AsTime(),
 		UpdatedAt:   protoRepo.GetUpdatedAt().AsTime(),
@@ -107,5 +109,37 @@ func ProtoToModelProfile(protoProfile *v1.Profile) *model.Profile {
 		EncryptedToken: protoProfile.GetEncryptedToken(),
 		CreatedAt:      protoProfile.GetCreatedAt().AsTime(),
 		LastUsedAt:     protoProfile.GetLastUsedAt().AsTime(),
+	}
+}
+
+// ModelToProtoWorkspace converts a model.Workspace to a proto Workspace
+func ModelToProtoWorkspace(workspace *model.Workspace) *v1.Workspace {
+	if workspace == nil {
+		return nil
+	}
+
+	return &v1.Workspace{
+		Name:        workspace.Name,
+		Description: workspace.Description,
+		Path:        workspace.Path,
+		Active:      workspace.Active,
+		CreatedAt:   timestamppb.New(workspace.CreatedAt),
+		UpdatedAt:   timestamppb.New(workspace.UpdatedAt),
+	}
+}
+
+// ProtoToModelWorkspace converts a proto Workspace to a model.Workspace
+func ProtoToModelWorkspace(protoWorkspace *v1.Workspace) *model.Workspace {
+	if protoWorkspace == nil {
+		return nil
+	}
+
+	return &model.Workspace{
+		Name:        protoWorkspace.GetName(),
+		Description: protoWorkspace.GetDescription(),
+		Path:        protoWorkspace.GetPath(),
+		Active:      protoWorkspace.GetActive(),
+		CreatedAt:   protoWorkspace.GetCreatedAt().AsTime(),
+		UpdatedAt:   protoWorkspace.GetUpdatedAt().AsTime(),
 	}
 }

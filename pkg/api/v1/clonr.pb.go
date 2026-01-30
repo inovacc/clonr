@@ -24,7 +24,7 @@ var File_v1_clonr_proto protoreflect.FileDescriptor
 
 const file_v1_clonr_proto_rawDesc = "" +
 	"\n" +
-	"\x0ev1/clonr.proto\x12\bclonr.v1\x1a\x0fv1/common.proto\x1a\x13v1/repository.proto\x1a\x0fv1/config.proto\x1a\x10v1/profile.proto2\x81\f\n" +
+	"\x0ev1/clonr.proto\x12\bclonr.v1\x1a\x0fv1/common.proto\x1a\x13v1/repository.proto\x1a\x0fv1/config.proto\x1a\x10v1/profile.proto\x1a\x12v1/workspace.proto2\xb1\x12\n" +
 	"\fClonrService\x12(\n" +
 	"\x04Ping\x12\x0f.clonr.v1.Empty\x1a\x0f.clonr.v1.Empty\x12A\n" +
 	"\bSaveRepo\x12\x19.clonr.v1.SaveRepoRequest\x1a\x1a.clonr.v1.SaveRepoResponse\x12V\n" +
@@ -46,7 +46,16 @@ const file_v1_clonr_proto_rawDesc = "" +
 	"\x10SetActiveProfile\x12!.clonr.v1.SetActiveProfileRequest\x1a\".clonr.v1.SetActiveProfileResponse\x12M\n" +
 	"\fListProfiles\x12\x1d.clonr.v1.ListProfilesRequest\x1a\x1e.clonr.v1.ListProfilesResponse\x12P\n" +
 	"\rDeleteProfile\x12\x1e.clonr.v1.DeleteProfileRequest\x1a\x1f.clonr.v1.DeleteProfileResponse\x12P\n" +
-	"\rProfileExists\x12\x1e.clonr.v1.ProfileExistsRequest\x1a\x1f.clonr.v1.ProfileExistsResponseB\x88\x01\n" +
+	"\rProfileExists\x12\x1e.clonr.v1.ProfileExistsRequest\x1a\x1f.clonr.v1.ProfileExistsResponse\x12P\n" +
+	"\rSaveWorkspace\x12\x1e.clonr.v1.SaveWorkspaceRequest\x1a\x1f.clonr.v1.SaveWorkspaceResponse\x12M\n" +
+	"\fGetWorkspace\x12\x1d.clonr.v1.GetWorkspaceRequest\x1a\x1e.clonr.v1.GetWorkspaceResponse\x12_\n" +
+	"\x12GetActiveWorkspace\x12#.clonr.v1.GetActiveWorkspaceRequest\x1a$.clonr.v1.GetActiveWorkspaceResponse\x12_\n" +
+	"\x12SetActiveWorkspace\x12#.clonr.v1.SetActiveWorkspaceRequest\x1a$.clonr.v1.SetActiveWorkspaceResponse\x12S\n" +
+	"\x0eListWorkspaces\x12\x1f.clonr.v1.ListWorkspacesRequest\x1a .clonr.v1.ListWorkspacesResponse\x12V\n" +
+	"\x0fDeleteWorkspace\x12 .clonr.v1.DeleteWorkspaceRequest\x1a!.clonr.v1.DeleteWorkspaceResponse\x12V\n" +
+	"\x0fWorkspaceExists\x12 .clonr.v1.WorkspaceExistsRequest\x1a!.clonr.v1.WorkspaceExistsResponse\x12b\n" +
+	"\x13GetReposByWorkspace\x12$.clonr.v1.GetReposByWorkspaceRequest\x1a%.clonr.v1.GetReposByWorkspaceResponse\x12b\n" +
+	"\x13UpdateRepoWorkspace\x12$.clonr.v1.UpdateRepoWorkspaceRequest\x1a%.clonr.v1.UpdateRepoWorkspaceResponseB\x88\x01\n" +
 	"\fcom.clonr.v1B\n" +
 	"ClonrProtoP\x01Z+github.com/inovacc/clonr/pkg/api/v1;clonrv1\xa2\x02\x03CXX\xaa\x02\bClonr.V1\xca\x02\bClonr\\V1\xe2\x02\x14Clonr\\V1\\GPBMetadata\xea\x02\tClonr::V1b\x06proto3"
 
@@ -70,24 +79,42 @@ var file_v1_clonr_proto_goTypes = []any{
 	(*ListProfilesRequest)(nil),           // 16: clonr.v1.ListProfilesRequest
 	(*DeleteProfileRequest)(nil),          // 17: clonr.v1.DeleteProfileRequest
 	(*ProfileExistsRequest)(nil),          // 18: clonr.v1.ProfileExistsRequest
-	(*SaveRepoResponse)(nil),              // 19: clonr.v1.SaveRepoResponse
-	(*RepoExistsByURLResponse)(nil),       // 20: clonr.v1.RepoExistsByURLResponse
-	(*RepoExistsByPathResponse)(nil),      // 21: clonr.v1.RepoExistsByPathResponse
-	(*InsertRepoIfNotExistsResponse)(nil), // 22: clonr.v1.InsertRepoIfNotExistsResponse
-	(*GetAllReposResponse)(nil),           // 23: clonr.v1.GetAllReposResponse
-	(*GetReposResponse)(nil),              // 24: clonr.v1.GetReposResponse
-	(*SetFavoriteResponse)(nil),           // 25: clonr.v1.SetFavoriteResponse
-	(*UpdateRepoTimestampResponse)(nil),   // 26: clonr.v1.UpdateRepoTimestampResponse
-	(*RemoveRepoByURLResponse)(nil),       // 27: clonr.v1.RemoveRepoByURLResponse
-	(*GetConfigResponse)(nil),             // 28: clonr.v1.GetConfigResponse
-	(*SaveConfigResponse)(nil),            // 29: clonr.v1.SaveConfigResponse
-	(*SaveProfileResponse)(nil),           // 30: clonr.v1.SaveProfileResponse
-	(*GetProfileResponse)(nil),            // 31: clonr.v1.GetProfileResponse
-	(*GetActiveProfileResponse)(nil),      // 32: clonr.v1.GetActiveProfileResponse
-	(*SetActiveProfileResponse)(nil),      // 33: clonr.v1.SetActiveProfileResponse
-	(*ListProfilesResponse)(nil),          // 34: clonr.v1.ListProfilesResponse
-	(*DeleteProfileResponse)(nil),         // 35: clonr.v1.DeleteProfileResponse
-	(*ProfileExistsResponse)(nil),         // 36: clonr.v1.ProfileExistsResponse
+	(*SaveWorkspaceRequest)(nil),          // 19: clonr.v1.SaveWorkspaceRequest
+	(*GetWorkspaceRequest)(nil),           // 20: clonr.v1.GetWorkspaceRequest
+	(*GetActiveWorkspaceRequest)(nil),     // 21: clonr.v1.GetActiveWorkspaceRequest
+	(*SetActiveWorkspaceRequest)(nil),     // 22: clonr.v1.SetActiveWorkspaceRequest
+	(*ListWorkspacesRequest)(nil),         // 23: clonr.v1.ListWorkspacesRequest
+	(*DeleteWorkspaceRequest)(nil),        // 24: clonr.v1.DeleteWorkspaceRequest
+	(*WorkspaceExistsRequest)(nil),        // 25: clonr.v1.WorkspaceExistsRequest
+	(*GetReposByWorkspaceRequest)(nil),    // 26: clonr.v1.GetReposByWorkspaceRequest
+	(*UpdateRepoWorkspaceRequest)(nil),    // 27: clonr.v1.UpdateRepoWorkspaceRequest
+	(*SaveRepoResponse)(nil),              // 28: clonr.v1.SaveRepoResponse
+	(*RepoExistsByURLResponse)(nil),       // 29: clonr.v1.RepoExistsByURLResponse
+	(*RepoExistsByPathResponse)(nil),      // 30: clonr.v1.RepoExistsByPathResponse
+	(*InsertRepoIfNotExistsResponse)(nil), // 31: clonr.v1.InsertRepoIfNotExistsResponse
+	(*GetAllReposResponse)(nil),           // 32: clonr.v1.GetAllReposResponse
+	(*GetReposResponse)(nil),              // 33: clonr.v1.GetReposResponse
+	(*SetFavoriteResponse)(nil),           // 34: clonr.v1.SetFavoriteResponse
+	(*UpdateRepoTimestampResponse)(nil),   // 35: clonr.v1.UpdateRepoTimestampResponse
+	(*RemoveRepoByURLResponse)(nil),       // 36: clonr.v1.RemoveRepoByURLResponse
+	(*GetConfigResponse)(nil),             // 37: clonr.v1.GetConfigResponse
+	(*SaveConfigResponse)(nil),            // 38: clonr.v1.SaveConfigResponse
+	(*SaveProfileResponse)(nil),           // 39: clonr.v1.SaveProfileResponse
+	(*GetProfileResponse)(nil),            // 40: clonr.v1.GetProfileResponse
+	(*GetActiveProfileResponse)(nil),      // 41: clonr.v1.GetActiveProfileResponse
+	(*SetActiveProfileResponse)(nil),      // 42: clonr.v1.SetActiveProfileResponse
+	(*ListProfilesResponse)(nil),          // 43: clonr.v1.ListProfilesResponse
+	(*DeleteProfileResponse)(nil),         // 44: clonr.v1.DeleteProfileResponse
+	(*ProfileExistsResponse)(nil),         // 45: clonr.v1.ProfileExistsResponse
+	(*SaveWorkspaceResponse)(nil),         // 46: clonr.v1.SaveWorkspaceResponse
+	(*GetWorkspaceResponse)(nil),          // 47: clonr.v1.GetWorkspaceResponse
+	(*GetActiveWorkspaceResponse)(nil),    // 48: clonr.v1.GetActiveWorkspaceResponse
+	(*SetActiveWorkspaceResponse)(nil),    // 49: clonr.v1.SetActiveWorkspaceResponse
+	(*ListWorkspacesResponse)(nil),        // 50: clonr.v1.ListWorkspacesResponse
+	(*DeleteWorkspaceResponse)(nil),       // 51: clonr.v1.DeleteWorkspaceResponse
+	(*WorkspaceExistsResponse)(nil),       // 52: clonr.v1.WorkspaceExistsResponse
+	(*GetReposByWorkspaceResponse)(nil),   // 53: clonr.v1.GetReposByWorkspaceResponse
+	(*UpdateRepoWorkspaceResponse)(nil),   // 54: clonr.v1.UpdateRepoWorkspaceResponse
 }
 var file_v1_clonr_proto_depIdxs = []int32{
 	0,  // 0: clonr.v1.ClonrService.Ping:input_type -> clonr.v1.Empty
@@ -109,27 +136,45 @@ var file_v1_clonr_proto_depIdxs = []int32{
 	16, // 16: clonr.v1.ClonrService.ListProfiles:input_type -> clonr.v1.ListProfilesRequest
 	17, // 17: clonr.v1.ClonrService.DeleteProfile:input_type -> clonr.v1.DeleteProfileRequest
 	18, // 18: clonr.v1.ClonrService.ProfileExists:input_type -> clonr.v1.ProfileExistsRequest
-	0,  // 19: clonr.v1.ClonrService.Ping:output_type -> clonr.v1.Empty
-	19, // 20: clonr.v1.ClonrService.SaveRepo:output_type -> clonr.v1.SaveRepoResponse
-	20, // 21: clonr.v1.ClonrService.RepoExistsByURL:output_type -> clonr.v1.RepoExistsByURLResponse
-	21, // 22: clonr.v1.ClonrService.RepoExistsByPath:output_type -> clonr.v1.RepoExistsByPathResponse
-	22, // 23: clonr.v1.ClonrService.InsertRepoIfNotExists:output_type -> clonr.v1.InsertRepoIfNotExistsResponse
-	23, // 24: clonr.v1.ClonrService.GetAllRepos:output_type -> clonr.v1.GetAllReposResponse
-	24, // 25: clonr.v1.ClonrService.GetRepos:output_type -> clonr.v1.GetReposResponse
-	25, // 26: clonr.v1.ClonrService.SetFavoriteByURL:output_type -> clonr.v1.SetFavoriteResponse
-	26, // 27: clonr.v1.ClonrService.UpdateRepoTimestamp:output_type -> clonr.v1.UpdateRepoTimestampResponse
-	27, // 28: clonr.v1.ClonrService.RemoveRepoByURL:output_type -> clonr.v1.RemoveRepoByURLResponse
-	28, // 29: clonr.v1.ClonrService.GetConfig:output_type -> clonr.v1.GetConfigResponse
-	29, // 30: clonr.v1.ClonrService.SaveConfig:output_type -> clonr.v1.SaveConfigResponse
-	30, // 31: clonr.v1.ClonrService.SaveProfile:output_type -> clonr.v1.SaveProfileResponse
-	31, // 32: clonr.v1.ClonrService.GetProfile:output_type -> clonr.v1.GetProfileResponse
-	32, // 33: clonr.v1.ClonrService.GetActiveProfile:output_type -> clonr.v1.GetActiveProfileResponse
-	33, // 34: clonr.v1.ClonrService.SetActiveProfile:output_type -> clonr.v1.SetActiveProfileResponse
-	34, // 35: clonr.v1.ClonrService.ListProfiles:output_type -> clonr.v1.ListProfilesResponse
-	35, // 36: clonr.v1.ClonrService.DeleteProfile:output_type -> clonr.v1.DeleteProfileResponse
-	36, // 37: clonr.v1.ClonrService.ProfileExists:output_type -> clonr.v1.ProfileExistsResponse
-	19, // [19:38] is the sub-list for method output_type
-	0,  // [0:19] is the sub-list for method input_type
+	19, // 19: clonr.v1.ClonrService.SaveWorkspace:input_type -> clonr.v1.SaveWorkspaceRequest
+	20, // 20: clonr.v1.ClonrService.GetWorkspace:input_type -> clonr.v1.GetWorkspaceRequest
+	21, // 21: clonr.v1.ClonrService.GetActiveWorkspace:input_type -> clonr.v1.GetActiveWorkspaceRequest
+	22, // 22: clonr.v1.ClonrService.SetActiveWorkspace:input_type -> clonr.v1.SetActiveWorkspaceRequest
+	23, // 23: clonr.v1.ClonrService.ListWorkspaces:input_type -> clonr.v1.ListWorkspacesRequest
+	24, // 24: clonr.v1.ClonrService.DeleteWorkspace:input_type -> clonr.v1.DeleteWorkspaceRequest
+	25, // 25: clonr.v1.ClonrService.WorkspaceExists:input_type -> clonr.v1.WorkspaceExistsRequest
+	26, // 26: clonr.v1.ClonrService.GetReposByWorkspace:input_type -> clonr.v1.GetReposByWorkspaceRequest
+	27, // 27: clonr.v1.ClonrService.UpdateRepoWorkspace:input_type -> clonr.v1.UpdateRepoWorkspaceRequest
+	0,  // 28: clonr.v1.ClonrService.Ping:output_type -> clonr.v1.Empty
+	28, // 29: clonr.v1.ClonrService.SaveRepo:output_type -> clonr.v1.SaveRepoResponse
+	29, // 30: clonr.v1.ClonrService.RepoExistsByURL:output_type -> clonr.v1.RepoExistsByURLResponse
+	30, // 31: clonr.v1.ClonrService.RepoExistsByPath:output_type -> clonr.v1.RepoExistsByPathResponse
+	31, // 32: clonr.v1.ClonrService.InsertRepoIfNotExists:output_type -> clonr.v1.InsertRepoIfNotExistsResponse
+	32, // 33: clonr.v1.ClonrService.GetAllRepos:output_type -> clonr.v1.GetAllReposResponse
+	33, // 34: clonr.v1.ClonrService.GetRepos:output_type -> clonr.v1.GetReposResponse
+	34, // 35: clonr.v1.ClonrService.SetFavoriteByURL:output_type -> clonr.v1.SetFavoriteResponse
+	35, // 36: clonr.v1.ClonrService.UpdateRepoTimestamp:output_type -> clonr.v1.UpdateRepoTimestampResponse
+	36, // 37: clonr.v1.ClonrService.RemoveRepoByURL:output_type -> clonr.v1.RemoveRepoByURLResponse
+	37, // 38: clonr.v1.ClonrService.GetConfig:output_type -> clonr.v1.GetConfigResponse
+	38, // 39: clonr.v1.ClonrService.SaveConfig:output_type -> clonr.v1.SaveConfigResponse
+	39, // 40: clonr.v1.ClonrService.SaveProfile:output_type -> clonr.v1.SaveProfileResponse
+	40, // 41: clonr.v1.ClonrService.GetProfile:output_type -> clonr.v1.GetProfileResponse
+	41, // 42: clonr.v1.ClonrService.GetActiveProfile:output_type -> clonr.v1.GetActiveProfileResponse
+	42, // 43: clonr.v1.ClonrService.SetActiveProfile:output_type -> clonr.v1.SetActiveProfileResponse
+	43, // 44: clonr.v1.ClonrService.ListProfiles:output_type -> clonr.v1.ListProfilesResponse
+	44, // 45: clonr.v1.ClonrService.DeleteProfile:output_type -> clonr.v1.DeleteProfileResponse
+	45, // 46: clonr.v1.ClonrService.ProfileExists:output_type -> clonr.v1.ProfileExistsResponse
+	46, // 47: clonr.v1.ClonrService.SaveWorkspace:output_type -> clonr.v1.SaveWorkspaceResponse
+	47, // 48: clonr.v1.ClonrService.GetWorkspace:output_type -> clonr.v1.GetWorkspaceResponse
+	48, // 49: clonr.v1.ClonrService.GetActiveWorkspace:output_type -> clonr.v1.GetActiveWorkspaceResponse
+	49, // 50: clonr.v1.ClonrService.SetActiveWorkspace:output_type -> clonr.v1.SetActiveWorkspaceResponse
+	50, // 51: clonr.v1.ClonrService.ListWorkspaces:output_type -> clonr.v1.ListWorkspacesResponse
+	51, // 52: clonr.v1.ClonrService.DeleteWorkspace:output_type -> clonr.v1.DeleteWorkspaceResponse
+	52, // 53: clonr.v1.ClonrService.WorkspaceExists:output_type -> clonr.v1.WorkspaceExistsResponse
+	53, // 54: clonr.v1.ClonrService.GetReposByWorkspace:output_type -> clonr.v1.GetReposByWorkspaceResponse
+	54, // 55: clonr.v1.ClonrService.UpdateRepoWorkspace:output_type -> clonr.v1.UpdateRepoWorkspaceResponse
+	28, // [28:56] is the sub-list for method output_type
+	0,  // [0:28] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name
 	0,  // [0:0] is the sub-list for extension extendee
 	0,  // [0:0] is the sub-list for field type_name
@@ -144,6 +189,7 @@ func file_v1_clonr_proto_init() {
 	file_v1_repository_proto_init()
 	file_v1_config_proto_init()
 	file_v1_profile_proto_init()
+	file_v1_workspace_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

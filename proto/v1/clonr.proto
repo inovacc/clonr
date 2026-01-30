@@ -8,6 +8,7 @@ import "v1/common.proto";
 import "v1/repository.proto";
 import "v1/config.proto";
 import "v1/profile.proto";
+import "v1/workspace.proto";
 
 // ClonrService defines all database operations for Clonr
 service ClonrService {
@@ -37,4 +38,15 @@ service ClonrService {
   rpc ListProfiles(ListProfilesRequest) returns (ListProfilesResponse);
   rpc DeleteProfile(DeleteProfileRequest) returns (DeleteProfileResponse);
   rpc ProfileExists(ProfileExistsRequest) returns (ProfileExistsResponse);
+
+  // Workspace operations
+  rpc SaveWorkspace(SaveWorkspaceRequest) returns (SaveWorkspaceResponse);
+  rpc GetWorkspace(GetWorkspaceRequest) returns (GetWorkspaceResponse);
+  rpc GetActiveWorkspace(GetActiveWorkspaceRequest) returns (GetActiveWorkspaceResponse);
+  rpc SetActiveWorkspace(SetActiveWorkspaceRequest) returns (SetActiveWorkspaceResponse);
+  rpc ListWorkspaces(ListWorkspacesRequest) returns (ListWorkspacesResponse);
+  rpc DeleteWorkspace(DeleteWorkspaceRequest) returns (DeleteWorkspaceResponse);
+  rpc WorkspaceExists(WorkspaceExistsRequest) returns (WorkspaceExistsResponse);
+  rpc GetReposByWorkspace(GetReposByWorkspaceRequest) returns (GetReposByWorkspaceResponse);
+  rpc UpdateRepoWorkspace(UpdateRepoWorkspaceRequest) returns (UpdateRepoWorkspaceResponse);
 }

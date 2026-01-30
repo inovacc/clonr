@@ -16,10 +16,11 @@ import (
 )
 
 const (
-	boltBucketRepos    = "repos"    // key: URL -> Repository JSON
-	boltBucketPaths    = "paths"    // key: Path -> URL string
-	boltBucketConfig   = "config"   // key: "config" -> Config JSON
-	boltBucketProfiles = "profiles" // key: name -> Profile JSON
+	boltBucketRepos      = "repos"      // key: URL -> Repository JSON
+	boltBucketPaths      = "paths"      // key: Path -> URL string
+	boltBucketConfig     = "config"     // key: "config" -> Config JSON
+	boltBucketProfiles   = "profiles"   // key: name -> Profile JSON
+	boltBucketWorkspaces = "workspaces" // key: name -> Workspace JSON
 )
 
 type Bolt struct {
@@ -48,6 +49,10 @@ func NewBolt(path string) (*Bolt, error) {
 		}
 
 		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketProfiles)); err != nil {
+			return err
+		}
+
+		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketWorkspaces)); err != nil {
 			return err
 		}
 
@@ -91,6 +96,10 @@ func initDB() (Store, error) {
 			return err
 		}
 
+		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketWorkspaces)); err != nil {
+			return err
+		}
+
 		return nil
 	}); err != nil {
 		_ = instance.Close()
@@ -108,15 +117,20 @@ func (b *Bolt) Ping() error {
 }
 
 func (b *Bolt) SaveRepo(u *url.URL, path string) error {
+	return b.SaveRepoWithWorkspace(u, path, "")
+}
+
+func (b *Bolt) SaveRepoWithWorkspace(u *url.URL, path string, workspace string) error {
 	if u == nil {
 		return errors.New("url is required")
 	}
 
 	repo := model.Repository{
-		UID:      uuid.New().String(),
-		URL:      u.String(),
-		Path:     path,
-		ClonedAt: time.Now(),
+		UID:       uuid.New().String(),
+		URL:       u.String(),
+		Path:      path,
+		Workspace: workspace,
+		ClonedAt:  time.Now(),
 	}
 
 	data, err := json.Marshal(&repo)
@@ -222,11 +236,7 @@ func (b *Bolt) GetAllRepos() ([]model.Repository, error) {
 	return out, err
 }
 
-func (b *Bolt) GetRepos(favoritesOnly bool) ([]model.Repository, error) {
-	if !favoritesOnly {
-		return b.GetAllRepos()
-	}
-
+func (b *Bolt) GetRepos(workspace string, favoritesOnly bool) ([]model.Repository, error) {
 	var out []model.Repository
 
 	err := b.storage.View(func(tx *bbolt.Tx) error {
@@ -239,9 +249,17 @@ func (b *Bolt) GetRepos(favoritesOnly bool) ([]model.Repository, error) {
 				return err
 			}
 
-			if r.Favorite {
-				out = append(out, r)
+			// Filter by workspace if specified
+			if workspace != "" && r.Workspace != workspace {
+				return nil
 			}
+
+			// Filter by favorites if requested
+			if favoritesOnly && !r.Favorite {
+				return nil
+			}
+
+			out = append(out, r)
 
 			return nil
 		})
@@ -531,4 +549,214 @@ func (b *Bolt) ProfileExists(name string) (bool, error) {
 	})
 
 	return exists, err
+}
+
+// SaveWorkspace saves or updates a workspace
+func (b *Bolt) SaveWorkspace(workspace *model.Workspace) error {
+	if workspace == nil {
+		return errors.New("workspace is required")
+	}
+
+	if workspace.Name == "" {
+		return errors.New("workspace name is required")
+	}
+
+	data, err := json.Marshal(workspace)
+	if err != nil {
+		return err
+	}
+
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketWorkspaces))
+
+		return bucket.Put([]byte(workspace.Name), data)
+	})
+}
+
+// GetWorkspace retrieves a workspace by name
+func (b *Bolt) GetWorkspace(name string) (*model.Workspace, error) {
+	var workspace *model.Workspace
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketWorkspaces))
+		v := bucket.Get([]byte(name))
+
+		if v == nil {
+			return nil
+		}
+
+		var w model.Workspace
+		if err := json.Unmarshal(v, &w); err != nil {
+			return err
+		}
+
+		workspace = &w
+
+		return nil
+	})
+
+	return workspace, err
+}
+
+// GetActiveWorkspace retrieves the currently active workspace
+func (b *Bolt) GetActiveWorkspace() (*model.Workspace, error) {
+	var workspace *model.Workspace
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketWorkspaces))
+
+		return bucket.ForEach(func(k, v []byte) error {
+			var w model.Workspace
+			if err := json.Unmarshal(v, &w); err != nil {
+				return err
+			}
+
+			if w.Active {
+				workspace = &w
+
+				return nil
+			}
+
+			return nil
+		})
+	})
+
+	return workspace, err
+}
+
+// SetActiveWorkspace sets the active workspace by name
+func (b *Bolt) SetActiveWorkspace(name string) error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketWorkspaces))
+
+		// First, verify the workspace exists
+		v := bucket.Get([]byte(name))
+		if v == nil {
+			return errors.New("workspace not found")
+		}
+
+		// Deactivate all workspaces and activate the specified one
+		if err := bucket.ForEach(func(k, val []byte) error {
+			var w model.Workspace
+			if err := json.Unmarshal(val, &w); err != nil {
+				return err
+			}
+
+			w.Active = string(k) == name
+
+			if w.Active {
+				w.UpdatedAt = time.Now()
+			}
+
+			data, err := json.Marshal(&w)
+			if err != nil {
+				return err
+			}
+
+			return bucket.Put(k, data)
+		}); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+// ListWorkspaces retrieves all workspaces
+func (b *Bolt) ListWorkspaces() ([]model.Workspace, error) {
+	var workspaces []model.Workspace
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketWorkspaces))
+
+		return bucket.ForEach(func(k, v []byte) error {
+			var w model.Workspace
+			if err := json.Unmarshal(v, &w); err != nil {
+				return err
+			}
+
+			workspaces = append(workspaces, w)
+
+			return nil
+		})
+	})
+
+	return workspaces, err
+}
+
+// DeleteWorkspace removes a workspace by name
+func (b *Bolt) DeleteWorkspace(name string) error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketWorkspaces))
+
+		return bucket.Delete([]byte(name))
+	})
+}
+
+// WorkspaceExists checks if a workspace exists by name
+func (b *Bolt) WorkspaceExists(name string) (bool, error) {
+	var exists bool
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketWorkspaces))
+		exists = bucket.Get([]byte(name)) != nil
+
+		return nil
+	})
+
+	return exists, err
+}
+
+// GetReposByWorkspace retrieves all repository URLs in a workspace
+func (b *Bolt) GetReposByWorkspace(workspace string) ([]string, error) {
+	var urls []string
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		repos := tx.Bucket([]byte(boltBucketRepos))
+
+		return repos.ForEach(func(k, v []byte) error {
+			var r model.Repository
+
+			if err := json.Unmarshal(v, &r); err != nil {
+				return err
+			}
+
+			if r.Workspace == workspace {
+				urls = append(urls, r.URL)
+			}
+
+			return nil
+		})
+	})
+
+	return urls, err
+}
+
+// UpdateRepoWorkspace updates the workspace for a repository
+func (b *Bolt) UpdateRepoWorkspace(urlStr string, workspace string) error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		repos := tx.Bucket([]byte(boltBucketRepos))
+
+		v := repos.Get([]byte(urlStr))
+
+		if v == nil {
+			return errors.New("repository not found")
+		}
+
+		var r model.Repository
+
+		if err := json.Unmarshal(v, &r); err != nil {
+			return err
+		}
+
+		r.Workspace = workspace
+		r.UpdatedAt = time.Now()
+
+		data, err := json.Marshal(&r)
+		if err != nil {
+			return err
+		}
+
+		return repos.Put([]byte(urlStr), data)
+	})
 }

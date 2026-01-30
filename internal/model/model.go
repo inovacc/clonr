@@ -15,6 +15,9 @@ type Repository struct {
 	// Path is the local path where the repository was cloned
 	Path string `json:"path"`
 
+	// Workspace is the name of the workspace this repository belongs to
+	Workspace string `json:"workspace"`
+
 	// Favorite indicates if the repository is a favorite
 	Favorite bool `gorm:"default:false" json:"favorite"`
 

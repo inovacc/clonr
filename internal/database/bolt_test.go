@@ -242,7 +242,7 @@ func TestBolt_GetRepos_FavoritesOnly(t *testing.T) {
 	}
 
 	// Get all repos
-	allRepos, err := db.GetRepos(false)
+	allRepos, err := db.GetRepos("", false)
 	if err != nil {
 		t.Fatalf("GetRepos(false) error = %v", err)
 	}
@@ -252,7 +252,7 @@ func TestBolt_GetRepos_FavoritesOnly(t *testing.T) {
 	}
 
 	// Get favorites only
-	favRepos, err := db.GetRepos(true)
+	favRepos, err := db.GetRepos("", true)
 	if err != nil {
 		t.Fatalf("GetRepos(true) error = %v", err)
 	}
@@ -279,7 +279,7 @@ func TestBolt_SetFavoriteByURL(t *testing.T) {
 	}
 
 	// Verify
-	repos, _ := db.GetRepos(true)
+	repos, _ := db.GetRepos("", true)
 	if len(repos) != 1 {
 		t.Errorf("Expected 1 favorite, got %d", len(repos))
 	}
@@ -290,7 +290,7 @@ func TestBolt_SetFavoriteByURL(t *testing.T) {
 	}
 
 	// Verify
-	repos, _ = db.GetRepos(true)
+	repos, _ = db.GetRepos("", true)
 	if len(repos) != 0 {
 		t.Errorf("Expected 0 favorites, got %d", len(repos))
 	}
@@ -710,7 +710,7 @@ func TestBolt_GetRepos_NoFavorites(t *testing.T) {
 	}
 
 	// Get favorites only - should be empty
-	favRepos, err := db.GetRepos(true)
+	favRepos, err := db.GetRepos("", true)
 	if err != nil {
 		t.Fatalf("GetRepos(true) error = %v", err)
 	}
@@ -907,7 +907,7 @@ func TestBolt_MultipleReposOperations(t *testing.T) {
 	}
 
 	// Check favorites
-	favRepos, err := db.GetRepos(true)
+	favRepos, err := db.GetRepos("", true)
 	if err != nil {
 		t.Fatalf("GetRepos(true) error = %v", err)
 	}
@@ -937,7 +937,7 @@ func TestBolt_MultipleReposOperations(t *testing.T) {
 	}
 
 	// Check favorites again
-	favRepos, _ = db.GetRepos(true)
+	favRepos, _ = db.GetRepos("", true)
 	if len(favRepos) != 1 {
 		t.Errorf("Expected 1 favorite after removal, got %d", len(favRepos))
 	}

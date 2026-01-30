@@ -119,7 +119,12 @@ const (
 
 // ListReposWithStats returns repos with optional stats and sorting
 func ListReposWithStats(favoritesOnly bool, sortBy SortBy, withStats bool) ([]RepoWithStats, error) {
-	repos, err := ListReposFiltered(favoritesOnly)
+	return ListReposWithStatsAndWorkspace(favoritesOnly, "", sortBy, withStats)
+}
+
+// ListReposWithStatsAndWorkspace returns repos filtered by workspace with optional stats and sorting
+func ListReposWithStatsAndWorkspace(favoritesOnly bool, workspace string, sortBy SortBy, withStats bool) ([]RepoWithStats, error) {
+	repos, err := ListReposFilteredByWorkspace(workspace, favoritesOnly)
 	if err != nil {
 		return nil, err
 	}

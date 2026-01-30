@@ -15,9 +15,10 @@ import (
 
 // CloneOptions configures the clone operation
 type CloneOptions struct {
-	Force    bool     // Force clone even if repo exists (removes existing)
-	GitArgs  []string // Additional git clone arguments
-	Protocol string   // Preferred protocol (https or ssh), empty for auto-detect
+	Force     bool     // Force clone even if repo exists (removes existing)
+	GitArgs   []string // Additional git clone arguments
+	Protocol  string   // Preferred protocol (https or ssh), empty for auto-detect
+	Workspace string   // Workspace to clone into (empty for active workspace or default)
 }
 
 // CloneResult contains the result of a clone operation
@@ -26,6 +27,7 @@ type CloneResult struct {
 	CloneURL   string
 	TargetPath string
 	GitArgs    []string
+	Workspace  string // Workspace the repo was cloned into
 }
 
 // PrepareClone parses clone arguments and prepares for cloning.
@@ -131,13 +133,42 @@ func PrepareClone(args []string, opts CloneOptions) (*CloneResult, error) {
 		return nil, fmt.Errorf("error getting config: %w", err)
 	}
 
+	// Determine workspace
+	workspace := opts.Workspace
+	if workspace == "" {
+		// Try to get active workspace
+		activeWorkspace, err := client.GetActiveWorkspace()
+		if err == nil && activeWorkspace != nil {
+			workspace = activeWorkspace.Name
+		}
+	}
+
+	// Get workspace path if workspace is specified
+	var workspacePath string
+
+	if workspace != "" {
+		ws, err := client.GetWorkspace(workspace)
+		if err != nil {
+			return nil, fmt.Errorf("error getting workspace: %w", err)
+		}
+
+		if ws != nil {
+			workspacePath = ws.Path
+		}
+	}
+
 	// Determine a target path
 	var savePath string
 
 	switch {
 	case targetDir == "":
-		// No target specified - use the default clone directory
-		savePath = filepath.Join(cfg.DefaultCloneDir, repo.Name)
+		// No target specified - use workspace path or default clone directory
+		baseDir := cfg.DefaultCloneDir
+		if workspacePath != "" {
+			baseDir = workspacePath
+		}
+
+		savePath = filepath.Join(baseDir, repo.Name)
 	case filepath.IsAbs(targetDir):
 		// Absolute path - use directly
 		savePath = targetDir
@@ -186,6 +217,7 @@ func PrepareClone(args []string, opts CloneOptions) (*CloneResult, error) {
 		CloneURL:   cloneURL,
 		TargetPath: savePath,
 		GitArgs:    gitArgs,
+		Workspace:  workspace,
 	}, nil
 }
 
@@ -230,12 +262,17 @@ func PrepareClonePath(args []string, opts CloneOptions) (*url.URL, string, error
 
 // SaveClonedRepo saves the successfully cloned repository to the database
 func SaveClonedRepo(uri *url.URL, savePath string) error {
+	return SaveClonedRepoWithWorkspace(uri, savePath, "")
+}
+
+// SaveClonedRepoWithWorkspace saves the cloned repository with workspace
+func SaveClonedRepoWithWorkspace(uri *url.URL, savePath string, workspace string) error {
 	client, err := grpcclient.GetClient()
 	if err != nil {
 		return fmt.Errorf("failed to connect to server: %w", err)
 	}
 
-	if err := client.SaveRepo(uri, savePath); err != nil {
+	if err := client.SaveRepoWithWorkspace(uri, savePath, workspace); err != nil {
 		return fmt.Errorf("error saving repo to database: %w", err)
 	}
 
@@ -265,7 +302,7 @@ func SaveClonedRepoFromResult(result *CloneResult) error {
 		return fmt.Errorf("error building URL: %w", err)
 	}
 
-	return SaveClonedRepo(uri, result.TargetPath)
+	return SaveClonedRepoWithWorkspace(uri, result.TargetPath, result.Workspace)
 }
 
 // CloneRepo is the legacy function that clones and saves in one operation

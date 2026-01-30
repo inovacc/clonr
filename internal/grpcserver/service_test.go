@@ -33,17 +33,34 @@ type mockStore struct {
 	saveConfigErr       error
 
 	// Profile fields
-	saveProfileErr       error
-	getProfileResult     *model.Profile
-	getProfileErr        error
-	getActiveProfileRes  *model.Profile
-	getActiveProfileErr  error
-	setActiveProfileErr  error
-	listProfilesResult   []model.Profile
-	listProfilesErr      error
-	deleteProfileErr     error
-	profileExistsResult  bool
-	profileExistsErr     error
+	saveProfileErr      error
+	getProfileResult    *model.Profile
+	getProfileErr       error
+	getActiveProfileRes *model.Profile
+	getActiveProfileErr error
+	setActiveProfileErr error
+	listProfilesResult  []model.Profile
+	listProfilesErr     error
+	deleteProfileErr    error
+	profileExistsResult bool
+	profileExistsErr    error
+
+	// Workspace fields
+	saveWorkspaceErr         error
+	getWorkspaceResult       *model.Workspace
+	getWorkspaceErr          error
+	getActiveWorkspaceRes    *model.Workspace
+	getActiveWorkspaceErr    error
+	setActiveWorkspaceErr    error
+	listWorkspacesResult     []model.Workspace
+	listWorkspacesErr        error
+	deleteWorkspaceErr       error
+	workspaceExistsResult    bool
+	workspaceExistsErr       error
+	getReposByWorkspaceRes   []string
+	getReposByWorkspaceErr   error
+	updateRepoWorkspaceErr   error
+	saveRepoWithWorkspaceErr error
 }
 
 func (m *mockStore) Ping() error {
@@ -70,7 +87,7 @@ func (m *mockStore) GetAllRepos() ([]model.Repository, error) {
 	return m.getAllReposResult, m.getAllReposErr
 }
 
-func (m *mockStore) GetRepos(_ bool) ([]model.Repository, error) {
+func (m *mockStore) GetRepos(_ string, _ bool) ([]model.Repository, error) {
 	return m.getReposResult, m.getReposErr
 }
 
@@ -126,6 +143,46 @@ func (m *mockStore) ProfileExists(_ string) (bool, error) {
 	return m.profileExistsResult, m.profileExistsErr
 }
 
+func (m *mockStore) SaveRepoWithWorkspace(_ *url.URL, _ string, _ string) error {
+	return m.saveRepoWithWorkspaceErr
+}
+
+func (m *mockStore) SaveWorkspace(_ *model.Workspace) error {
+	return m.saveWorkspaceErr
+}
+
+func (m *mockStore) GetWorkspace(_ string) (*model.Workspace, error) {
+	return m.getWorkspaceResult, m.getWorkspaceErr
+}
+
+func (m *mockStore) GetActiveWorkspace() (*model.Workspace, error) {
+	return m.getActiveWorkspaceRes, m.getActiveWorkspaceErr
+}
+
+func (m *mockStore) SetActiveWorkspace(_ string) error {
+	return m.setActiveWorkspaceErr
+}
+
+func (m *mockStore) ListWorkspaces() ([]model.Workspace, error) {
+	return m.listWorkspacesResult, m.listWorkspacesErr
+}
+
+func (m *mockStore) DeleteWorkspace(_ string) error {
+	return m.deleteWorkspaceErr
+}
+
+func (m *mockStore) WorkspaceExists(_ string) (bool, error) {
+	return m.workspaceExistsResult, m.workspaceExistsErr
+}
+
+func (m *mockStore) GetReposByWorkspace(_ string) ([]string, error) {
+	return m.getReposByWorkspaceRes, m.getReposByWorkspaceErr
+}
+
+func (m *mockStore) UpdateRepoWorkspace(_ string, _ string) error {
+	return m.updateRepoWorkspaceErr
+}
+
 func TestNewService(t *testing.T) {
 	mock := &mockStore{}
 
@@ -179,7 +236,7 @@ func TestService_SaveRepo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			svc := NewService(&mockStore{saveRepoErr: tt.saveErr})
+			svc := NewService(&mockStore{saveRepoWithWorkspaceErr: tt.saveErr})
 
 			resp, err := svc.SaveRepo(context.Background(), &v1.SaveRepoRequest{
 				Url:  tt.url,

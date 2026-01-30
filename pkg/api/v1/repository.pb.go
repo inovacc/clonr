@@ -33,6 +33,7 @@ type Repository struct {
 	ClonedAt      *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=cloned_at,json=clonedAt,proto3" json:"cloned_at,omitempty"`
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	LastChecked   *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=last_checked,json=lastChecked,proto3" json:"last_checked,omitempty"`
+	Workspace     string                 `protobuf:"bytes,9,opt,name=workspace,proto3" json:"workspace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -123,11 +124,19 @@ func (x *Repository) GetLastChecked() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *Repository) GetWorkspace() string {
+	if x != nil {
+		return x.Workspace
+	}
+	return ""
+}
+
 // SaveRepo RPC messages
 type SaveRepoRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	Path          string                 `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	Workspace     string                 `protobuf:"bytes,3,opt,name=workspace,proto3" json:"workspace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -172,6 +181,13 @@ func (x *SaveRepoRequest) GetUrl() string {
 func (x *SaveRepoRequest) GetPath() string {
 	if x != nil {
 		return x.Path
+	}
+	return ""
+}
+
+func (x *SaveRepoRequest) GetWorkspace() string {
+	if x != nil {
+		return x.Workspace
 	}
 	return ""
 }
@@ -944,7 +960,7 @@ var File_v1_repository_proto protoreflect.FileDescriptor
 
 const file_v1_repository_proto_rawDesc = "" +
 	"\n" +
-	"\x13v1/repository.proto\x12\bclonr.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa3\x02\n" +
+	"\x13v1/repository.proto\x12\bclonr.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc1\x02\n" +
 	"\n" +
 	"Repository\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x10\n" +
@@ -955,10 +971,12 @@ const file_v1_repository_proto_rawDesc = "" +
 	"\tcloned_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\bclonedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12=\n" +
-	"\flast_checked\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\vlastChecked\"7\n" +
+	"\flast_checked\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\vlastChecked\x12\x1c\n" +
+	"\tworkspace\x18\t \x01(\tR\tworkspace\"U\n" +
 	"\x0fSaveRepoRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\x12\n" +
-	"\x04path\x18\x02 \x01(\tR\x04path\",\n" +
+	"\x04path\x18\x02 \x01(\tR\x04path\x12\x1c\n" +
+	"\tworkspace\x18\x03 \x01(\tR\tworkspace\",\n" +
 	"\x10SaveRepoResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\"*\n" +
 	"\x16RepoExistsByURLRequest\x12\x10\n" +
