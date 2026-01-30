@@ -41,7 +41,6 @@ fabric.properties
 /pkg/pb/
 
 # Generated files
-cmd/version.go
 .go-version
 
 # Local settings
