@@ -86,10 +86,12 @@ func (s *LeakScanner) ScanGitRepo(ctx context.Context, repoPath string) (*ScanRe
 		return nil, fmt.Errorf("failed to create git command: %w", err)
 	}
 
+	remote := sources.NewRemoteInfo(0, absPath) // 0 = UnknownPlatform
 	source := &sources.Git{
 		Cmd:    gitCmd,
 		Config: &s.detector.Config,
 		Sema:   s.detector.Sema,
+		Remote: remote,
 	}
 
 	findings, err := s.detector.DetectSource(ctx, source)
@@ -114,10 +116,12 @@ func (s *LeakScanner) ScanUnpushedCommits(ctx context.Context, repoPath string) 
 		return s.ScanStagedChanges(ctx, repoPath)
 	}
 
+	remote := sources.NewRemoteInfo(0, absPath) // 0 = UnknownPlatform
 	source := &sources.Git{
 		Cmd:    gitCmd,
 		Config: &s.detector.Config,
 		Sema:   s.detector.Sema,
+		Remote: remote,
 	}
 
 	findings, err := s.detector.DetectSource(ctx, source)
@@ -143,10 +147,12 @@ func (s *LeakScanner) ScanStagedChanges(ctx context.Context, repoPath string) (*
 		return s.ScanDirectory(ctx, repoPath)
 	}
 
+	remote := sources.NewRemoteInfo(0, absPath) // 0 = UnknownPlatform
 	source := &sources.Git{
 		Cmd:    gitCmd,
 		Config: &s.detector.Config,
 		Sema:   s.detector.Sema,
+		Remote: remote,
 	}
 
 	findings, err := s.detector.DetectSource(ctx, source)

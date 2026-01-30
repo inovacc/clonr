@@ -4,7 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/charmbracelet/bubbles/spinner"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/inovacc/clonr/internal/git"
 	"github.com/inovacc/clonr/internal/security"
 	"github.com/spf13/cobra"
@@ -42,6 +46,91 @@ func init() {
 	pushCmd.Flags().BoolVar(&pushSkipLeaks, "skip-leaks", false, "Skip secret scanning")
 }
 
+// Styles for output
+var (
+	spinStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	okStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
+	warnStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("214"))
+	errStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
+	dimStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
+)
+
+type scanModel struct {
+	spinner  spinner.Model
+	scanning bool
+	done     bool
+	result   *security.ScanResult
+	err      error
+}
+
+type scanDoneMsg struct {
+	result *security.ScanResult
+	err    error
+}
+
+func newScanModel() scanModel {
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+	s.Style = spinStyle
+	return scanModel{spinner: s, scanning: true}
+}
+
+func (m scanModel) Init() tea.Cmd {
+	return tea.Batch(m.spinner.Tick, m.runScan)
+}
+
+func (m scanModel) runScan() tea.Msg {
+	scanner, err := security.NewLeakScanner()
+	if err != nil {
+		return scanDoneMsg{err: err}
+	}
+
+	repoPath, _ := os.Getwd()
+	_ = scanner.LoadGitleaksIgnore(repoPath)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	result, err := scanner.ScanUnpushedCommits(ctx, repoPath)
+	return scanDoneMsg{result: result, err: err}
+}
+
+func (m scanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if msg.String() == "ctrl+c" {
+			return m, tea.Quit
+		}
+	case scanDoneMsg:
+		m.scanning = false
+		m.done = true
+		m.result = msg.result
+		m.err = msg.err
+		return m, tea.Quit
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
+	}
+	return m, nil
+}
+
+func (m scanModel) View() string {
+	if m.done {
+		if m.err != nil {
+			return warnStyle.Render("  ⚠ Scan warning: ") + dimStyle.Render(m.err.Error()) + "\n"
+		}
+		if m.result != nil && m.result.HasLeaks {
+			return errStyle.Render(fmt.Sprintf("  ✗ Found %d secret(s)\n", len(m.result.Findings)))
+		}
+		return okStyle.Render("  ✓ No secrets detected\n")
+	}
+	if m.scanning {
+		return fmt.Sprintf("  %s Scanning for secrets...\n", m.spinner.View())
+	}
+	return ""
+}
+
 func runPush(_ *cobra.Command, args []string) error {
 	client := git.NewClient()
 	ctx := context.Background()
@@ -52,31 +141,25 @@ func runPush(_ *cobra.Command, args []string) error {
 
 	// Check for leaks before pushing (unless skipped)
 	if pushCheckLeaks && !pushSkipLeaks {
-		_, _ = fmt.Fprintln(os.Stdout, "🔍 Scanning for secrets...")
+		_, _ = fmt.Fprintln(os.Stdout, "\n"+dimStyle.Render("Pre-push security check"))
+		_, _ = fmt.Fprintln(os.Stdout, dimStyle.Render("───────────────────────"))
 
-		scanner, err := security.NewLeakScanner()
+		m := newScanModel()
+		p := tea.NewProgram(m)
+
+		finalModel, err := p.Run()
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "⚠️  Warning: Could not initialize leak scanner: %v\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, warnStyle.Render("  ⚠ Scan failed: %v\n"), err)
 		} else {
-			// Get current directory as repo path
-			repoPath, _ := os.Getwd()
-
-			// Load .gitleaksignore if exists
-			_ = scanner.LoadGitleaksIgnore(repoPath)
-
-			// Scan unpushed commits or staged changes
-			result, err := scanner.ScanUnpushedCommits(ctx, repoPath)
-			if err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "⚠️  Warning: Leak scan failed: %v\n", err)
-			} else if result.HasLeaks {
-				_, _ = fmt.Fprint(os.Stderr, security.FormatFindings(result.Findings))
-				_, _ = fmt.Fprintln(os.Stderr, "❌ Push aborted: secrets detected!")
-				_, _ = fmt.Fprintln(os.Stderr, "   Use --skip-leaks to push anyway (not recommended)")
+			scanM := finalModel.(scanModel)
+			if scanM.result != nil && scanM.result.HasLeaks {
+				_, _ = fmt.Fprint(os.Stderr, security.FormatFindings(scanM.result.Findings))
+				_, _ = fmt.Fprintln(os.Stderr, errStyle.Render("\n❌ Push aborted: secrets detected!"))
+				_, _ = fmt.Fprintln(os.Stderr, dimStyle.Render("   Use --skip-leaks to push anyway (not recommended)"))
 				return fmt.Errorf("secrets detected in commits")
-			} else {
-				_, _ = fmt.Fprintln(os.Stdout, "✅ No secrets detected")
 			}
 		}
+		_, _ = fmt.Fprintln(os.Stdout, "")
 	}
 
 	var remote, branch string
@@ -98,6 +181,6 @@ func runPush(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	_, _ = fmt.Fprintln(os.Stdout, "Push completed successfully!")
+	_, _ = fmt.Fprintln(os.Stdout, okStyle.Render("Push completed successfully!"))
 	return nil
 }
