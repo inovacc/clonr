@@ -123,6 +123,123 @@ All Bubbletea models follow the standard Init/Update/View pattern. When implemen
 - This split allows the Bubbletea UI to handle the git clone process while core handles validation
 - Core functions should not print to stdout/stderr directly - return errors instead
 
+### KeePass Token Storage
+
+`internal/core/keepass.go` provides KeePass database management for secure profile token storage:
+
+- **Library**: `github.com/tobischo/gokeepasslib/v3`
+- **Format**: Standard KeePass `.kdbx` database format
+- **Location**: `~/.config/clonr/clonr.kdbx`
+
+**Key Functions:**
+```go
+// Create or open KeePass database
+kpm, err := core.NewKeePassManager(password)
+
+// Store a profile token
+kpm.SetProfileToken(profileName, host, token)
+
+// Retrieve a profile token
+token, err := kpm.GetProfileToken(profileName, host)
+
+// Delete a profile token
+kpm.DeleteProfileToken(profileName, host)
+
+// List all profiles
+profiles := kpm.ListProfiles()
+
+// Change database password
+kpm.ChangePassword(newPassword)
+
+// Check if KeePass database exists
+core.KeePassDBExists() bool
+
+// Get database path
+path, err := core.GetKeePassDBPath()
+```
+
+**Token Storage Priority:**
+```
+Profile Token Storage:
+┌─────────────────────────────────────────────────┐
+│  1. KeePass (if database exists)                │
+│     ├─ Password from TPM (if available)         │
+│     └─ Password from env/prompt (fallback)      │
+│  2. System Keyring                              │
+│  3. Encrypted file (AES-256-GCM)                │
+└─────────────────────────────────────────────────┘
+```
+
+### TPM 2.0 Integration (Hardware-Backed Encryption)
+
+`internal/core/tpm*.go` provides TPM 2.0 key management for hardware-backed encryption:
+
+- **Platform Support**: Linux only (uses `/dev/tpmrm0`)
+- **Library**: `github.com/google/go-tpm` v0.9.8
+- **Fallback**: Non-Linux platforms use password-based KeePass or file-based encryption
+
+**Files:**
+- `tpm.go` - TPM 2.0 key sealing/unsealing (Linux build tag)
+- `tpm_stub.go` - Stub for non-Linux platforms
+- `tpm_keystore.go` - Sealed key storage and helper functions
+
+**Key Functions:**
+```go
+// Check TPM availability
+core.IsTPMAvailable() bool
+
+// Initialize new TPM-sealed key
+core.InitializeTPMKey() error
+
+// Get KeePass password from TPM
+core.GetKeePassPasswordTPM() (string, error)
+
+// Get KeePass password (TPM or user prompt)
+core.GetKeePassPassword() (string, error)
+
+// Check if TPM key exists
+core.HasTPMKey() bool
+
+// Remove TPM-sealed key
+core.ResetTPMKey() error
+
+// Derive password from user passphrase
+core.DeriveKeePassPasswordFromPassphrase(passphrase) string
+```
+
+**TPM + KeePass Flow:**
+```
+Token Storage with TPM:
+┌─────────────────────────────────────────────────┐
+│  1. TPM unseals master key                      │
+│  2. Derive KeePass password from master key     │
+│  3. Open KeePass database (no user password)    │
+│  4. Store/retrieve tokens from KeePass          │
+└─────────────────────────────────────────────────┘
+```
+
+**Storage Locations:**
+| File | Platform | Path |
+|------|----------|------|
+| TPM Sealed Key | Linux | `~/.config/clonr/.clonr_sealed_key` |
+| KeePass DB | All | `~/.config/clonr/clonr.kdbx` |
+
+**TPM Commands:**
+```sh
+clonr tpm init             # Create TPM key + KeePass DB
+clonr tpm status           # Show TPM + KeePass status
+clonr tpm reset            # Remove TPM key
+clonr tpm migrate          # Migrate existing KeePass DB to TPM
+clonr tpm migrate-profiles # Migrate profiles from keyring to KeePass
+```
+
+**Security Benefits:**
+- Key material bound to hardware (cannot be extracted)
+- No password required - authentication automatic via TPM
+- Resistant to offline attacks
+- KeePass database portable but protected
+- Keys cannot be backed up (by design)
+
 ### Git Client (Credential Helper Pattern)
 
 `internal/git/client.go` provides a centralized git client inspired by [GitHub CLI](https://github.com/cli/cli):
@@ -202,7 +319,8 @@ clonr/
 │   ├── stash.go                      # Git stash operations
 │   ├── checkout.go                   # Git checkout branches
 │   ├── merge.go                      # Git merge branches
-│   └── scan.go                       # Manual secret scanning
+│   ├── scan.go                       # Manual secret scanning
+│   └── tpm.go                        # TPM + KeePass management (init, status, reset, migrate, migrate-profiles)
 ├── docs/                             # Project documentation
 │   ├── GRPC_IMPLEMENTATION_GUIDE.md  # gRPC implementation details
 │   ├── ROADMAP.md                    # Project roadmap
@@ -215,7 +333,11 @@ clonr/
 │   │   ├── profile.go                # Profile management logic
 │   │   ├── oauth.go                  # GitHub OAuth device flow
 │   │   ├── keyring.go                # Secure keyring storage
-│   │   └── encrypt.go                # AES-256-GCM encryption fallback
+│   │   ├── keepass.go                # KeePass database manager for tokens
+│   │   ├── encrypt.go                # AES-256-GCM encryption + KeePass password
+│   │   ├── tpm.go                    # TPM 2.0 key sealing (Linux only)
+│   │   ├── tpm_stub.go               # TPM stub for non-Linux platforms
+│   │   └── tpm_keystore.go           # TPM sealed key storage
 │   ├── git/                          # Git client with credential helper
 │   │   └── client.go                 # Centralized git operations (gh CLI pattern)
 │   ├── security/                     # Security scanning (gitleaks)
@@ -521,6 +643,37 @@ clonr profile remove github
 - Direct token validation with GitHub API
 - Same secure storage (keyring or encrypted file)
 
+### TPM 2.0 Key Management (Linux Only)
+
+Hardware-backed encryption using TPM 2.0:
+
+```sh
+# Check TPM status
+clonr tpm status
+
+# Initialize TPM-sealed master key (first time)
+clonr tpm init
+
+# Remove TPM-sealed key (falls back to file-based)
+clonr tpm reset
+```
+
+**TPM Features:**
+- Hardware-bound encryption keys (cannot be extracted)
+- No password required - automatic authentication
+- Falls back to file-based encryption if TPM unavailable
+- Keys cannot be backed up (security by design)
+
+**TPM Permissions (Linux):**
+The TPM device `/dev/tpmrm0` is owned by `tss:tss`. Users must be in the `tss` group:
+```sh
+# Add user to tss group
+sudo usermod -aG tss $USER
+
+# Apply immediately (or log out/in)
+newgrp tss
+```
+
 If server is not running, client commands will fail with a helpful error:
 ```
 Error: Server not running
@@ -579,4 +732,5 @@ All RPCs use unary (request-response) pattern with 30-second timeouts.
 - **Database**: `go.etcd.io/bbolt` (BoltDB)
 - **Security**: `github.com/zricethezav/gitleaks/v8` (secret scanning)
 - **Keyring**: `github.com/zalando/go-keyring`
+- **TPM 2.0**: `github.com/google/go-tpm` (hardware-backed encryption, Linux only)
 - **Process Management**: `github.com/shirou/gopsutil/v4/process`

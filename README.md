@@ -166,10 +166,58 @@ clonr profile remove old-profile        # Delete a profile
 
 **Features:**
 - **OAuth Device Flow**: Browser-based GitHub login (like `gh auth login`)
-- **Secure Storage**: Tokens stored in system keyring (macOS Keychain, Windows Credential Manager, Linux Secret Service)
-- **Encrypted Fallback**: AES-256-GCM encryption when keyring unavailable
+- **KeePass Storage**: Tokens stored in encrypted KeePass database (`.kdbx` format)
+- **TPM 2.0 Support**: Hardware-backed encryption on Linux - no password required
+- **Fallback Options**: System keyring or AES-256-GCM encryption when KeePass unavailable
 - **Multiple Profiles**: Switch between work/personal GitHub accounts
 - **Auto-detection**: Active profile token used automatically for `gh` commands
+
+### TPM 2.0 & KeePass Storage (Linux)
+
+Clonr uses KeePass database format (`.kdbx`) for secure token storage, with optional TPM 2.0 hardware-backed encryption on Linux:
+
+```sh
+# Check TPM and KeePass status
+clonr tpm status
+
+# Initialize TPM key + create KeePass database (new setup)
+clonr tpm init
+
+# Migrate existing profiles to KeePass (from keyring/encrypted)
+clonr tpm migrate-profiles
+
+# Migrate existing KeePass DB to TPM protection
+clonr tpm migrate
+
+# Remove TPM-sealed key
+clonr tpm reset
+```
+
+**Token Storage Priority:**
+1. **KeePass** (if database exists) - Encrypted `.kdbx` database
+2. **System Keyring** - macOS Keychain, Windows Credential Manager, Linux Secret Service
+3. **Encrypted File** - AES-256-GCM fallback
+
+**TPM Features (Linux):**
+- **Hardware-Bound Keys**: Encryption keys sealed to TPM cannot be extracted
+- **Passwordless**: No password required - authentication is automatic via TPM
+- **Offline Attack Resistant**: Keys only accessible on the original machine
+- **KeePass Integration**: TPM-derived password protects KeePass database
+
+**Security Note:** TPM-sealed keys cannot be backed up. If you lose access to the TPM (hardware failure, BIOS update), encrypted data will be inaccessible. This is a security feature, not a bug.
+
+**Requirements (for TPM):**
+- Linux with TPM 2.0 device (`/dev/tpmrm0`)
+- TPM 2.0 enabled in BIOS
+- User must be in the `tss` group for TPM access:
+  ```sh
+  # Add yourself to the tss group
+  sudo usermod -aG tss $USER
+  # Then log out and back in, or use:
+  newgrp tss
+  ```
+
+**Without TPM:** KeePass database can be protected with a user-provided password (set via `CLONR_KEEPASS_PASSWORD` environment variable or prompted at runtime).
 
 ### GitHub CLI Integration
 
@@ -381,6 +429,8 @@ go build -tags sqlite -o bin/clonr.exe .
 - [Protocol Buffers](https://protobuf.dev) - Data serialization
 - [BoltDB](https://github.com/etcd-io/bbolt) - Embedded key-value database
 - [GORM](https://gorm.io) - ORM for SQLite support
+- [go-tpm](https://github.com/google/go-tpm) - TPM 2.0 hardware key management (Linux)
+- [gokeepasslib](https://github.com/tobischo/gokeepasslib) - KeePass database format for secure token storage
 
 ## Examples
 
@@ -489,7 +539,11 @@ clonr/
 │   │   ├── profile.go                # Profile management logic
 │   │   ├── oauth.go                  # GitHub OAuth device flow
 │   │   ├── keyring.go                # Secure keyring storage
-│   │   ├── encrypt.go                # AES-256-GCM encryption fallback
+│   │   ├── keepass.go                # KeePass database manager for tokens
+│   │   ├── encrypt.go                # AES-256-GCM encryption + KeePass password derivation
+│   │   ├── tpm.go                    # TPM 2.0 key management (Linux)
+│   │   ├── tpm_stub.go               # TPM stub (non-Linux platforms)
+│   │   └── tpm_keystore.go           # TPM sealed key storage
 │   │   ├── issues.go                 # Issues logic (list, create)
 │   │   ├── gh_pr.go                  # PR status logic
 │   │   ├── gh_actions.go             # Actions workflow logic
