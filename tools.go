@@ -5,8 +5,4 @@
 //go:generate go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 //go:generate go run ./scripts/proto/generate.go
 
-package tools
-
-import (
-	_ "github.com/inovacc/genversioninfo"
-)
+package main
