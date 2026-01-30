@@ -35,13 +35,19 @@ You can clone from any GitHub URL, including:
 Pass additional git clone flags after '--':
   clonr clone owner/repo -- --depth=1 --single-branch
 
-If no destination is specified, the repository is cloned to the active workspace's
-directory, or the default clone directory if no workspace is configured.
+PROFILE SELECTION:
+In interactive mode, you will be prompted to select a profile for authentication.
+Each profile has an associated workspace, so selecting a profile also sets the
+destination workspace. Use --profile to specify a profile directly.
 
-Use --workspace to specify which workspace to clone into. If workspaces exist
-but none is specified in interactive mode, you'll be prompted to select one.`,
-	Example: `  # Clone using owner/repo format
+WORKSPACE SELECTION:
+If no profile is selected or the profile has no workspace, you'll be prompted
+to select a workspace in interactive mode. Use --workspace to specify directly.`,
+	Example: `  # Clone using owner/repo format (prompts for profile)
   clonr clone btcsuite/btcd
+
+  # Clone with a specific profile (uses profile's workspace)
+  clonr clone owner/repo --profile work
 
   # Clone from your own GitHub account
   clonr clone myrepo
@@ -58,10 +64,10 @@ but none is specified in interactive mode, you'll be prompted to select one.`,
   # Clone from a GitHub URL (extra path is stripped)
   clonr clone https://github.com/owner/repo/blob/main/README.md
 
-  # Clone into a specific workspace
-  clonr clone owner/repo --workspace personal
+  # Clone into a specific workspace (overrides profile's workspace)
+  clonr clone owner/repo --profile work --workspace personal
 
-  # Clone non-interactively (uses active workspace)
+  # Clone non-interactively (uses active profile and workspace)
   clonr clone owner/repo --no-tui`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: runClone,
@@ -72,26 +78,90 @@ func init() {
 	cloneCmd.Flags().BoolP("force", "f", false, "Force clone even if repository/directory already exists (removes existing)")
 	cloneCmd.Flags().Bool("no-tui", false, "Non-interactive mode (no TUI, useful for scripts)")
 	cloneCmd.Flags().StringP("workspace", "w", "", "Workspace to clone into")
+	cloneCmd.Flags().StringP("profile", "p", "", "Profile to use for authentication")
 }
 
 func runClone(cmd *cobra.Command, args []string) error {
 	force, _ := cmd.Flags().GetBool("force")
 	noTUI, _ := cmd.Flags().GetBool("no-tui")
 	workspace, _ := cmd.Flags().GetString("workspace")
+	profile, _ := cmd.Flags().GetString("profile")
 
 	opts := core.CloneOptions{
 		Force:     force,
 		Workspace: workspace,
 	}
 
-	// Get client to check workspaces
+	// Get client to check profiles and workspaces
 	client, err := grpcclient.GetClient()
 	if err != nil {
 		return err
 	}
 
-	// If no workspace specified and TUI mode, check if we need workspace selection
-	if workspace == "" && !noTUI {
+	// If profile specified via flag, set it as active
+	if profile != "" {
+		if err := client.SetActiveProfile(profile); err != nil {
+			return fmt.Errorf("failed to set active profile '%s': %w", profile, err)
+		}
+
+		// Get profile to check for workspace
+		p, err := client.GetProfile(profile)
+		if err != nil {
+			return fmt.Errorf("failed to get profile '%s': %w", profile, err)
+		}
+
+		if p != nil && workspace == "" && p.Workspace != "" {
+			opts.Workspace = p.Workspace
+		}
+
+		_, _ = fmt.Fprintf(os.Stdout, "Using profile '%s'\n", profile)
+	}
+
+	// Profile selection via TUI - determines auth and optionally workspace
+	if profile == "" && !noTUI {
+		profiles, err := client.ListProfiles()
+		if err != nil {
+			return fmt.Errorf("failed to list profiles: %w", err)
+		}
+
+		if len(profiles) > 0 {
+			// Profiles exist - show selection TUI
+			m, err := cli.NewProfileSelector()
+			if err != nil {
+				return err
+			}
+
+			p := tea.NewProgram(m)
+
+			finalModel, err := p.Run()
+			if err != nil {
+				return err
+			}
+
+			selector := finalModel.(cli.ProfileSelectorModel)
+			selected := selector.GetSelected()
+
+			if selected != nil {
+				profile = selected.Name
+
+				// Set selected profile as active for authentication
+				if err := client.SetActiveProfile(profile); err != nil {
+					return fmt.Errorf("failed to set active profile: %w", err)
+				}
+
+				// If profile has a workspace and no workspace was specified, use it
+				if workspace == "" && selected.Workspace != "" {
+					opts.Workspace = selected.Workspace
+					_, _ = fmt.Fprintf(os.Stdout, "Using profile '%s' (workspace: %s)\n", selected.Name, selected.Workspace)
+				} else {
+					_, _ = fmt.Fprintf(os.Stdout, "Using profile '%s'\n", selected.Name)
+				}
+			}
+		}
+	}
+
+	// If workspace still not set and TUI mode, check if we need workspace selection
+	if opts.Workspace == "" && workspace == "" && !noTUI {
 		workspaces, err := client.ListWorkspaces()
 		if err != nil {
 			return fmt.Errorf("failed to list workspaces: %w", err)
