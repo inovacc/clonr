@@ -49,5 +49,6 @@ func runCommit(_ *cobra.Command, _ []string) error {
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout, "Commit created successfully!")
+
 	return nil
 }

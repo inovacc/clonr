@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	stashMessage         string
+	stashMessage          string
 	stashIncludeUntracked bool
-	stashKeepIndex       bool
+	stashKeepIndex        bool
 )
 
 var stashCmd = &cobra.Command{
@@ -79,6 +79,7 @@ func runStashPush(_ *cobra.Command, _ []string) error {
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout, "Changes stashed successfully!")
+
 	return nil
 }
 
@@ -101,6 +102,7 @@ func runStashList(_ *cobra.Command, _ []string) error {
 	}
 
 	_, _ = fmt.Fprint(os.Stdout, list)
+
 	return nil
 }
 
@@ -117,6 +119,7 @@ func runStashPop(_ *cobra.Command, _ []string) error {
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout, "Stash applied and removed!")
+
 	return nil
 }
 
@@ -138,5 +141,6 @@ func runStashDrop(_ *cobra.Command, args []string) error {
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout, "Stash dropped!")
+
 	return nil
 }

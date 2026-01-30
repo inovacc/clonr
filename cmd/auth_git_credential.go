@@ -45,12 +45,14 @@ func runGitCredential(_ *cobra.Command, args []string) error {
 
 	// Read credential request from stdin
 	wants := make(map[string]string)
+
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
 			break
 		}
+
 		parts := strings.SplitN(line, "=", 2)
 		if len(parts) == 2 {
 			wants[parts[0]] = parts[1]
@@ -68,8 +70,8 @@ func runGitCredential(_ *cobra.Command, args []string) error {
 	}
 
 	// Resolve token from profile or environment
-	token, _, err := core.ResolveGitHubTokenForHost("", "", host)
-	if err != nil || token == "" {
+	token, _, _ := core.ResolveGitHubTokenForHost("", "", host)
+	if token == "" {
 		// No token available, let git try other credential helpers
 		return nil
 	}

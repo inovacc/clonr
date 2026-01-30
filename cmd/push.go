@@ -48,11 +48,11 @@ func init() {
 
 // Styles for output
 var (
-	spinStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	okStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
-	warnStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("214"))
-	errStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
-	dimStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
+	spinStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	okStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
+	warnStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("214"))
+	errStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
+	dimStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 )
 
 type scanModel struct {
@@ -72,6 +72,7 @@ func newScanModel() scanModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = spinStyle
+
 	return scanModel{spinner: s, scanning: true}
 }
 
@@ -92,6 +93,7 @@ func (m scanModel) runScan() tea.Msg {
 	defer cancel()
 
 	result, err := scanner.ScanUnpushedCommits(ctx, repoPath)
+
 	return scanDoneMsg{result: result, err: err}
 }
 
@@ -106,12 +108,16 @@ func (m scanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.done = true
 		m.result = msg.result
 		m.err = msg.err
+
 		return m, tea.Quit
 	case spinner.TickMsg:
 		var cmd tea.Cmd
+
 		m.spinner, cmd = m.spinner.Update(msg)
+
 		return m, cmd
 	}
+
 	return m, nil
 }
 
@@ -120,14 +126,18 @@ func (m scanModel) View() string {
 		if m.err != nil {
 			return warnStyle.Render("  ⚠ Scan warning: ") + dimStyle.Render(m.err.Error()) + "\n"
 		}
+
 		if m.result != nil && m.result.HasLeaks {
 			return errStyle.Render(fmt.Sprintf("  ✗ Found %d secret(s)\n", len(m.result.Findings)))
 		}
+
 		return okStyle.Render("  ✓ No secrets detected\n")
 	}
+
 	if m.scanning {
 		return fmt.Sprintf("  %s Scanning for secrets...\n", m.spinner.View())
 	}
+
 	return ""
 }
 
@@ -156,9 +166,11 @@ func runPush(_ *cobra.Command, args []string) error {
 				_, _ = fmt.Fprint(os.Stderr, security.FormatFindings(scanM.result.Findings))
 				_, _ = fmt.Fprintln(os.Stderr, errStyle.Render("\n❌ Push aborted: secrets detected!"))
 				_, _ = fmt.Fprintln(os.Stderr, dimStyle.Render("   Use --skip-leaks to push anyway (not recommended)"))
+
 				return fmt.Errorf("secrets detected in commits")
 			}
 		}
+
 		_, _ = fmt.Fprintln(os.Stdout, "")
 	}
 
@@ -166,6 +178,7 @@ func runPush(_ *cobra.Command, args []string) error {
 	if len(args) >= 1 {
 		remote = args[0]
 	}
+
 	if len(args) >= 2 {
 		branch = args[1]
 	}
@@ -182,5 +195,6 @@ func runPush(_ *cobra.Command, args []string) error {
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout, okStyle.Render("Push completed successfully!"))
+
 	return nil
 }

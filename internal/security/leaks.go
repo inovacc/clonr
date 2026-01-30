@@ -193,6 +193,7 @@ func (s *LeakScanner) LoadGitleaksIgnore(repoPath string) error {
 	if _, err := os.Stat(ignorePath); err == nil {
 		return s.detector.AddGitleaksIgnore(ignorePath)
 	}
+
 	return nil
 }
 
@@ -209,9 +210,11 @@ func FormatFindings(findings []Finding) string {
 		sb.WriteString(fmt.Sprintf("  %d. %s\n", i+1, f.Description))
 		sb.WriteString(fmt.Sprintf("     Rule: %s\n", f.RuleID))
 		sb.WriteString(fmt.Sprintf("     File: %s:%d\n", f.File, f.Line))
+
 		if f.Commit != "" {
 			sb.WriteString(fmt.Sprintf("     Commit: %s\n", f.Commit))
 		}
+
 		sb.WriteString(fmt.Sprintf("     Secret: %s\n", f.Secret))
 		sb.WriteString("\n")
 	}

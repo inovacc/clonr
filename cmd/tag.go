@@ -43,5 +43,6 @@ func runTag(_ *cobra.Command, args []string) error {
 	}
 
 	_, _ = fmt.Fprintf(os.Stdout, "Tag '%s' created successfully!\n", tagName)
+
 	return nil
 }

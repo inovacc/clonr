@@ -57,5 +57,6 @@ func runMerge(_ *cobra.Command, args []string) error {
 	}
 
 	_, _ = fmt.Fprintf(os.Stdout, "Merged '%s' successfully!\n", branch)
+
 	return nil
 }

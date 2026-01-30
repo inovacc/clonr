@@ -9,10 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	scanPath     string
-	scanGitHistory bool
-)
+var scanGitHistory bool
 
 var scanCmd = &cobra.Command{
 	Use:   "scan [path]",
@@ -71,9 +68,11 @@ func runScan(_ *cobra.Command, args []string) error {
 	if result.HasLeaks {
 		_, _ = fmt.Fprint(os.Stdout, security.FormatFindings(result.Findings))
 		_, _ = fmt.Fprintf(os.Stdout, "❌ Found %d secret(s)\n", len(result.Findings))
+
 		return fmt.Errorf("secrets detected")
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout, "✅ No secrets detected!")
+
 	return nil
 }

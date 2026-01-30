@@ -39,6 +39,7 @@ func runPull(_ *cobra.Command, args []string) error {
 	if len(args) >= 1 {
 		remote = args[0]
 	}
+
 	if len(args) >= 2 {
 		branch = args[1]
 	}
@@ -49,5 +50,6 @@ func runPull(_ *cobra.Command, args []string) error {
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout, "Pull completed successfully!")
+
 	return nil
 }

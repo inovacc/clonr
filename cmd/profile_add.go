@@ -131,8 +131,10 @@ func runProfileAdd(_ *cobra.Command, args []string) error {
 	}
 
 	// Store token
-	var tokenStorage model.TokenStorage
-	var encryptedToken []byte
+	var (
+		tokenStorage   model.TokenStorage
+		encryptedToken []byte
+	)
 
 	if err := core.SetToken(name, profileAddHost, token); err != nil {
 		// Keyring not available, use encrypted storage

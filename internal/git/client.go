@@ -12,18 +12,16 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"sync"
 )
 
 // Client wraps git operations with authentication support
 type Client struct {
-	ClonrPath string    // Path to clonr executable (for credential helper)
-	RepoDir   string    // Repository directory
-	GitPath   string    // Path to git executable
+	ClonrPath string // Path to clonr executable (for credential helper)
+	RepoDir   string // Repository directory
+	GitPath   string // Path to git executable
 	Stderr    io.Writer
 	Stdin     io.Reader
 	Stdout    io.Writer
-	mu        sync.Mutex
 }
 
 // NewClient creates a new git client
@@ -44,6 +42,7 @@ func NewClient() *Client {
 func NewClientForRepo(repoDir string) *Client {
 	c := NewClient()
 	c.RepoDir = repoDir
+
 	return c
 }
 
@@ -91,6 +90,7 @@ func (c *Client) CommandInteractive(ctx context.Context, args ...string) *exec.C
 	cmd.Stderr = c.Stderr
 	cmd.Stdin = c.Stdin
 	cmd.Stdout = c.Stdout
+
 	return cmd
 }
 
@@ -99,24 +99,24 @@ func (c *Client) CommandInteractive(ctx context.Context, args ...string) *exec.C
 func (c *Client) AuthenticatedCommand(ctx context.Context, pattern CredentialPattern, args ...string) *exec.Cmd {
 	credHelper := fmt.Sprintf("!%q auth git-credential", c.ClonrPath)
 
-	var preArgs []string
+	preArgs := make([]string, 0, 4+len(args))
 
 	if pattern.allMatching {
 		// Clear existing credential helpers and set ours for all hosts
-		preArgs = []string{
+		preArgs = append(preArgs,
 			"-c", "credential.helper=",
 			"-c", fmt.Sprintf("credential.helper=%s", credHelper),
-		}
+		)
 	} else {
 		// Set credential helper for specific host only
-		preArgs = []string{
+		preArgs = append(preArgs,
 			"-c", fmt.Sprintf("credential.%s.helper=", pattern.pattern),
 			"-c", fmt.Sprintf("credential.%s.helper=%s", pattern.pattern, credHelper),
-		}
+		)
 	}
 
-	allArgs := append(preArgs, args...)
-	cmd := exec.CommandContext(ctx, c.GitPath, allArgs...)
+	preArgs = append(preArgs, args...)
+	cmd := exec.CommandContext(ctx, c.GitPath, preArgs...)
 
 	if c.RepoDir != "" {
 		cmd.Dir = c.RepoDir
@@ -232,12 +232,14 @@ func (c *Client) Commit(ctx context.Context, message string, opts CommitOptions)
 		if c.RepoDir != "" {
 			addCmd.Dir = c.RepoDir
 		}
+
 		if _, err := addCmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("failed to stage files: %w", err)
 		}
 	}
 
 	args := []string{"commit", "-m", message}
+
 	cmd := exec.CommandContext(ctx, c.GitPath, args...)
 	if c.RepoDir != "" {
 		cmd.Dir = c.RepoDir
@@ -335,9 +337,9 @@ type CommitOptions struct {
 
 // StashOptions configures stash behavior
 type StashOptions struct {
-	Message     string
+	Message          string
 	IncludeUntracked bool
-	KeepIndex   bool
+	KeepIndex        bool
 }
 
 // CheckoutOptions configures checkout behavior
@@ -370,6 +372,7 @@ func (c *Client) Stash(ctx context.Context, opts StashOptions) error {
 	}
 
 	cmd := c.Command(ctx, args...)
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return &GitError{Stderr: string(output), err: err}
@@ -381,20 +384,24 @@ func (c *Client) Stash(ctx context.Context, opts StashOptions) error {
 // StashPop pops the latest stash
 func (c *Client) StashPop(ctx context.Context) error {
 	cmd := c.Command(ctx, "stash", "pop")
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return &GitError{Stderr: string(output), err: err}
 	}
+
 	return nil
 }
 
 // StashList lists all stashes
 func (c *Client) StashList(ctx context.Context) (string, error) {
 	cmd := c.Command(ctx, "stash", "list")
+
 	output, err := cmd.Output()
 	if err != nil {
 		return "", &GitError{err: err}
 	}
+
 	return string(output), nil
 }
 
@@ -406,10 +413,12 @@ func (c *Client) StashDrop(ctx context.Context, stash string) error {
 	}
 
 	cmd := c.Command(ctx, args...)
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return &GitError{Stderr: string(output), err: err}
 	}
+
 	return nil
 }
 
@@ -475,12 +484,14 @@ func (c *Client) ListBranches(ctx context.Context, all bool) ([]string, error) {
 	}
 
 	cmd := c.Command(ctx, args...)
+
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, &GitError{err: err}
 	}
 
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+
 	branches := make([]string, 0, len(lines))
 	for _, line := range lines {
 		if line = strings.TrimSpace(line); line != "" {
@@ -502,6 +513,7 @@ func (e *GitError) Error() string {
 	if e.Stderr == "" {
 		return fmt.Errorf("git command failed: %w", e.err).Error()
 	}
+
 	return fmt.Sprintf("git command failed: %s", strings.TrimSpace(e.Stderr))
 }
 
@@ -547,6 +559,7 @@ func ExtractRepoName(rawURL string) string {
 		if len(parts) > 0 {
 			return strings.TrimSuffix(parts[len(parts)-1], ".git")
 		}
+
 		return ""
 	}
 
@@ -561,6 +574,7 @@ func ExtractRepoName(rawURL string) string {
 // RepoRoot finds the root directory of the current git repository
 func RepoRoot(ctx context.Context) (string, error) {
 	cmd := exec.CommandContext(ctx, "git", "rev-parse", "--show-toplevel")
+
 	output, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("not a git repository")
@@ -577,12 +591,14 @@ type CredentialStore interface {
 // WriteCredential writes credentials in git credential helper format
 func WriteCredential(w io.Writer, host, username, password string) error {
 	var buf bytes.Buffer
+
 	_, _ = fmt.Fprintf(&buf, "protocol=https\n")
 	_, _ = fmt.Fprintf(&buf, "host=%s\n", host)
 	_, _ = fmt.Fprintf(&buf, "username=%s\n", username)
 	_, _ = fmt.Fprintf(&buf, "password=%s\n", password)
 
 	_, err := w.Write(buf.Bytes())
+
 	return err
 }
 
@@ -592,7 +608,7 @@ func ReadCredentialRequest(r io.Reader) (map[string]string, error) {
 	buf := new(bytes.Buffer)
 	_, _ = buf.ReadFrom(r)
 
-	for _, line := range strings.Split(buf.String(), "\n") {
+	for line := range strings.SplitSeq(buf.String(), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
@@ -621,6 +637,7 @@ func FindGitDir(startPath string) (string, error) {
 		if parent == current {
 			return "", fmt.Errorf("not a git repository (or any parent)")
 		}
+
 		current = parent
 	}
 }
