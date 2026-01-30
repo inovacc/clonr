@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package clonr.v1;
+
+option go_package = "github.com/inovacc/clonr/pkg/api/v1";
+
+import "google/protobuf/timestamp.proto";
+
+// Workspace represents a logical grouping of repositories
+message Workspace {
+  string name = 1;
+  string description = 2;
+  string path = 3;
+  bool active = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// SaveWorkspace RPC messages
+message SaveWorkspaceRequest {
+  Workspace workspace = 1;
+}
+
+message SaveWorkspaceResponse {
+  bool success = 1;
+}
+
+// GetWorkspace RPC messages
+message GetWorkspaceRequest {
+  string name = 1;
+}
+
+message GetWorkspaceResponse {
+  Workspace workspace = 1;
+}
+
+// GetActiveWorkspace RPC messages
+message GetActiveWorkspaceRequest {}
+
+message GetActiveWorkspaceResponse {
+  Workspace workspace = 1;
+}
+
+// SetActiveWorkspace RPC messages
+message SetActiveWorkspaceRequest {
+  string name = 1;
+}
+
+message SetActiveWorkspaceResponse {
+  bool success = 1;
+}
+
+// ListWorkspaces RPC messages
+message ListWorkspacesRequest {}
+
+message ListWorkspacesResponse {
+  repeated Workspace workspaces = 1;
+}
+
+// DeleteWorkspace RPC messages
+message DeleteWorkspaceRequest {
+  string name = 1;
+}
+
+message DeleteWorkspaceResponse {
+  bool success = 1;
+}
+
+// WorkspaceExists RPC messages
+message WorkspaceExistsRequest {
+  string name = 1;
+}
+
+message WorkspaceExistsResponse {
+  bool exists = 1;
+}
+
+// GetReposByWorkspace RPC messages
+message GetReposByWorkspaceRequest {
+  string workspace = 1;
+}
+
+message GetReposByWorkspaceResponse {
+  repeated string urls = 1;
+}
+
+// UpdateRepoWorkspace RPC messages
+message UpdateRepoWorkspaceRequest {
+  string url = 1;
+  string workspace = 2;
+}
+
+message UpdateRepoWorkspaceResponse {
+  bool success = 1;
+}
