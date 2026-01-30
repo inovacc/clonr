@@ -29,19 +29,23 @@ using the --token flag to skip the OAuth flow.
 The token will be stored securely in your system keyring if available,
 or encrypted in the database as a fallback.
 
+A workspace must be specified using the --workspace flag. The profile
+will be associated with this workspace.
+
 Examples:
-  clonr profile add work
-  clonr profile add personal --host github.com
-  clonr profile add enterprise --host github.mycompany.com
-  clonr profile add myprofile --token ghp_xxxxxxxxxxxx`,
+  clonr profile add work --workspace work
+  clonr profile add personal --workspace personal --host github.com
+  clonr profile add enterprise --workspace corp --host github.mycompany.com
+  clonr profile add myprofile --workspace dev --token ghp_xxxxxxxxxxxx`,
 	Args: cobra.ExactArgs(1),
 	RunE: runProfileAdd,
 }
 
 var (
-	profileAddHost   string
-	profileAddScopes []string
-	profileAddToken  string
+	profileAddHost      string
+	profileAddScopes    []string
+	profileAddToken     string
+	profileAddWorkspace string
 )
 
 func init() {
@@ -50,6 +54,9 @@ func init() {
 	profileAddCmd.Flags().StringVar(&profileAddHost, "host", "github.com", "GitHub host (for enterprise)")
 	profileAddCmd.Flags().StringSliceVar(&profileAddScopes, "scopes", nil, "OAuth scopes (default: repo,read:org,gist,read:user,user:email)")
 	profileAddCmd.Flags().StringVar(&profileAddToken, "token", "", "Personal Access Token (skip OAuth flow)")
+	profileAddCmd.Flags().StringVar(&profileAddWorkspace, "workspace", "", "Associated workspace (required)")
+
+	_ = profileAddCmd.MarkFlagRequired("workspace")
 }
 
 func runProfileAdd(_ *cobra.Command, args []string) error {
@@ -71,6 +78,16 @@ func runProfileAdd(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("profile '%s' already exists", name)
 	}
 
+	// Validate workspace exists
+	wsExists, err := client.WorkspaceExists(profileAddWorkspace)
+	if err != nil {
+		return fmt.Errorf("failed to check workspace existence: %w", err)
+	}
+
+	if !wsExists {
+		return fmt.Errorf("workspace '%s' does not exist\nCreate it with: clonr workspace add %s --path <directory>", profileAddWorkspace, profileAddWorkspace)
+	}
+
 	// Use default scopes if not specified
 	scopes := profileAddScopes
 	if len(scopes) == 0 {
@@ -79,6 +96,7 @@ func runProfileAdd(_ *cobra.Command, args []string) error {
 
 	_, _ = fmt.Fprintf(os.Stdout, "Creating profile: %s\n", name)
 	_, _ = fmt.Fprintf(os.Stdout, "Host: %s\n", profileAddHost)
+	_, _ = fmt.Fprintf(os.Stdout, "Workspace: %s\n", profileAddWorkspace)
 
 	var token, username string
 
@@ -167,6 +185,7 @@ func runProfileAdd(_ *cobra.Command, args []string) error {
 		EncryptedToken: encryptedToken,
 		CreatedAt:      time.Now(),
 		LastUsedAt:     time.Now(),
+		Workspace:      profileAddWorkspace,
 	}
 
 	// Save profile
@@ -182,6 +201,7 @@ func runProfileAdd(_ *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintln(os.Stdout, "\nSuccess!")
 	_, _ = fmt.Fprintf(os.Stdout, "Profile: %s\n", profile.Name)
 	_, _ = fmt.Fprintf(os.Stdout, "User: %s\n", profile.User)
+	_, _ = fmt.Fprintf(os.Stdout, "Workspace: %s\n", profile.Workspace)
 	_, _ = fmt.Fprintf(os.Stdout, "Storage: %s\n", tokenStorage)
 
 	if isFirstProfile {

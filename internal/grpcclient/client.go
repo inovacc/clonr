@@ -527,6 +527,7 @@ func protoToModelProfile(pr *v1.Profile) *model.Profile {
 		EncryptedToken: pr.GetEncryptedToken(),
 		CreatedAt:      pr.GetCreatedAt().AsTime(),
 		LastUsedAt:     pr.GetLastUsedAt().AsTime(),
+		Workspace:      pr.GetWorkspace(),
 	}
 }
 
@@ -546,6 +547,7 @@ func modelToProtoProfile(profile *model.Profile) *v1.Profile {
 		EncryptedToken: profile.EncryptedToken,
 		CreatedAt:      timestamppb.New(profile.CreatedAt),
 		LastUsedAt:     timestamppb.New(profile.LastUsedAt),
+		Workspace:      profile.Workspace,
 	}
 }
 

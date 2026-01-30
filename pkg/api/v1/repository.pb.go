@@ -596,6 +596,7 @@ func (x *GetAllReposResponse) GetRepositories() []*Repository {
 type GetReposRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	FavoritesOnly bool                   `protobuf:"varint,1,opt,name=favorites_only,json=favoritesOnly,proto3" json:"favorites_only,omitempty"`
+	Workspace     string                 `protobuf:"bytes,2,opt,name=workspace,proto3" json:"workspace,omitempty"` // empty = all workspaces
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -635,6 +636,13 @@ func (x *GetReposRequest) GetFavoritesOnly() bool {
 		return x.FavoritesOnly
 	}
 	return false
+}
+
+func (x *GetReposRequest) GetWorkspace() string {
+	if x != nil {
+		return x.Workspace
+	}
+	return ""
 }
 
 type GetReposResponse struct {
@@ -994,9 +1002,10 @@ const file_v1_repository_proto_rawDesc = "" +
 	"\binserted\x18\x01 \x01(\bR\binserted\"\x14\n" +
 	"\x12GetAllReposRequest\"O\n" +
 	"\x13GetAllReposResponse\x128\n" +
-	"\frepositories\x18\x01 \x03(\v2\x14.clonr.v1.RepositoryR\frepositories\"8\n" +
+	"\frepositories\x18\x01 \x03(\v2\x14.clonr.v1.RepositoryR\frepositories\"V\n" +
 	"\x0fGetReposRequest\x12%\n" +
-	"\x0efavorites_only\x18\x01 \x01(\bR\rfavoritesOnly\"L\n" +
+	"\x0efavorites_only\x18\x01 \x01(\bR\rfavoritesOnly\x12\x1c\n" +
+	"\tworkspace\x18\x02 \x01(\tR\tworkspace\"L\n" +
 	"\x10GetReposResponse\x128\n" +
 	"\frepositories\x18\x01 \x03(\v2\x14.clonr.v1.RepositoryR\frepositories\"B\n" +
 	"\x12SetFavoriteRequest\x12\x10\n" +

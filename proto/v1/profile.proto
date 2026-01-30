@@ -17,6 +17,7 @@ message Profile {
   bytes encrypted_token = 7;
   google.protobuf.Timestamp created_at = 8;
   google.protobuf.Timestamp last_used_at = 9;
+  string workspace = 10;  // Associated workspace name
 }
 
 // SaveProfile RPC messages

@@ -942,3 +942,95 @@ func TestBolt_MultipleReposOperations(t *testing.T) {
 		t.Errorf("Expected 1 favorite after removal, got %d", len(favRepos))
 	}
 }
+
+func TestBolt_GetRepos_WorkspaceFilter(t *testing.T) {
+	db, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	// Add repos in different workspaces
+	u1, _ := url.Parse("https://github.com/user/work-repo1")
+	u2, _ := url.Parse("https://github.com/user/work-repo2")
+	u3, _ := url.Parse("https://github.com/user/personal-repo")
+	u4, _ := url.Parse("https://github.com/user/no-workspace")
+
+	if err := db.SaveRepoWithWorkspace(u1, "/tmp/work1", "work"); err != nil {
+		t.Fatalf("SaveRepoWithWorkspace() error = %v", err)
+	}
+
+	if err := db.SaveRepoWithWorkspace(u2, "/tmp/work2", "work"); err != nil {
+		t.Fatalf("SaveRepoWithWorkspace() error = %v", err)
+	}
+
+	if err := db.SaveRepoWithWorkspace(u3, "/tmp/personal", "personal"); err != nil {
+		t.Fatalf("SaveRepoWithWorkspace() error = %v", err)
+	}
+
+	if err := db.SaveRepo(u4, "/tmp/none"); err != nil {
+		t.Fatalf("SaveRepo() error = %v", err)
+	}
+
+	// Test: Get all repos (no workspace filter)
+	allRepos, err := db.GetRepos("", false)
+	if err != nil {
+		t.Fatalf("GetRepos('', false) error = %v", err)
+	}
+
+	if len(allRepos) != 4 {
+		t.Errorf("GetRepos('', false) returned %d repos, want 4", len(allRepos))
+	}
+
+	// Test: Get repos in "work" workspace
+	workRepos, err := db.GetRepos("work", false)
+	if err != nil {
+		t.Fatalf("GetRepos('work', false) error = %v", err)
+	}
+
+	if len(workRepos) != 2 {
+		t.Errorf("GetRepos('work', false) returned %d repos, want 2", len(workRepos))
+	}
+
+	// Test: Get repos in "personal" workspace
+	personalRepos, err := db.GetRepos("personal", false)
+	if err != nil {
+		t.Fatalf("GetRepos('personal', false) error = %v", err)
+	}
+
+	if len(personalRepos) != 1 {
+		t.Errorf("GetRepos('personal', false) returned %d repos, want 1", len(personalRepos))
+	}
+
+	// Test: Get repos with non-existent workspace
+	noRepos, err := db.GetRepos("nonexistent", false)
+	if err != nil {
+		t.Fatalf("GetRepos('nonexistent', false) error = %v", err)
+	}
+
+	if len(noRepos) != 0 {
+		t.Errorf("GetRepos('nonexistent', false) returned %d repos, want 0", len(noRepos))
+	}
+
+	// Test: Workspace + favorites filter combined
+	// Mark one work repo as favorite
+	if err := db.SetFavoriteByURL(u1.String(), true); err != nil {
+		t.Fatalf("SetFavoriteByURL() error = %v", err)
+	}
+
+	workFavRepos, err := db.GetRepos("work", true)
+	if err != nil {
+		t.Fatalf("GetRepos('work', true) error = %v", err)
+	}
+
+	if len(workFavRepos) != 1 {
+		t.Errorf("GetRepos('work', true) returned %d repos, want 1", len(workFavRepos))
+	}
+
+	// All favorites (any workspace)
+	allFavRepos, err := db.GetRepos("", true)
+	if err != nil {
+		t.Fatalf("GetRepos('', true) error = %v", err)
+	}
+
+	if len(allFavRepos) != 1 {
+		t.Errorf("GetRepos('', true) returned %d repos, want 1", len(allFavRepos))
+	}
+}

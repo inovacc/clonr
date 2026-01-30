@@ -34,6 +34,7 @@ type Profile struct {
 	EncryptedToken []byte                 `protobuf:"bytes,7,opt,name=encrypted_token,json=encryptedToken,proto3" json:"encrypted_token,omitempty"`
 	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	LastUsedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=last_used_at,json=lastUsedAt,proto3" json:"last_used_at,omitempty"`
+	Workspace      string                 `protobuf:"bytes,10,opt,name=workspace,proto3" json:"workspace,omitempty"` // Associated workspace name
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -129,6 +130,13 @@ func (x *Profile) GetLastUsedAt() *timestamppb.Timestamp {
 		return x.LastUsedAt
 	}
 	return nil
+}
+
+func (x *Profile) GetWorkspace() string {
+	if x != nil {
+		return x.Workspace
+	}
+	return ""
 }
 
 // SaveProfile RPC messages
@@ -742,7 +750,7 @@ var File_v1_profile_proto protoreflect.FileDescriptor
 
 const file_v1_profile_proto_rawDesc = "" +
 	"\n" +
-	"\x10v1/profile.proto\x12\bclonr.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xbc\x02\n" +
+	"\x10v1/profile.proto\x12\bclonr.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xda\x02\n" +
 	"\aProfile\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04host\x18\x02 \x01(\tR\x04host\x12\x12\n" +
@@ -754,7 +762,9 @@ const file_v1_profile_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12<\n" +
 	"\flast_used_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"lastUsedAt\"A\n" +
+	"lastUsedAt\x12\x1c\n" +
+	"\tworkspace\x18\n" +
+	" \x01(\tR\tworkspace\"A\n" +
 	"\x12SaveProfileRequest\x12+\n" +
 	"\aprofile\x18\x01 \x01(\v2\x11.clonr.v1.ProfileR\aprofile\"/\n" +
 	"\x13SaveProfileResponse\x12\x18\n" +

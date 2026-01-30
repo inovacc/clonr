@@ -42,6 +42,9 @@ type Profile struct {
 
 	// LastUsedAt is when the profile was last used
 	LastUsedAt time.Time `json:"last_used_at"`
+
+	// Workspace is the associated workspace for this profile
+	Workspace string `json:"workspace"`
 }
 
 // DefaultHost returns the default GitHub host
