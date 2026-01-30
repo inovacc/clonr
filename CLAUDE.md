@@ -123,6 +123,61 @@ All Bubbletea models follow the standard Init/Update/View pattern. When implemen
 - This split allows the Bubbletea UI to handle the git clone process while core handles validation
 - Core functions should not print to stdout/stderr directly - return errors instead
 
+### Git Client (Credential Helper Pattern)
+
+`internal/git/client.go` provides a centralized git client inspired by [GitHub CLI](https://github.com/cli/cli):
+
+- **Credential Helper Pattern**: Uses `git -c credential.helper=` to inject authentication
+- Clonr registers itself as a git credential helper: `clonr auth git-credential`
+- Tokens never appear in process arguments (more secure than URL injection)
+- Supports host-specific or all-matching credential patterns
+
+```go
+client := git.NewClient()
+// Clone with automatic authentication
+err := client.Clone(ctx, "https://github.com/user/repo", "/path/to/clone")
+
+// Push with authentication
+err = client.Push(ctx, "origin", "main", git.PushOptions{SetUpstream: true})
+```
+
+**Available Operations:**
+- `Clone`, `Pull`, `Push`, `Fetch` - Remote operations with credential helper
+- `Commit`, `Tag` - Local operations
+- `Stash`, `StashPop`, `StashList`, `StashDrop` - Stash management
+- `Checkout`, `Merge`, `ListBranches` - Branch operations
+- `Status`, `CurrentBranch`, `IsRepository` - Repository info
+
+### Security Scanning (Gitleaks Integration)
+
+`internal/security/leaks.go` integrates [gitleaks](https://github.com/zricethezav/gitleaks) for secret detection:
+
+- **Pre-push scanning**: Automatically scans unpushed commits before `clonr push`
+- **Manual scanning**: Use `clonr scan [path]` to scan directories or git history
+- **Gitleaks rules**: Detects API keys, tokens, passwords, private keys, cloud credentials
+- **.gitleaksignore support**: Respects ignore patterns in repository
+
+```go
+scanner, _ := security.NewLeakScanner()
+_ = scanner.LoadGitleaksIgnore(repoPath)
+
+// Scan unpushed commits
+result, err := scanner.ScanUnpushedCommits(ctx, repoPath)
+
+// Scan directory files
+result, err := scanner.ScanDirectory(ctx, path)
+
+// Scan full git history
+result, err := scanner.ScanGitRepo(ctx, path)
+```
+
+**Push Workflow:**
+1. User runs `clonr push`
+2. Pre-push security check runs with TUI spinner
+3. If secrets detected: push aborted, findings displayed
+4. If clean: push proceeds with authentication
+5. Use `--skip-leaks` to bypass (not recommended)
+
 ### Module Structure
 
 ```
@@ -134,11 +189,20 @@ clonr/
 │   ├── server.go                     # Server commands (clonr server start)
 │   ├── service.go                    # Service management (clonr service --install)
 │   ├── profile.go                    # Profile parent command
-│   ├── profile_add.go                # Add profile with OAuth
+│   ├── profile_add.go                # Add profile with OAuth or PAT (--token flag)
 │   ├── profile_list.go               # List profiles
 │   ├── profile_use.go                # Set active profile
 │   ├── profile_remove.go             # Remove profile
-│   └── profile_status.go             # Show profile info
+│   ├── profile_status.go             # Show profile info
+│   ├── auth_git_credential.go        # Git credential helper (internal)
+│   ├── commit.go                     # Git commit with profile auth
+│   ├── tag.go                        # Git tag creation
+│   ├── pull.go                       # Git pull with profile auth
+│   ├── push.go                       # Git push with pre-push leak scan
+│   ├── stash.go                      # Git stash operations
+│   ├── checkout.go                   # Git checkout branches
+│   ├── merge.go                      # Git merge branches
+│   └── scan.go                       # Manual secret scanning
 ├── docs/                             # Project documentation
 │   ├── GRPC_IMPLEMENTATION_GUIDE.md  # gRPC implementation details
 │   ├── ROADMAP.md                    # Project roadmap
@@ -152,6 +216,10 @@ clonr/
 │   │   ├── oauth.go                  # GitHub OAuth device flow
 │   │   ├── keyring.go                # Secure keyring storage
 │   │   └── encrypt.go                # AES-256-GCM encryption fallback
+│   ├── git/                          # Git client with credential helper
+│   │   └── client.go                 # Centralized git operations (gh CLI pattern)
+│   ├── security/                     # Security scanning (gitleaks)
+│   │   └── leaks.go                  # Secret detection in commits/files
 │   ├── database/                     # Database abstraction (server-side)
 │   ├── model/                        # Data models (Repository, Config, Profile)
 │   ├── grpcserver/                   # gRPC server implementation
@@ -382,6 +450,77 @@ clonr clone https://github.com/user/repo
 clonr configure
 ```
 
+### Git Commands with Profile Authentication
+
+Clonr provides git commands that automatically use profile authentication:
+
+```sh
+# Commit changes (uses git client)
+clonr commit -m "feat: add feature"
+clonr commit -a -m "fix: bug fix"      # Stage all modified files
+
+# Create tags
+clonr tag v1.0.0
+clonr tag v1.0.0 -m "Release 1.0.0"    # Annotated tag
+
+# Pull changes (with profile auth)
+clonr pull
+clonr pull origin main
+
+# Push changes (with pre-push security scan)
+clonr push
+clonr push -u origin main              # Set upstream
+clonr push --tags                      # Push all tags
+clonr push --skip-leaks                # Skip security scan (not recommended)
+
+# Stash operations
+clonr stash                            # Stash changes
+clonr stash push -m "WIP"              # Stash with message
+clonr stash list                       # List stashes
+clonr stash pop                        # Pop latest stash
+clonr stash drop                       # Drop latest stash
+
+# Branch operations
+clonr checkout feature-branch
+clonr checkout -b new-branch           # Create and checkout
+clonr merge feature-branch
+clonr merge --squash feature-branch
+
+# Security scanning
+clonr scan                             # Scan current directory
+clonr scan /path/to/repo               # Scan specific path
+clonr scan --git                       # Scan git history
+```
+
+### Profile Management with PAT Support
+
+Profiles support both OAuth device flow and direct Personal Access Token (PAT) input:
+
+```sh
+# Add profile with OAuth device flow (interactive)
+clonr profile add github
+
+# Add profile with Personal Access Token (non-interactive)
+clonr profile add github --token ghp_xxxxxxxxxxxx
+
+# List profiles
+clonr profile list
+
+# Switch active profile
+clonr profile use work
+
+# Show current profile status
+clonr profile status
+
+# Remove profile
+clonr profile remove github
+```
+
+**PAT Token Benefits:**
+- Skip OAuth flow for CI/CD environments
+- Direct token validation with GitHub API
+- Same secure storage (keyring or encrypted file)
+
 If server is not running, client commands will fail with a helpful error:
 ```
 Error: Server not running
@@ -431,3 +570,13 @@ All RPCs use unary (request-response) pattern with 30-second timeouts.
 - Git must be installed for clone operations
 - Protocol Buffers compiler (protoc) for proto generation
 - Both client and server must use compatible protobuf versions
+
+## Key Dependencies
+
+- **gRPC/Protobuf**: `google.golang.org/grpc`, `google.golang.org/protobuf`
+- **CLI Framework**: `github.com/spf13/cobra`
+- **TUI Components**: `github.com/charmbracelet/bubbletea`, `github.com/charmbracelet/lipgloss`
+- **Database**: `go.etcd.io/bbolt` (BoltDB)
+- **Security**: `github.com/zricethezav/gitleaks/v8` (secret scanning)
+- **Keyring**: `github.com/zalando/go-keyring`
+- **Process Management**: `github.com/shirou/gopsutil/v4/process`
