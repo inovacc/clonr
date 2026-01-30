@@ -70,7 +70,7 @@ func PrepareClone(args []string, opts CloneOptions) (*CloneResult, error) {
 	// Merge with options git args
 	gitArgs = append(opts.GitArgs, gitArgs...)
 
-	// Get current GitHub user for shorthand resolution
+	// Get the current GitHub user for shorthand resolution
 	currentUser := getGitHubUsername()
 
 	// Determine protocol
@@ -106,7 +106,7 @@ func PrepareClone(args []string, opts CloneOptions) (*CloneResult, error) {
 		return nil, fmt.Errorf("error building canonical URL: %w", err)
 	}
 
-	// Check for repo existence in database
+	// Check for repo existence in a database
 	ok, err := client.RepoExistsByURL(canonicalURL)
 	if err != nil {
 		return nil, fmt.Errorf("error checking for repo existence: %w", err)
@@ -131,12 +131,12 @@ func PrepareClone(args []string, opts CloneOptions) (*CloneResult, error) {
 		return nil, fmt.Errorf("error getting config: %w", err)
 	}
 
-	// Determine target path
+	// Determine a target path
 	var savePath string
 
 	switch {
 	case targetDir == "":
-		// No target specified - use default clone directory
+		// No target specified - use the default clone directory
 		savePath = filepath.Join(cfg.DefaultCloneDir, repo.Name)
 	case filepath.IsAbs(targetDir):
 		// Absolute path - use directly
@@ -159,7 +159,7 @@ func PrepareClone(args []string, opts CloneOptions) (*CloneResult, error) {
 		savePath = absPath
 	}
 
-	// Create parent directory if it doesn't exist
+	// Create a parent directory if it doesn't exist
 	parentDir := filepath.Dir(savePath)
 	if _, err := os.Stat(parentDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(parentDir, os.ModePerm); err != nil {
@@ -167,13 +167,13 @@ func PrepareClone(args []string, opts CloneOptions) (*CloneResult, error) {
 		}
 	}
 
-	// Check if target directory already exists
+	// Check if the target directory already exists
 	if info, err := os.Stat(savePath); err == nil && info.IsDir() {
 		if !opts.Force {
 			return nil, fmt.Errorf("directory already exists: %s\n\nUse --force to remove and re-clone", savePath)
 		}
 
-		// Force mode: remove existing directory
+		// Force mode: remove the existing directory
 		if err := os.RemoveAll(savePath); err != nil {
 			return nil, fmt.Errorf("error removing existing directory: %w", err)
 		}
