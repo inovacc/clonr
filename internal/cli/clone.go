@@ -1,12 +1,13 @@
 package cli
 
 import (
+	"context"
 	"fmt"
-	"os/exec"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/inovacc/clonr/internal/git"
 )
 
 var (
@@ -18,20 +19,21 @@ var (
 )
 
 type CloneModel struct {
-	spinner  spinner.Model
-	url      string
-	path     string
-	token    string
-	cloning  bool
-	done     bool
-	err      error
+	spinner spinner.Model
+	url     string
+	path    string
+	cloning bool
+	done    bool
+	err     error
 }
 
 type cloneCompleteMsg struct {
 	err error
 }
 
-func NewCloneModel(url, path, token string) CloneModel {
+// NewCloneModel creates a new clone model
+// Authentication is handled via clonr's credential helper
+func NewCloneModel(url, path string) CloneModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = spinnerStyle
@@ -40,7 +42,6 @@ func NewCloneModel(url, path, token string) CloneModel {
 		spinner: s,
 		url:     url,
 		path:    path,
-		token:   token,
 		cloning: true,
 	}
 }
@@ -50,59 +51,15 @@ func (m CloneModel) Init() tea.Cmd {
 }
 
 func (m CloneModel) cloneRepo() tea.Msg {
-	cloneURL := m.url
+	// Use git client with credential helper for authentication
+	client := git.NewClient()
 
-	// Inject token into URL for authentication if provided
-	if m.token != "" {
-		cloneURL = injectTokenIntoURL(m.url, m.token)
-	}
-
-	cmd := exec.Command("git", "clone", cloneURL, m.path)
-
-	output, err := cmd.CombinedOutput()
+	err := client.Clone(context.Background(), m.url, m.path)
 	if err != nil {
-		return cloneCompleteMsg{err: fmt.Errorf("git clone failed: %v - %s", err, string(output))}
+		return cloneCompleteMsg{err: err}
 	}
 
 	return cloneCompleteMsg{err: nil}
-}
-
-// injectTokenIntoURL adds authentication token to HTTPS URLs
-func injectTokenIntoURL(rawURL, token string) string {
-	var scheme, rest string
-
-	if len(rawURL) > 8 && rawURL[:8] == "https://" {
-		scheme = "https://"
-		rest = rawURL[8:]
-	} else if len(rawURL) > 7 && rawURL[:7] == "http://" {
-		scheme = "http://"
-		rest = rawURL[7:]
-	} else {
-		return rawURL
-	}
-
-	// Remove existing credentials if present (user:pass@host or user@host)
-	for i := 0; i < len(rest); i++ {
-		if rest[i] == '@' {
-			// Check if @ appears before the first /
-			slashFound := false
-			for j := 0; j < i; j++ {
-				if rest[j] == '/' {
-					slashFound = true
-					break
-				}
-			}
-			if !slashFound {
-				rest = rest[i+1:]
-				break
-			}
-		}
-		if rest[i] == '/' {
-			break
-		}
-	}
-
-	return scheme + token + "@" + rest
 }
 
 func (m CloneModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

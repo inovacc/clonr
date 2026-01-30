@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"os/exec"
 
+	"github.com/inovacc/clonr/internal/git"
 	"github.com/spf13/cobra"
 )
 
@@ -32,30 +33,21 @@ func init() {
 }
 
 func runCommit(_ *cobra.Command, _ []string) error {
-	// Check if we're in a git repository
-	if _, err := exec.Command("git", "rev-parse", "--git-dir").Output(); err != nil {
+	client := git.NewClient()
+	ctx := context.Background()
+
+	if !client.IsRepository(ctx) {
 		return fmt.Errorf("not a git repository")
 	}
 
-	// Stage all if -a flag is provided
-	if commitAll {
-		cmd := exec.Command("git", "add", "-A")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("failed to stage files: %w", err)
-		}
+	opts := git.CommitOptions{
+		All: commitAll,
 	}
 
-	// Create commit
-	cmd := exec.Command("git", "commit", "-m", commitMessage)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to commit: %w", err)
+	if err := client.Commit(ctx, commitMessage, opts); err != nil {
+		return err
 	}
 
-	_, _ = fmt.Fprintln(os.Stdout, "\nCommit created successfully!")
+	_, _ = fmt.Fprintln(os.Stdout, "Commit created successfully!")
 	return nil
 }
