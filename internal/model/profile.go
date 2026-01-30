@@ -11,6 +11,9 @@ const (
 
 	// TokenStorageInsecure stores encrypted token in database (fallback)
 	TokenStorageInsecure TokenStorage = "insecure_storage"
+
+	// TokenStorageKeePass stores token in KeePass database
+	TokenStorageKeePass TokenStorage = "keepass"
 )
 
 // Profile represents a GitHub authentication profile

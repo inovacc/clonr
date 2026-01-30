@@ -3,8 +3,10 @@ package core
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -12,6 +14,9 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
+
+	"golang.org/x/term"
 )
 
 const (
@@ -64,7 +69,19 @@ func getKeyPath() (string, error) {
 }
 
 // getOrCreateKey retrieves the encryption key, creating it if necessary
+// Priority: 1. TPM sealed key, 2. File-based key
 func getOrCreateKey() ([]byte, error) {
+	// Try TPM first if available and sealed key exists
+	if key, err := GetTPMSealedMasterKey(); err == nil {
+		return key, nil
+	}
+
+	// Fall back to file-based key
+	return getOrCreateFileKey()
+}
+
+// getOrCreateFileKey retrieves the file-based encryption key, creating it if necessary
+func getOrCreateFileKey() ([]byte, error) {
 	keyPath, err := getKeyPath()
 	if err != nil {
 		return nil, err
@@ -97,6 +114,18 @@ func getOrCreateKey() ([]byte, error) {
 	}
 
 	return key, nil
+}
+
+// HasFileBasedKey checks if a file-based encryption key exists
+func HasFileBasedKey() bool {
+	keyPath, err := getKeyPath()
+	if err != nil {
+		return false
+	}
+
+	_, err = os.Stat(keyPath)
+
+	return err == nil
 }
 
 // deriveKey creates a profile-specific key from the master key
@@ -172,4 +201,129 @@ func DecryptToken(ciphertext []byte, profileName, host string) (string, error) {
 	}
 
 	return string(plaintext), nil
+}
+
+// ErrKeePassPasswordFailed is returned when KeePass password retrieval fails
+var ErrKeePassPasswordFailed = errors.New("failed to get KeePass password")
+
+// GetKeePassPassword gets the KeePass password with TPM fallback
+// Priority: 1. TPM sealed key, 2. Environment variable, 3. User prompt
+func GetKeePassPassword() (string, error) {
+	// Try TPM first if available and sealed key exists
+	if tpmPassword, err := GetKeePassPasswordTPM(); err == nil {
+		return tpmPassword, nil
+	}
+
+	// Fall back to traditional password retrieval
+	passphrase, err := getKeePassPassphrase()
+	if err != nil {
+		return "", fmt.Errorf("error reading KeePass password: %w", err)
+	}
+
+	return DeriveKeePassPasswordFromPassphrase(passphrase), nil
+}
+
+// getKeePassPassphrase gets the KeePass password from env var or prompts the user
+func getKeePassPassphrase() (string, error) {
+	// Check for environment variable first
+	if password := os.Getenv("CLONR_KEEPASS_PASSWORD"); password != "" {
+		return password, nil
+	}
+
+	// Fall back to prompting
+	return PromptForPassword("Enter KeePass master password: ")
+}
+
+// PromptForPassword prompts the user for a password without echoing
+func PromptForPassword(prompt string) (string, error) {
+	_, _ = fmt.Fprint(os.Stderr, prompt)
+
+	fd := int(os.Stdin.Fd())
+
+	bytePassword, err := term.ReadPassword(fd)
+
+	_, _ = fmt.Fprintln(os.Stderr)
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(bytePassword), nil
+}
+
+// GetKeePassPasswordTPM gets the KeePass password from TPM-sealed key
+func GetKeePassPasswordTPM() (string, error) {
+	if !IsTPMAvailable() {
+		return "", ErrTPMNotAvailable
+	}
+
+	store, err := NewSealedKeyStore()
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrKeePassPasswordFailed, err)
+	}
+
+	if !store.HasSealedKey() {
+		return "", ErrNoSealedKey
+	}
+
+	tpm, err := NewTPMKeyManager()
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrKeePassPasswordFailed, err)
+	}
+
+	sealedData, err := store.LoadSealedKey()
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrKeePassPasswordFailed, err)
+	}
+
+	key, err := tpm.UnsealKey(sealedData)
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrKeePassPasswordFailed, err)
+	}
+
+	return deriveKeePassPasswordFromKey(key), nil
+}
+
+// deriveKeePassPasswordFromKey derives a KeePass-compatible password from raw key bytes
+func deriveKeePassPasswordFromKey(key []byte) string {
+	var (
+		result  []byte
+		counter byte = 1
+		outLen       = 30 // 30 bytes = 240 bits
+	)
+
+	for len(result) < outLen {
+		mac := hmac.New(sha256.New, key)
+		mac.Write([]byte("keepass"))
+		mac.Write([]byte{counter})
+		result = append(result, mac.Sum(nil)...)
+		counter++
+	}
+
+	str := base64.RawURLEncoding.EncodeToString(result[:outLen])
+	str = strings.ReplaceAll(strings.ReplaceAll(str, "_", ""), "-", "")
+
+	return str
+}
+
+// DeriveKeePassPasswordFromPassphrase derives KeePass password from a user passphrase
+func DeriveKeePassPasswordFromPassphrase(passphrase string) string {
+	var (
+		result  []byte
+		counter byte = 1
+		outLen       = 30 // 30 bytes = 240 bits
+	)
+
+	for len(result) < outLen {
+		mac := hmac.New(sha256.New, []byte(passphrase))
+		mac.Write([]byte("keepass"))
+		mac.Write([]byte{counter})
+		result = append(result, mac.Sum(nil)...)
+		counter++
+	}
+
+	str := base64.RawURLEncoding.EncodeToString(result[:outLen])
+	str = strings.ReplaceAll(strings.ReplaceAll(str, "_", ""), "-", "")
+
+	return str
 }

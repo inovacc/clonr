@@ -10,9 +10,9 @@ require (
 	github.com/cli/go-gh/v2 v2.13.0
 	github.com/cli/oauth v1.2.2
 	github.com/google/go-github/v67 v67.0.0
+	github.com/google/go-tpm v0.9.8
 	github.com/google/gops v0.3.29
 	github.com/google/uuid v1.6.0
-	github.com/inovacc/genversioninfo v0.3.0
 	github.com/inovacc/git-nerds v1.1.1
 	github.com/kardianos/service v1.2.4
 	github.com/spf13/cobra v1.10.2
@@ -106,6 +106,8 @@ require (
 	github.com/tetratelabs/wazero v1.11.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.16 // indirect
 	github.com/tklauser/numcpus v0.11.0 // indirect
+	github.com/tobischo/argon2 v0.1.0 // indirect
+	github.com/tobischo/gokeepasslib/v3 v3.6.1 // indirect
 	github.com/trivago/tgo v1.0.7 // indirect
 	github.com/ulikunitz/xz v0.5.15 // indirect
 	github.com/wasilibs/go-re2 v1.10.0 // indirect
@@ -119,6 +121,7 @@ require (
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/term v0.39.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260128011058-8636f8732409 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
