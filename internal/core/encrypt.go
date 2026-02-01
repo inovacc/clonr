@@ -7,20 +7,21 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"golang.org/x/term"
 )
 
 const (
-	// keyFileName is the name of the file storing the encryption key
-	keyFileName = ".clonr_key"
+	// OpenPrefix marks data stored in plain text (no TPM available)
+	OpenPrefix = "OPEN:"
+
+	// EncPrefix marks encrypted data (TPM available)
+	EncPrefix = "ENC:"
 )
 
 var (
@@ -29,90 +30,48 @@ var (
 
 	// ErrEncryptionFailed is returned when encryption fails
 	ErrEncryptionFailed = errors.New("encryption failed")
+
+	// ErrNoEncryption indicates data is stored without encryption
+	ErrNoEncryption = errors.New("no encryption available (no TPM)")
 )
 
-// getKeyPath returns the path to the encryption key file
-func getKeyPath() (string, error) {
-	configDir, err := GetClonrConfigDir()
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(configDir, keyFileName), nil
-}
-
-// getOrCreateKey retrieves the encryption key, creating it if necessary
-// Priority: 1. TPM sealed key (auto-initialized if available), 2. File-based key
+// getOrCreateKey retrieves the encryption key from TPM, creating it if necessary.
+// Returns nil if TPM is not available (data will be stored unencrypted with OPEN: tag).
 func getOrCreateKey() ([]byte, error) {
-	// Try TPM first if available
-	if IsTPMAvailable() {
-		// Auto-initialize if no sealed key exists
-		if !HasTPMKey() {
-			if err := InitializeTPMKey(); err == nil {
-				// Successfully initialized, now get the key
-				if key, err := GetTPMSealedMasterKey(); err == nil {
-					return key, nil
-				}
-			}
-			// If initialization failed, fall through to file-based
-		} else {
-			// Sealed key exists, try to get it
-			if key, err := GetTPMSealedMasterKey(); err == nil {
-				return key, nil
-			}
+	// Only use TPM - no fallback to file-based encryption
+	if !IsTPMAvailable() {
+		return nil, ErrNoEncryption
+	}
+
+	// Auto-initialize if no sealed key exists
+	if !HasTPMKey() {
+		if err := InitializeTPMKey(); err != nil {
+			return nil, fmt.Errorf("failed to initialize TPM key: %w", err)
 		}
 	}
 
-	// Fall back to file-based key
-	return getOrCreateFileKey()
-}
-
-// getOrCreateFileKey retrieves the file-based encryption key, creating it if necessary
-func getOrCreateFileKey() ([]byte, error) {
-	keyPath, err := getKeyPath()
+	// Get the sealed key
+	key, err := GetTPMSealedMasterKey()
 	if err != nil {
-		return nil, err
-	}
-
-	// Try to read existing key
-	keyHex, err := os.ReadFile(keyPath)
-	if err == nil {
-		key, decodeErr := hex.DecodeString(string(keyHex))
-		if decodeErr == nil && len(key) == 32 {
-			return key, nil
-		}
-	}
-
-	// Generate new key
-	key := make([]byte, 32) // AES-256
-	if _, err := io.ReadFull(rand.Reader, key); err != nil {
-		return nil, fmt.Errorf("failed to generate encryption key: %w", err)
-	}
-
-	// Ensure directory exists
-	if err := os.MkdirAll(filepath.Dir(keyPath), 0700); err != nil {
-		return nil, fmt.Errorf("failed to create config directory: %w", err)
-	}
-
-	// Save key with restrictive permissions
-	keyHex = []byte(hex.EncodeToString(key))
-	if err := os.WriteFile(keyPath, keyHex, 0600); err != nil {
-		return nil, fmt.Errorf("failed to save encryption key: %w", err)
+		return nil, fmt.Errorf("failed to get TPM key: %w", err)
 	}
 
 	return key, nil
 }
 
-// HasFileBasedKey checks if a file-based encryption key exists
-func HasFileBasedKey() bool {
-	keyPath, err := getKeyPath()
-	if err != nil {
-		return false
-	}
+// IsDataOpen checks if the stored data is in plain text (no encryption)
+func IsDataOpen(data []byte) bool {
+	return strings.HasPrefix(string(data), OpenPrefix)
+}
 
-	_, err = os.Stat(keyPath)
+// IsDataEncrypted checks if the stored data is encrypted
+func IsDataEncrypted(data []byte) bool {
+	return strings.HasPrefix(string(data), EncPrefix)
+}
 
-	return err == nil
+// IsEncryptionAvailable checks if TPM encryption is available
+func IsEncryptionAvailable() bool {
+	return IsTPMAvailable()
 }
 
 // deriveKey creates a profile-specific key from the master key
@@ -127,10 +86,15 @@ func deriveKey(masterKey []byte, profileName, host string) []byte {
 	return hash[:]
 }
 
-// EncryptToken encrypts a token using AES-256-GCM
+// EncryptToken encrypts a token using AES-256-GCM if TPM is available.
+// If TPM is not available, stores the token in plain text with OPEN: prefix.
 func EncryptToken(token, profileName, host string) ([]byte, error) {
 	masterKey, err := getOrCreateKey()
 	if err != nil {
+		// No TPM available - store as plain text with OPEN: prefix
+		if errors.Is(err, ErrNoEncryption) {
+			return []byte(OpenPrefix + token), nil
+		}
 		return nil, fmt.Errorf("%w: %w", ErrEncryptionFailed, err)
 	}
 
@@ -153,13 +117,32 @@ func EncryptToken(token, profileName, host string) ([]byte, error) {
 
 	ciphertext := aesGCM.Seal(nonce, nonce, []byte(token), nil)
 
-	return ciphertext, nil
+	// Prefix encrypted data with ENC:
+	result := make([]byte, len(EncPrefix)+len(ciphertext))
+	copy(result, EncPrefix)
+	copy(result[len(EncPrefix):], ciphertext)
+
+	return result, nil
 }
 
-// DecryptToken decrypts a token using AES-256-GCM
+// DecryptToken decrypts a token using AES-256-GCM or returns plain text if OPEN: prefix.
 func DecryptToken(ciphertext []byte, profileName, host string) (string, error) {
+	data := string(ciphertext)
+
+	// Check for OPEN: prefix (plain text, no encryption)
+	if strings.HasPrefix(data, OpenPrefix) {
+		return strings.TrimPrefix(data, OpenPrefix), nil
+	}
+
+	// Check for ENC: prefix and strip it
+	if strings.HasPrefix(data, EncPrefix) {
+		ciphertext = []byte(strings.TrimPrefix(data, EncPrefix))
+	}
+
+	// Need TPM to decrypt
 	masterKey, err := getOrCreateKey()
 	if err != nil {
+		// If no TPM and data is encrypted, we can't decrypt
 		return "", fmt.Errorf("%w: %w", ErrDecryptionFailed, err)
 	}
 
