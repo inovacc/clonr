@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -881,6 +882,12 @@ func isPathWithin(childPath, parentPath string) bool {
 	parent, err := filepath.Abs(parentPath)
 	if err != nil {
 		return false
+	}
+
+	// On Windows, paths are case-insensitive
+	if runtime.GOOS == "windows" {
+		child = strings.ToLower(child)
+		parent = strings.ToLower(parent)
 	}
 
 	// Ensure parent ends with separator for accurate prefix matching
