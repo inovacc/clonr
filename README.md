@@ -174,24 +174,7 @@ clonr profile remove old-profile        # Delete a profile
 
 ### TPM 2.0 & KeePass Storage (Linux)
 
-Clonr uses KeePass database format (`.kdbx`) for secure token storage, with optional TPM 2.0 hardware-backed encryption on Linux:
-
-```sh
-# Check TPM and KeePass status
-clonr tpm status
-
-# Initialize TPM key + create KeePass database (new setup)
-clonr tpm init
-
-# Migrate existing profiles to KeePass (from keyring/encrypted)
-clonr tpm migrate-profiles
-
-# Migrate existing KeePass DB to TPM protection
-clonr tpm migrate
-
-# Remove TPM-sealed key
-clonr tpm reset
-```
+Clonr uses KeePass database format (`.kdbx`) for secure token storage, with optional TPM 2.0 hardware-backed encryption on Linux. TPM integration is handled automatically when available.
 
 **Token Storage Priority:**
 1. **KeePass** (requires TPM) - Encrypted `.kdbx` database with TPM-derived password

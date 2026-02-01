@@ -77,12 +77,6 @@ clonr
 +-- snapshot                                 # Export database to JSON snapshot
 +-- stats                                    # Show git statistics for a repository
 +-- status                                   # Show git status of repositories
-+-- tpm                                      # TPM 2.0 + KeePass key management
-|   +-- init                                 # Initialize TPM key + KeePass database
-|   +-- migrate                              # Migrate existing KeePass DB to TPM
-|   +-- migrate-profiles                     # Migrate profiles from keyring to KeePass
-|   +-- reset                                # Remove TPM-sealed key
-|   \-- status                               # Show TPM + KeePass status
 +-- unfavorite                               # Remove favorite mark from a repository
 +-- update                                   # Check for and install updates
 \-- version                                  # Print version information

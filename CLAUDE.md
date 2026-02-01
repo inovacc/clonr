@@ -230,16 +230,7 @@ Token Storage with TPM:
 | TPM Sealed Key | Windows | `%LOCALAPPDATA%\clonr\.clonr_sealed_key` |
 | KeePass DB | All | `~/.config/clonr/clonr.kdbx` |
 
-**TPM Commands:**
-```sh
-clonr tpm init             # Create TPM key + KeePass DB
-clonr tpm status           # Show TPM + KeePass status
-clonr tpm reset            # Remove TPM key
-clonr tpm migrate          # Migrate existing KeePass DB to TPM
-clonr tpm migrate-profiles # Migrate profiles from keyring to KeePass
-```
-
-**Security Benefits:**
+**Security Benefits (TPM used internally when available):**
 - Key material bound to hardware (cannot be extracted)
 - No password required - authentication automatic via TPM
 - Resistant to offline attacks
@@ -326,9 +317,6 @@ clonr/
 │   ├── checkout.go                   # Git checkout branches
 │   ├── merge.go                      # Git merge branches
 │   ├── scan.go                       # Manual secret scanning
-│   ├── tpm.go                        # TPM parent command
-│   ├── tpm_linux.go                  # TPM subcommands (init, status, reset, migrate) - Linux only
-│   └── tpm_stub.go                   # TPM stub for non-Linux platforms
 ├── docs/                             # Project documentation
 │   ├── GRPC_IMPLEMENTATION_GUIDE.md  # gRPC implementation details
 │   ├── ROADMAP.md                    # Project roadmap
@@ -651,25 +639,17 @@ clonr profile remove github
 - Direct token validation with GitHub API
 - Same secure storage (keyring or encrypted file)
 
-### TPM 2.0 Key Management (Linux Only)
+### TPM 2.0 Key Management (Automatic)
 
-Hardware-backed encryption using TPM 2.0:
+Hardware-backed encryption using TPM 2.0 is handled automatically:
 
-```sh
-# Check TPM status
-clonr tpm status
-
-# Initialize TPM-sealed master key (first time)
-clonr tpm init
-
-# Remove TPM-sealed key (falls back to file-based)
-clonr tpm reset
-```
+- **Auto-initialization**: When storage is needed and TPM is available, a sealed key is created silently
+- **Transparent**: No CLI commands needed - TPM is used internally by the storage layer
+- **Fallback**: If TPM unavailable, falls back to file-based encryption
 
 **TPM Features:**
 - Hardware-bound encryption keys (cannot be extracted)
 - No password required - automatic authentication
-- Falls back to file-based encryption if TPM unavailable
 - Keys cannot be backed up (security by design)
 
 **TPM Permissions (Linux):**

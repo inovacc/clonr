@@ -42,11 +42,25 @@ func getKeyPath() (string, error) {
 }
 
 // getOrCreateKey retrieves the encryption key, creating it if necessary
-// Priority: 1. TPM sealed key, 2. File-based key
+// Priority: 1. TPM sealed key (auto-initialized if available), 2. File-based key
 func getOrCreateKey() ([]byte, error) {
-	// Try TPM first if available and sealed key exists
-	if key, err := GetTPMSealedMasterKey(); err == nil {
-		return key, nil
+	// Try TPM first if available
+	if IsTPMAvailable() {
+		// Auto-initialize if no sealed key exists
+		if !HasTPMKey() {
+			if err := InitializeTPMKey(); err == nil {
+				// Successfully initialized, now get the key
+				if key, err := GetTPMSealedMasterKey(); err == nil {
+					return key, nil
+				}
+			}
+			// If initialization failed, fall through to file-based
+		} else {
+			// Sealed key exists, try to get it
+			if key, err := GetTPMSealedMasterKey(); err == nil {
+				return key, nil
+			}
+		}
 	}
 
 	// Fall back to file-based key
@@ -201,7 +215,8 @@ func PromptForPassword(prompt string) (string, error) {
 	return string(bytePassword), nil
 }
 
-// GetKeePassPasswordTPM gets the KeePass password from TPM-sealed key
+// GetKeePassPasswordTPM gets the KeePass password from TPM-sealed key.
+// If no sealed key exists, it will be created silently.
 func GetKeePassPasswordTPM() (string, error) {
 	if !IsTPMAvailable() {
 		return "", ErrTPMNotAvailable
@@ -212,8 +227,11 @@ func GetKeePassPasswordTPM() (string, error) {
 		return "", fmt.Errorf("%w: %v", ErrKeePassPasswordFailed, err)
 	}
 
+	// Auto-initialize if no sealed key exists
 	if !store.HasSealedKey() {
-		return "", ErrNoSealedKey
+		if err := InitializeTPMKey(); err != nil {
+			return "", fmt.Errorf("%w: failed to initialize TPM key: %v", ErrKeePassPasswordFailed, err)
+		}
 	}
 
 	tpm, err := NewTPMKeyManager()
