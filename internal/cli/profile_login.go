@@ -103,21 +103,16 @@ func (m *ProfileLoginModel) startOAuth() tea.Msg {
 		if err != nil {
 			// Send error through device code channel with empty values to signal error
 		} else {
-			// Store the token
-			var tokenStorage model.TokenStorage
+			// Encrypt and store the token
+			encryptedToken, err := tpm.EncryptToken(result.Token, m.profileName, m.host)
+			if err != nil {
+				return
+			}
 
-			var encryptedToken []byte
-
-			if keyErr := core.SetToken(m.profileName, m.host, result.Token); keyErr != nil {
-				// Keyring not available, use encrypted storage
-				encryptedToken, err = tpm.EncryptToken(result.Token, m.profileName, m.host)
-				if err != nil {
-					return
-				}
-
-				tokenStorage = model.TokenStorageInsecure
-			} else {
-				tokenStorage = model.TokenStorageKeyring
+			// Determine storage type based on whether data is encrypted or open
+			tokenStorage := model.TokenStorageEncrypted
+			if tpm.IsDataOpen(encryptedToken) {
+				tokenStorage = model.TokenStorageOpen
 			}
 
 			// Get client to check if first profile

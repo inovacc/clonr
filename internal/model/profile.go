@@ -6,14 +6,11 @@ import "time"
 type TokenStorage string
 
 const (
-	// TokenStorageKeyring stores token in system keyring
-	TokenStorageKeyring TokenStorage = "keyring"
+	// TokenStorageEncrypted stores TPM-encrypted token in database
+	TokenStorageEncrypted TokenStorage = "encrypted"
 
-	// TokenStorageInsecure stores encrypted token in database (fallback)
-	TokenStorageInsecure TokenStorage = "insecure_storage"
-
-	// TokenStorageKeePass stores token in KeePass database
-	TokenStorageKeePass TokenStorage = "keepass"
+	// TokenStorageOpen stores plain text token in database (no TPM available)
+	TokenStorageOpen TokenStorage = "open"
 )
 
 // Profile represents a GitHub authentication profile
@@ -27,7 +24,7 @@ type Profile struct {
 	// User is the authenticated GitHub username
 	User string `json:"user"`
 
-	// TokenStorage indicates where the token is stored (keyring or encrypted)
+	// TokenStorage indicates how the token is stored (encrypted or open)
 	TokenStorage TokenStorage `json:"token_storage"`
 
 	// Scopes are the OAuth scopes granted to this token
@@ -36,8 +33,7 @@ type Profile struct {
 	// Active indicates if this is the currently active profile
 	Active bool `json:"active"`
 
-	// EncryptedToken stores the encrypted token when keyring is unavailable
-	// This field is only populated when TokenStorage is insecure_storage
+	// EncryptedToken stores the token (with ENC: or OPEN: prefix)
 	EncryptedToken []byte `json:"encrypted_token,omitempty"`
 
 	// CreatedAt is when the profile was created

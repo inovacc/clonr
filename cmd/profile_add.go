@@ -149,22 +149,16 @@ func runProfileAdd(_ *cobra.Command, args []string) error {
 		scopes = result.Scopes
 	}
 
-	// Store token
-	var (
-		tokenStorage   model.TokenStorage
-		encryptedToken []byte
-	)
+	// Encrypt and store the token
+	encryptedToken, err := tpm.EncryptToken(token, name, profileAddHost)
+	if err != nil {
+		return fmt.Errorf("failed to encrypt token: %w", err)
+	}
 
-	if err := core.SetToken(name, profileAddHost, token); err != nil {
-		// Keyring not available, use encrypted storage
-		encryptedToken, err = tpm.EncryptToken(token, name, profileAddHost)
-		if err != nil {
-			return fmt.Errorf("failed to encrypt token: %w", err)
-		}
-
-		tokenStorage = model.TokenStorageInsecure
-	} else {
-		tokenStorage = model.TokenStorageKeyring
+	// Determine storage type based on whether data is encrypted or open
+	tokenStorage := model.TokenStorageEncrypted
+	if tpm.IsDataOpen(encryptedToken) {
+		tokenStorage = model.TokenStorageOpen
 	}
 
 	// Check if this is the first profile (make it active)
@@ -189,13 +183,8 @@ func runProfileAdd(_ *cobra.Command, args []string) error {
 		Workspace:      profileAddWorkspace,
 	}
 
-	// Save profile
+	// Save profile to BoltDB
 	if err := client.SaveProfile(profile); err != nil {
-		// Clean up token on failure
-		if tokenStorage == model.TokenStorageKeyring {
-			_ = core.DeleteToken(name, profileAddHost)
-		}
-
 		return fmt.Errorf("failed to save profile: %w", err)
 	}
 

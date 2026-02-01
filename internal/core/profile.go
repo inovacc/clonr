@@ -76,8 +76,8 @@ func (pm *ProfileManager) CreateProfile(ctx context.Context, name, host string, 
 		return nil, "", fmt.Errorf("OAuth authentication failed: %w", err)
 	}
 
-	// Store token - priority: KeePass > Keyring > Encrypted file
-	tokenStorage, err := pm.storeToken(name, host, result.Token)
+	// Encrypt and store token in profile
+	encryptedToken, tokenStorage, err := pm.storeToken(name, host, result.Token)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to store token: %w", err)
 	}
@@ -90,23 +90,21 @@ func (pm *ProfileManager) CreateProfile(ctx context.Context, name, host string, 
 
 	isFirstProfile := len(profiles) == 0
 
-	// Create profile
+	// Create profile with encrypted token
 	profile := &model.Profile{
-		Name:         name,
-		Host:         host,
-		User:         result.Username,
-		TokenStorage: tokenStorage,
-		Scopes:       result.Scopes,
-		Active:       isFirstProfile,
-		CreatedAt:    time.Now(),
-		LastUsedAt:   time.Now(),
+		Name:           name,
+		Host:           host,
+		User:           result.Username,
+		TokenStorage:   tokenStorage,
+		Scopes:         result.Scopes,
+		Active:         isFirstProfile,
+		EncryptedToken: encryptedToken,
+		CreatedAt:      time.Now(),
+		LastUsedAt:     time.Now(),
 	}
 
-	// Save profile
+	// Save profile to BoltDB
 	if err := pm.client.SaveProfile(profile); err != nil { //nolint:contextcheck // client manages its own timeout
-		// Clean up token on failure
-		_ = pm.deleteToken(name, host, tokenStorage)
-
 		return nil, "", fmt.Errorf("failed to save profile: %w", err)
 	}
 
@@ -117,53 +115,23 @@ func (pm *ProfileManager) CreateProfile(ctx context.Context, name, host string, 
 	return profile, result.Token, nil
 }
 
-// storeToken stores a token using the best available method
-// Priority: KeePass > Keyring > Encrypted file
-func (pm *ProfileManager) storeToken(name, host, token string) (model.TokenStorage, error) {
-	// Try KeePass first (if database exists)
-	if KeePassDBExists() {
-		kpm, err := getKeePassManager()
-		if err == nil {
-			if err := kpm.SetProfileToken(name, host, token); err == nil {
-				return model.TokenStorageKeePass, nil
-			}
-		}
-	}
-
-	// Try keyring second
-	if err := SetToken(name, host, token); err == nil {
-		return model.TokenStorageKeyring, nil
-	}
-
-	// Fall back to encrypted storage
-	// Note: We don't actually store the encrypted token in the profile anymore
-	// since KeePass handles storage. This is kept for backward compatibility.
-	return model.TokenStorageInsecure, nil
-}
-
-// deleteToken removes a token from storage
-func (pm *ProfileManager) deleteToken(name, host string, storage model.TokenStorage) error {
-	switch storage {
-	case model.TokenStorageKeePass:
-		if kpm, err := getKeePassManager(); err == nil {
-			return kpm.DeleteProfileToken(name, host)
-		}
-	case model.TokenStorageKeyring:
-		return DeleteToken(name, host)
-	}
-
-	return nil
-}
-
-// getKeePassManager returns a KeePass manager using TPM or password
-func getKeePassManager() (*KeePassManager, error) {
-	password, err := tpm.GetKeePassPassword()
+// storeToken encrypts and returns the token for storage in BoltDB.
+// Returns the encrypted token bytes and storage type (encrypted or open).
+func (pm *ProfileManager) storeToken(name, host, token string) ([]byte, model.TokenStorage, error) {
+	encryptedToken, err := tpm.EncryptToken(token, name, host)
 	if err != nil {
-		return nil, err
+		return nil, "", fmt.Errorf("failed to encrypt token: %w", err)
 	}
 
-	return NewKeePassManager(password)
+	// Determine storage type based on whether data is encrypted or open
+	storageType := model.TokenStorageEncrypted
+	if tpm.IsDataOpen(encryptedToken) {
+		storageType = model.TokenStorageOpen
+	}
+
+	return encryptedToken, storageType, nil
 }
+
 
 // GetProfile retrieves a profile by name
 func (pm *ProfileManager) GetProfile(name string) (*model.Profile, error) {
@@ -225,10 +193,7 @@ func (pm *ProfileManager) DeleteProfile(name string) error {
 		return ErrProfileNotFound
 	}
 
-	// Delete token from storage
-	// Ignore errors - profile deletion is more important and token might already be deleted
-	_ = pm.deleteToken(name, profile.Host, profile.TokenStorage)
-
+	// Token is stored in profile.EncryptedToken, so it gets deleted with the profile
 	return pm.client.DeleteProfile(name)
 }
 
@@ -260,42 +225,18 @@ func (pm *ProfileManager) GetActiveProfileToken() (string, error) {
 	return pm.getTokenFromProfile(profile)
 }
 
-// getTokenFromProfile retrieves the token based on storage type
+// getTokenFromProfile retrieves and decrypts the token from the profile
 func (pm *ProfileManager) getTokenFromProfile(profile *model.Profile) (string, error) {
-	switch profile.TokenStorage {
-	case model.TokenStorageKeePass:
-		kpm, err := getKeePassManager()
-		if err != nil {
-			return "", fmt.Errorf("failed to open KeePass database: %w", err)
-		}
-
-		token, err := kpm.GetProfileToken(profile.Name, profile.Host)
-		if err != nil {
-			return "", fmt.Errorf("failed to get token from KeePass: %w", err)
-		}
-
-		return token, nil
-	case model.TokenStorageKeyring:
-		token, err := GetToken(profile.Name, profile.Host)
-		if err != nil {
-			return "", fmt.Errorf("failed to get token from keyring: %w", err)
-		}
-
-		return token, nil
-	case model.TokenStorageInsecure:
-		if len(profile.EncryptedToken) == 0 {
-			return "", ErrTokenNotFound
-		}
-
-		token, err := tpm.DecryptToken(profile.EncryptedToken, profile.Name, profile.Host)
-		if err != nil {
-			return "", fmt.Errorf("failed to decrypt token: %w", err)
-		}
-
-		return token, nil
-	default:
+	if len(profile.EncryptedToken) == 0 {
 		return "", ErrTokenNotFound
 	}
+
+	token, err := tpm.DecryptToken(profile.EncryptedToken, profile.Name, profile.Host)
+	if err != nil {
+		return "", fmt.Errorf("failed to decrypt token: %w", err)
+	}
+
+	return token, nil
 }
 
 // ValidateProfileToken checks if a profile's token is still valid
@@ -341,29 +282,14 @@ func (pm *ProfileManager) RefreshProfile(ctx context.Context, name string) error
 		return fmt.Errorf("OAuth authentication failed: %w", err)
 	}
 
-	// Store new token based on current storage type
-	switch profile.TokenStorage {
-	case model.TokenStorageKeePass:
-		kpm, err := getKeePassManager()
-		if err != nil {
-			return fmt.Errorf("failed to open KeePass database: %w", err)
-		}
-
-		if err := kpm.SetProfileToken(name, profile.Host, result.Token); err != nil {
-			return fmt.Errorf("failed to store token in KeePass: %w", err)
-		}
-	case model.TokenStorageKeyring:
-		if err := SetToken(name, profile.Host, result.Token); err != nil {
-			return fmt.Errorf("failed to store token in keyring: %w", err)
-		}
-	default:
-		encryptedToken, err := tpm.EncryptToken(result.Token, name, profile.Host)
-		if err != nil {
-			return fmt.Errorf("failed to encrypt token: %w", err)
-		}
-
-		profile.EncryptedToken = encryptedToken
+	// Encrypt and store new token
+	encryptedToken, tokenStorage, err := pm.storeToken(name, profile.Host, result.Token)
+	if err != nil {
+		return fmt.Errorf("failed to encrypt token: %w", err)
 	}
+
+	profile.EncryptedToken = encryptedToken
+	profile.TokenStorage = tokenStorage
 
 	// Update profile
 	profile.User = result.Username

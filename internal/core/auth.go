@@ -29,7 +29,7 @@ const (
 //  3. GITHUB_TOKEN environment variable
 //  4. GH_TOKEN environment variable
 //  5. Active clonr profile token
-//  6. gh CLI auth (keyring + config file)
+//  6. gh CLI auth (config file)
 func ResolveGitHubToken(flagToken, profileName string) (token string, source TokenSource, err error) {
 	return ResolveGitHubTokenForHost(flagToken, profileName, "github.com")
 }
@@ -142,44 +142,15 @@ func getActiveProfileToken(host string) (string, error) {
 	return tokenFromProfile(profile)
 }
 
-// tokenFromProfile retrieves token based on storage type
+// tokenFromProfile decrypts and retrieves token from profile
 func tokenFromProfile(profile *model.Profile) (string, error) {
 	if profile == nil {
 		return "", ErrTokenNotFound
 	}
 
-	switch profile.TokenStorage {
-	case model.TokenStorageKeePass:
-		kpm, err := getKeePassManagerForAuth()
-		if err != nil {
-			return "", fmt.Errorf("failed to open KeePass database: %w", err)
-		}
-
-		token, err := kpm.GetProfileToken(profile.Name, profile.Host)
-		if err != nil {
-			return "", fmt.Errorf("failed to get token from KeePass: %w", err)
-		}
-
-		return token, nil
-	case model.TokenStorageKeyring:
-		return GetToken(profile.Name, profile.Host)
-	case model.TokenStorageInsecure:
-		if len(profile.EncryptedToken) == 0 {
-			return "", ErrTokenNotFound
-		}
-
-		return tpm.DecryptToken(profile.EncryptedToken, profile.Name, profile.Host)
-	default:
+	if len(profile.EncryptedToken) == 0 {
 		return "", ErrTokenNotFound
 	}
-}
 
-// getKeePassManagerForAuth returns a KeePass manager using TPM or password
-func getKeePassManagerForAuth() (*KeePassManager, error) {
-	password, err := tpm.GetKeePassPassword()
-	if err != nil {
-		return nil, err
-	}
-
-	return NewKeePassManager(password)
+	return tpm.DecryptToken(profile.EncryptedToken, profile.Name, profile.Host)
 }

@@ -77,10 +77,10 @@ func runProfileStatus(_ *cobra.Command, args []string) error {
 
 	storage := string(profile.TokenStorage)
 	switch profile.TokenStorage {
-	case model.TokenStorageKeyring:
-		storage = "secure (system keyring)"
-	case model.TokenStorageInsecure:
-		storage = "encrypted (database)"
+	case model.TokenStorageEncrypted:
+		storage = "encrypted (TPM)"
+	case model.TokenStorageOpen:
+		storage = "plain text (no TPM)"
 	}
 
 	_, _ = fmt.Fprintf(os.Stdout, "Storage: %s\n", storage)
