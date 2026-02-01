@@ -5,10 +5,36 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"gopkg.in/ini.v1"
 )
+
+// GetClonrConfigDir returns the clonr configuration directory path.
+// Linux: ~/.config/clonr (via os.UserConfigDir)
+// Windows: C:\Users\{username}\AppData\Local\clonr (via os.UserCacheDir)
+func GetClonrConfigDir() (string, error) {
+	var (
+		baseDir string
+		err     error
+	)
+
+	switch runtime.GOOS {
+	case "windows":
+		// Windows: use AppData\Local (via UserCacheDir)
+		baseDir, err = os.UserCacheDir()
+	default:
+		// Linux/others: use ~/.config (via UserConfigDir)
+		baseDir, err = os.UserConfigDir()
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("failed to get config directory: %w", err)
+	}
+
+	return filepath.Join(baseDir, "clonr"), nil
+}
 
 type CoreSection struct {
 	RepositoryFormatVersion int  `ini:"repositoryformatversion"`

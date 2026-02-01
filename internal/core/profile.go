@@ -41,7 +41,7 @@ func NewProfileManager() (*ProfileManager, error) {
 
 // CreateProfile creates a new profile with OAuth authentication
 func (pm *ProfileManager) CreateProfile(ctx context.Context, name, host string, scopes []string) (*model.Profile, string, error) {
-	// Check if profile already exists
+	// Check if a profile already exists
 	exists, err := pm.client.ProfileExists(name) //nolint:contextcheck // client manages its own timeout
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to check profile existence: %w", err)

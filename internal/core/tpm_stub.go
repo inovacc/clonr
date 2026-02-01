@@ -2,35 +2,24 @@
 
 package core
 
-import "errors"
-
-var (
-	// ErrTPMNotAvailable is returned when TPM device is not accessible
-	ErrTPMNotAvailable = errors.New("TPM device not available")
-
-	// ErrNoSealedKey is returned when no sealed key exists
-	ErrNoSealedKey = errors.New("no sealed key found")
-
-	// ErrSealFailed is returned when sealing operation fails
-	ErrSealFailed = errors.New("failed to seal key to TPM")
-
-	// ErrUnsealFailed is returned when unsealing operation fails
-	ErrUnsealFailed = errors.New("failed to unseal key from TPM")
-
-	// ErrTPMNotSupported is returned on platforms without TPM support
-	ErrTPMNotSupported = errors.New("TPM not supported on this platform")
+import (
+	"github.com/inovacc/sealbox"
 )
 
-// TPMKeyManager handles TPM-based key operations
-type TPMKeyManager struct{}
+// Re-export errors for backward compatibility
+var (
+	ErrTPMNotAvailable = sealbox.ErrTPMNotAvailable
+	ErrTPMNotSupported = sealbox.ErrTPMNotSupported
+	ErrNoSealedKey     = sealbox.ErrNoSealedKey
+	ErrSealFailed      = sealbox.ErrSealFailed
+	ErrUnsealFailed    = sealbox.ErrUnsealFailed
+)
 
-// SealedData represents the data needed to unseal a key
-type SealedData struct {
-	PublicArea       []byte `json:"public_area"`
-	PrivateArea      []byte `json:"private_area"`
-	SealedBlob       []byte `json:"sealed_blob"`
-	SealedBlobPublic []byte `json:"sealed_blob_public"`
-}
+// SealedData is an alias for backward compatibility
+type SealedData = sealbox.SealedData
+
+// TPMKeyManager wraps the sealbox KeyManager for backward compatibility
+type TPMKeyManager struct{}
 
 // NewTPMKeyManager creates a new TPM key manager
 // On non-Linux platforms, this always returns an error
@@ -41,7 +30,7 @@ func NewTPMKeyManager() (*TPMKeyManager, error) {
 // IsTPMAvailable checks if a TPM device is accessible
 // On non-Linux platforms, this always returns false
 func IsTPMAvailable() bool {
-	return false
+	return sealbox.IsAvailable()
 }
 
 // SealKey seals a key to the TPM
@@ -60,4 +49,9 @@ func (t *TPMKeyManager) UnsealKey(data *SealedData) ([]byte, error) {
 // On non-Linux platforms, this always returns an error
 func (t *TPMKeyManager) GenerateAndSealKey() (*SealedData, error) {
 	return nil, ErrTPMNotSupported
+}
+
+// Close is a no-op on unsupported platforms
+func (t *TPMKeyManager) Close() error {
+	return nil
 }

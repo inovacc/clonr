@@ -88,17 +88,12 @@ func loadZenHubConfigToken() (string, error) {
 
 // getZenHubConfigPath returns the path to the ZenHub config file
 func getZenHubConfigPath() (string, error) {
-	configDir, err := os.UserConfigDir()
+	configDir, err := GetClonrConfigDir()
 	if err != nil {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("cannot determine config directory: %w", err)
-		}
-
-		configDir = filepath.Join(homeDir, ".config")
+		return "", fmt.Errorf("cannot determine config directory: %w", err)
 	}
 
-	return filepath.Join(configDir, "clonr", "zenhub.json"), nil
+	return filepath.Join(configDir, "zenhub.json"), nil
 }
 
 // GetZenHubDefaultWorkspace returns the default workspace ID from config

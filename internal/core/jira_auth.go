@@ -253,17 +253,12 @@ func loadJiraConfigCredentials(instanceName string) (*JiraCredentials, error) {
 
 // getJiraConfigPath returns the path to the Jira config file
 func getJiraConfigPath() (string, error) {
-	configDir, err := os.UserConfigDir()
+	configDir, err := GetClonrConfigDir()
 	if err != nil {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("cannot determine config directory: %w", err)
-		}
-
-		configDir = filepath.Join(homeDir, ".config")
+		return "", fmt.Errorf("cannot determine config directory: %w", err)
 	}
 
-	return filepath.Join(configDir, "clonr", "jira.json"), nil
+	return filepath.Join(configDir, "jira.json"), nil
 }
 
 // normalizeJiraURL ensures the URL is properly formatted

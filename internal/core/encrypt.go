@@ -13,7 +13,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"golang.org/x/term"
@@ -34,35 +33,9 @@ var (
 
 // getKeyPath returns the path to the encryption key file
 func getKeyPath() (string, error) {
-	var configDir string
-
-	switch runtime.GOOS {
-	case "windows":
-		configDir = os.Getenv("LOCALAPPDATA")
-		if configDir == "" {
-			configDir = os.Getenv("APPDATA")
-		}
-
-		configDir = filepath.Join(configDir, "clonr")
-	case "darwin":
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("failed to get home directory: %w", err)
-		}
-
-		configDir = filepath.Join(home, "Library", "Application Support", "clonr")
-	default: // linux and others
-		configDir = os.Getenv("XDG_CONFIG_HOME")
-		if configDir == "" {
-			home, err := os.UserHomeDir()
-			if err != nil {
-				return "", fmt.Errorf("failed to get home directory: %w", err)
-			}
-
-			configDir = filepath.Join(home, ".config", "clonr")
-		} else {
-			configDir = filepath.Join(configDir, "clonr")
-		}
+	configDir, err := GetClonrConfigDir()
+	if err != nil {
+		return "", err
 	}
 
 	return filepath.Join(configDir, keyFileName), nil
@@ -206,32 +179,9 @@ func DecryptToken(ciphertext []byte, profileName, host string) (string, error) {
 // ErrKeePassPasswordFailed is returned when KeePass password retrieval fails
 var ErrKeePassPasswordFailed = errors.New("failed to get KeePass password")
 
-// GetKeePassPassword gets the KeePass password with TPM fallback
-// Priority: 1. TPM sealed key, 2. Environment variable, 3. User prompt
+// GetKeePassPassword gets the KeePass password from TPM (no fallback)
 func GetKeePassPassword() (string, error) {
-	// Try TPM first if available and sealed key exists
-	if tpmPassword, err := GetKeePassPasswordTPM(); err == nil {
-		return tpmPassword, nil
-	}
-
-	// Fall back to traditional password retrieval
-	passphrase, err := getKeePassPassphrase()
-	if err != nil {
-		return "", fmt.Errorf("error reading KeePass password: %w", err)
-	}
-
-	return DeriveKeePassPasswordFromPassphrase(passphrase), nil
-}
-
-// getKeePassPassphrase gets the KeePass password from env var or prompts the user
-func getKeePassPassphrase() (string, error) {
-	// Check for environment variable first
-	if password := os.Getenv("CLONR_KEEPASS_PASSWORD"); password != "" {
-		return password, nil
-	}
-
-	// Fall back to prompting
-	return PromptForPassword("Enter KeePass master password: ")
+	return GetKeePassPasswordTPM()
 }
 
 // PromptForPassword prompts the user for a password without echoing

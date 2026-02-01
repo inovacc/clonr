@@ -1,216 +1,94 @@
 package core
 
 import (
-	"encoding/json"
-	"fmt"
-	"os"
 	"path/filepath"
-	"runtime"
+
+	"github.com/inovacc/sealbox"
 )
 
-const (
-	// sealedKeyFileName is the name of the file storing the sealed key
-	sealedKeyFileName = ".clonr_sealed_key"
-)
+var cacheDir string
 
-// SealedKeyStore manages sealed key blobs on disk
+func init() {
+	var err error
+
+	cacheDir, err = GetClonrConfigDir()
+	if err != nil {
+		panic(err)
+	}
+
+	cacheDir = filepath.Join(cacheDir, ".clonr_sealed_key")
+}
+
+// sealboxOpts returns the KeyStore options for clonr
+func sealboxOpts() []sealbox.KeyStoreOption {
+	return []sealbox.KeyStoreOption{
+		sealbox.WithStorePath(cacheDir),
+	}
+}
+
+// SealedKeyStore wraps the sealbox KeyStore for backward compatibility
 type SealedKeyStore struct {
-	storePath string
+	store *sealbox.FileKeyStore
 }
 
 // NewSealedKeyStore creates a new sealed key store
 func NewSealedKeyStore() (*SealedKeyStore, error) {
-	var configDir string
-
-	switch runtime.GOOS {
-	case "windows":
-		configDir = os.Getenv("LOCALAPPDATA")
-		if configDir == "" {
-			configDir = os.Getenv("APPDATA")
-		}
-
-		configDir = filepath.Join(configDir, "clonr")
-	case "darwin":
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get home directory: %w", err)
-		}
-
-		configDir = filepath.Join(home, "Library", "Application Support", "clonr")
-	default: // linux and others
-		configDir = os.Getenv("XDG_CONFIG_HOME")
-		if configDir == "" {
-			home, err := os.UserHomeDir()
-			if err != nil {
-				return nil, fmt.Errorf("failed to get home directory: %w", err)
-			}
-
-			configDir = filepath.Join(home, ".config", "clonr")
-		} else {
-			configDir = filepath.Join(configDir, "clonr")
-		}
+	store, err := sealbox.NewKeyStore(sealboxOpts()...)
+	if err != nil {
+		return nil, err
 	}
 
-	storePath := filepath.Join(configDir, sealedKeyFileName)
-
-	return &SealedKeyStore{
-		storePath: storePath,
-	}, nil
+	return &SealedKeyStore{store: store}, nil
 }
 
 // SaveSealedKey saves the sealed key data to disk
-func (s *SealedKeyStore) SaveSealedKey(data *SealedData) error {
-	// Ensure directory exists
-	dir := filepath.Dir(s.storePath)
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return fmt.Errorf("failed to create directory: %w", err)
-	}
-
-	// Marshal the sealed data to JSON
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return fmt.Errorf("failed to marshal sealed data: %w", err)
-	}
-
-	// Write to file with restricted permissions (owner read/write only)
-	if err := os.WriteFile(s.storePath, jsonData, 0600); err != nil {
-		return fmt.Errorf("failed to write sealed key file: %w", err)
-	}
-
-	return nil
+func (s *SealedKeyStore) SaveSealedKey(data *sealbox.SealedData) error {
+	return s.store.Save(data)
 }
 
 // LoadSealedKey loads the sealed key data from disk
-func (s *SealedKeyStore) LoadSealedKey() (*SealedData, error) {
-	jsonData, err := os.ReadFile(s.storePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, ErrNoSealedKey
-		}
-
-		return nil, fmt.Errorf("failed to read sealed key file: %w", err)
-	}
-
-	var data SealedData
-	if err := json.Unmarshal(jsonData, &data); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal sealed data: %w", err)
-	}
-
-	return &data, nil
+func (s *SealedKeyStore) LoadSealedKey() (*sealbox.SealedData, error) {
+	return s.store.Load()
 }
 
 // HasSealedKey checks if a sealed key exists on disk
 func (s *SealedKeyStore) HasSealedKey() bool {
-	_, err := os.Stat(s.storePath)
-
-	return err == nil
+	return s.store.Exists()
 }
 
 // DeleteSealedKey removes the sealed key from disk
 func (s *SealedKeyStore) DeleteSealedKey() error {
-	if err := os.Remove(s.storePath); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to delete sealed key: %w", err)
-	}
-
-	return nil
+	return s.store.Delete()
 }
 
 // GetStorePath returns the path where the sealed key is stored
 func (s *SealedKeyStore) GetStorePath() string {
-	return s.storePath
+	return s.store.Path()
 }
 
 // InitializeTPMKey creates and seals a new key to the TPM
 // This should be run once during setup
 func InitializeTPMKey() error {
-	if !IsTPMAvailable() {
-		return ErrTPMNotAvailable
-	}
-
-	tpm, err := NewTPMKeyManager()
-	if err != nil {
-		return fmt.Errorf("failed to create TPM key manager: %w", err)
-	}
-
-	// Generate and seal a new random key
-	sealedData, err := tpm.GenerateAndSealKey()
-	if err != nil {
-		return fmt.Errorf("failed to generate and seal key: %w", err)
-	}
-
-	// Save the sealed data to disk
-	store, err := NewSealedKeyStore()
-	if err != nil {
-		return fmt.Errorf("failed to create key store: %w", err)
-	}
-
-	if err := store.SaveSealedKey(sealedData); err != nil {
-		return fmt.Errorf("failed to save sealed key: %w", err)
-	}
-
-	return nil
+	return sealbox.Initialize(sealboxOpts()...)
 }
 
 // ResetTPMKey removes the existing TPM-sealed key
 func ResetTPMKey() error {
-	store, err := NewSealedKeyStore()
-	if err != nil {
-		return fmt.Errorf("failed to create key store: %w", err)
-	}
-
-	return store.DeleteSealedKey()
+	return sealbox.Reset(sealboxOpts()...)
 }
 
 // HasTPMKey checks if a TPM-sealed key exists
 func HasTPMKey() bool {
-	store, err := NewSealedKeyStore()
-	if err != nil {
-		return false
-	}
-
-	return store.HasSealedKey()
+	return sealbox.HasKey(sealboxOpts()...)
 }
 
 // GetTPMKeyStorePath returns the path where the TPM-sealed key is stored
 func GetTPMKeyStorePath() (string, error) {
-	store, err := NewSealedKeyStore()
-	if err != nil {
-		return "", err
-	}
-
-	return store.GetStorePath(), nil
+	return sealbox.GetKeyStorePath(sealboxOpts()...)
 }
 
 // GetTPMSealedMasterKey retrieves the master encryption key from TPM
 // Returns the unsealed key that can be used for encryption operations
 func GetTPMSealedMasterKey() ([]byte, error) {
-	if !IsTPMAvailable() {
-		return nil, ErrTPMNotAvailable
-	}
-
-	store, err := NewSealedKeyStore()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create key store: %w", err)
-	}
-
-	if !store.HasSealedKey() {
-		return nil, ErrNoSealedKey
-	}
-
-	tpm, err := NewTPMKeyManager()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create TPM key manager: %w", err)
-	}
-
-	sealedData, err := store.LoadSealedKey()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load sealed key: %w", err)
-	}
-
-	key, err := tpm.UnsealKey(sealedData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unseal key: %w", err)
-	}
-
-	return key, nil
+	return sealbox.GetSealedMasterKey(sealboxOpts()...)
 }

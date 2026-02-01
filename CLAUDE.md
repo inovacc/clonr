@@ -163,8 +163,7 @@ path, err := core.GetKeePassDBPath()
 Profile Token Storage:
 ┌─────────────────────────────────────────────────┐
 │  1. KeePass (if database exists)                │
-│     ├─ Password from TPM (if available)         │
-│     └─ Password from env/prompt (fallback)      │
+│     └─ Password from TPM (required)             │
 │  2. System Keyring                              │
 │  3. Encrypted file (AES-256-GCM)                │
 └─────────────────────────────────────────────────┘
@@ -172,16 +171,17 @@ Profile Token Storage:
 
 ### TPM 2.0 Integration (Hardware-Backed Encryption)
 
-`internal/core/tpm*.go` provides TPM 2.0 key management for hardware-backed encryption:
+`internal/core/tpm*.go` provides TPM 2.0 key management for hardware-backed encryption using the **sealbox** library:
 
-- **Platform Support**: Linux only (uses `/dev/tpmrm0`)
-- **Library**: `github.com/google/go-tpm` v0.9.8
+- **Platform Support**: Linux (uses `/dev/tpmrm0`), Windows support planned (via TBS)
+- **Library**: `github.com/inovacc/sealbox` (wraps `github.com/google/go-tpm`)
+- **Development**: Uses `go mod replace` to link local sealbox at `/home/dyam/shared/personal/GolandProjects/keystore`
 - **Fallback**: Non-Linux platforms use password-based KeePass or file-based encryption
 
 **Files:**
-- `tpm.go` - TPM 2.0 key sealing/unsealing (Linux build tag)
-- `tpm_stub.go` - Stub for non-Linux platforms
-- `tpm_keystore.go` - Sealed key storage and helper functions
+- `tpm.go` - TPM 2.0 key sealing/unsealing via sealbox (Linux build tag)
+- `tpm_stub.go` - Stub for non-Linux platforms (returns `ErrTPMNotSupported`)
+- `tpm_keystore.go` - Sealed key storage using sealbox's FileKeyStore
 
 **Key Functions:**
 ```go
@@ -191,11 +191,8 @@ core.IsTPMAvailable() bool
 // Initialize new TPM-sealed key
 core.InitializeTPMKey() error
 
-// Get KeePass password from TPM
-core.GetKeePassPasswordTPM() (string, error)
-
-// Get KeePass password (TPM or user prompt)
-core.GetKeePassPassword() (string, error)
+// Get master key from TPM
+core.GetTPMSealedMasterKey() ([]byte, error)
 
 // Check if TPM key exists
 core.HasTPMKey() bool
@@ -203,15 +200,22 @@ core.HasTPMKey() bool
 // Remove TPM-sealed key
 core.ResetTPMKey() error
 
-// Derive password from user passphrase
-core.DeriveKeePassPasswordFromPassphrase(passphrase) string
+// Get TPM key store path
+core.GetTPMKeyStorePath() (string, error)
 ```
+
+**Sealbox Features:**
+- **PCR Policy Binding**: Keys can be bound to specific PCR values
+- **Password Protection**: Optional additional password layer
+- **Versioned SealedData**: Forward-compatible sealed key format
+- **Key Hierarchy**: Support for primary/derived key patterns
+- **Retry Logic**: Automatic retry on transient TPM errors
 
 **TPM + KeePass Flow:**
 ```
 Token Storage with TPM:
 ┌─────────────────────────────────────────────────┐
-│  1. TPM unseals master key                      │
+│  1. TPM unseals master key (via sealbox)        │
 │  2. Derive KeePass password from master key     │
 │  3. Open KeePass database (no user password)    │
 │  4. Store/retrieve tokens from KeePass          │
@@ -222,6 +226,8 @@ Token Storage with TPM:
 | File | Platform | Path |
 |------|----------|------|
 | TPM Sealed Key | Linux | `~/.config/clonr/.clonr_sealed_key` |
+| TPM Sealed Key | macOS | `~/Library/Application Support/clonr/.clonr_sealed_key` |
+| TPM Sealed Key | Windows | `%LOCALAPPDATA%\clonr\.clonr_sealed_key` |
 | KeePass DB | All | `~/.config/clonr/clonr.kdbx` |
 
 **TPM Commands:**
@@ -320,7 +326,9 @@ clonr/
 │   ├── checkout.go                   # Git checkout branches
 │   ├── merge.go                      # Git merge branches
 │   ├── scan.go                       # Manual secret scanning
-│   └── tpm.go                        # TPM + KeePass management (init, status, reset, migrate, migrate-profiles)
+│   ├── tpm.go                        # TPM parent command
+│   ├── tpm_linux.go                  # TPM subcommands (init, status, reset, migrate) - Linux only
+│   └── tpm_stub.go                   # TPM stub for non-Linux platforms
 ├── docs/                             # Project documentation
 │   ├── GRPC_IMPLEMENTATION_GUIDE.md  # gRPC implementation details
 │   ├── ROADMAP.md                    # Project roadmap
@@ -732,5 +740,6 @@ All RPCs use unary (request-response) pattern with 30-second timeouts.
 - **Database**: `go.etcd.io/bbolt` (BoltDB)
 - **Security**: `github.com/zricethezav/gitleaks/v8` (secret scanning)
 - **Keyring**: `github.com/zalando/go-keyring`
-- **TPM 2.0**: `github.com/google/go-tpm` (hardware-backed encryption, Linux only)
+- **TPM 2.0**: `github.com/inovacc/sealbox` (hardware-backed encryption, wraps go-tpm)
+- **KeePass**: `github.com/tobischo/gokeepasslib/v3` (secure token storage)
 - **Process Management**: `github.com/shirou/gopsutil/v4/process`

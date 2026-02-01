@@ -148,6 +148,18 @@ func tokenFromProfile(profile *model.Profile) (string, error) {
 	}
 
 	switch profile.TokenStorage {
+	case model.TokenStorageKeePass:
+		kpm, err := getKeePassManagerForAuth()
+		if err != nil {
+			return "", fmt.Errorf("failed to open KeePass database: %w", err)
+		}
+
+		token, err := kpm.GetProfileToken(profile.Name, profile.Host)
+		if err != nil {
+			return "", fmt.Errorf("failed to get token from KeePass: %w", err)
+		}
+
+		return token, nil
 	case model.TokenStorageKeyring:
 		return GetToken(profile.Name, profile.Host)
 	case model.TokenStorageInsecure:
@@ -159,4 +171,14 @@ func tokenFromProfile(profile *model.Profile) (string, error) {
 	default:
 		return "", ErrTokenNotFound
 	}
+}
+
+// getKeePassManagerForAuth returns a KeePass manager using TPM or password
+func getKeePassManagerForAuth() (*KeePassManager, error) {
+	password, err := GetKeePassPassword()
+	if err != nil {
+		return nil, err
+	}
+
+	return NewKeePassManager(password)
 }

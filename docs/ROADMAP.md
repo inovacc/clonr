@@ -409,6 +409,87 @@ CLI: `clonr nerds [repo-name]`
 - [ ] Incremental backups
 - [ ] Cloud storage integration (S3, GCS)
 
+### v0.7.0 – Cross-Platform TPM & Security Hardening
+
+#### Sealbox Integration ✅ (Completed)
+
+TPM functionality has been extracted to the external `github.com/inovacc/sealbox` package, providing a reusable TPM key management library.
+
+**Completed:**
+- [x] Integrated sealbox library via `go mod replace`
+- [x] Migrated from custom `internal/core/tpm.go` to sealbox wrappers
+- [x] Platform-agnostic abstractions (`KeyManager`, `KeyStore`, `SealedData`)
+- [x] Linux TPM 2.0 support via `/dev/tpmrm0`
+- [x] Sealed key storage with `WithAppConfig("clonr", ".clonr_sealed_key")`
+- [x] KeePass integration with TPM-derived password
+
+**Sealbox Features:**
+- PCR policy binding for hardware attestation
+- Optional password protection layer
+- Versioned SealedData format for forward compatibility
+- Key hierarchy support (primary/derived keys)
+- Automatic retry logic for transient TPM errors
+
+**Pending Windows Support:**
+- [ ] Complete Windows TBS implementation in sealbox
+- [ ] Test on Windows 10/11 with TPM 2.0
+- [ ] Update clonr `internal/core/tpm_windows.go` wrapper
+
+**Pending macOS Support (Stretch Goal):**
+- [ ] Research Secure Enclave integration in sealbox
+- [ ] Evaluate keychain with biometric protection alternative
+
+#### Sealbox API (Current)
+
+```go
+// High-level API
+sealbox.Initialize(opts...)           // Create and seal new key
+sealbox.GetSealedMasterKey(opts...)   // Retrieve unsealed key
+sealbox.HasKey(opts...)               // Check if key exists
+sealbox.Reset(opts...)                // Remove sealed key
+
+// Options
+sealbox.WithAppConfig(app, filename)  // App-specific config dir
+sealbox.WithStorePath(path)           // Custom storage path
+
+// Low-level API
+km, _ := sealbox.NewKeyManager()      // Direct TPM access
+km.SealKey(key)                       // Seal arbitrary data
+km.UnsealKey(sealed)                  // Unseal data
+km.GenerateAndSealKey()               // Generate random key
+
+store, _ := sealbox.NewKeyStore(opts...)
+store.Save(sealed)                    // Persist sealed data
+store.Load()                          // Load sealed data
+store.Exists()                        // Check existence
+```
+
+#### Clonr TPM Wrapper Files
+
+```
+internal/core/
+├── tpm.go           # Linux: wraps sealbox.NewKeyManager()
+├── tpm_stub.go      # Non-Linux: returns ErrTPMNotSupported
+└── tpm_keystore.go  # All platforms: wraps sealbox high-level API
+```
+
+#### Testing Strategy
+
+- [ ] Unit tests with TPM simulator (swtpm)
+- [ ] Integration tests on real hardware (Linux CI)
+- [ ] Windows CI pipeline with TPM simulator
+- [ ] Cross-platform build verification
+- [ ] Benchmark sealing/unsealing operations
+
+#### Documentation
+
+- [x] Updated CLAUDE.md with sealbox integration details
+- [ ] Usage examples for each platform
+- [ ] Security considerations and threat model
+- [ ] Migration guide for existing users
+
+---
+
 ### v1.0.0 – Production Ready
 
 #### Plugin System
@@ -453,6 +534,11 @@ CLI: `clonr nerds [repo-name]`
 - [ ] Alfred/Raycast workflows
 
 ### Security
+- [x] TPM 2.0 hardware-backed encryption (Linux) - `clonr tpm init/status/reset/migrate/migrate-profiles`
+- [x] KeePass database integration for secure token storage
+- [x] Extracted TPM to reusable `sealbox` package (v0.7.0) - `github.com/inovacc/sealbox`
+- [ ] TPM 2.0 support for Windows (v0.7.0) - pending sealbox Windows implementation
+- [ ] macOS Secure Enclave support (v0.7.0 stretch goal)
 - [ ] Gitleaks integration for secret detection (v0.4.0)
 - [ ] Pre-push/pre-pull secret scanning
 - [ ] Automated security audits
@@ -477,4 +563,5 @@ CLI: `clonr nerds [repo-name]`
 | v0.4.0  | Planned | Branch management, enhanced statistics |
 | v0.5.0  | 🚧 WIP | Team features, PM integrations (Jira, ZenHub) |
 | v0.6.0  | Planned | Sync & backup capabilities |
+| v0.7.0  | 🚧 WIP | Cross-platform TPM, sealbox integration (done), Windows support (pending) |
 | v1.0.0  | Planned | Production ready with plugins and enterprise features |

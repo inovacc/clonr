@@ -24,12 +24,12 @@ type KeePassManager struct {
 
 // NewKeePassManager creates or opens a KeePass database
 func NewKeePassManager(masterPassword string) (*KeePassManager, error) {
-	configDir, err := os.UserConfigDir()
+	configDir, err := GetClonrConfigDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config directory: %w", err)
 	}
 
-	dbPath := filepath.Join(configDir, "clonr", keepassDBName)
+	dbPath := filepath.Join(configDir, keepassDBName)
 
 	kpm := &KeePassManager{
 		dbPath:   dbPath,
@@ -52,12 +52,12 @@ func NewKeePassManager(masterPassword string) (*KeePassManager, error) {
 
 // GetKeePassDBPath returns the path to the KeePass database
 func GetKeePassDBPath() (string, error) {
-	configDir, err := os.UserConfigDir()
+	configDir, err := GetClonrConfigDir()
 	if err != nil {
 		return "", fmt.Errorf("failed to get config directory: %w", err)
 	}
 
-	return filepath.Join(configDir, "clonr", keepassDBName), nil
+	return filepath.Join(configDir, keepassDBName), nil
 }
 
 // KeePassDBExists checks if the KeePass database exists

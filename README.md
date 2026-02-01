@@ -194,15 +194,17 @@ clonr tpm reset
 ```
 
 **Token Storage Priority:**
-1. **KeePass** (if database exists) - Encrypted `.kdbx` database
+1. **KeePass** (requires TPM) - Encrypted `.kdbx` database with TPM-derived password
 2. **System Keyring** - macOS Keychain, Windows Credential Manager, Linux Secret Service
 3. **Encrypted File** - AES-256-GCM fallback
 
-**TPM Features (Linux):**
+**TPM Features (Linux, via [sealbox](https://github.com/inovacc/sealbox)):**
 - **Hardware-Bound Keys**: Encryption keys sealed to TPM cannot be extracted
 - **Passwordless**: No password required - authentication is automatic via TPM
 - **Offline Attack Resistant**: Keys only accessible on the original machine
 - **KeePass Integration**: TPM-derived password protects KeePass database
+- **PCR Policy Binding**: Optional binding to specific platform configuration registers
+- **Versioned Format**: Forward-compatible sealed key format
 
 **Security Note:** TPM-sealed keys cannot be backed up. If you lose access to the TPM (hardware failure, BIOS update), encrypted data will be inaccessible. This is a security feature, not a bug.
 
@@ -217,7 +219,7 @@ clonr tpm reset
   newgrp tss
   ```
 
-**Without TPM:** KeePass database can be protected with a user-provided password (set via `CLONR_KEEPASS_PASSWORD` environment variable or prompted at runtime).
+**Without TPM:** KeePass storage is not available. Use system keyring or encrypted file storage instead.
 
 ### GitHub CLI Integration
 
@@ -429,7 +431,7 @@ go build -tags sqlite -o bin/clonr.exe .
 - [Protocol Buffers](https://protobuf.dev) - Data serialization
 - [BoltDB](https://github.com/etcd-io/bbolt) - Embedded key-value database
 - [GORM](https://gorm.io) - ORM for SQLite support
-- [go-tpm](https://github.com/google/go-tpm) - TPM 2.0 hardware key management (Linux)
+- [sealbox](https://github.com/inovacc/sealbox) - TPM 2.0 hardware-backed encryption (wraps go-tpm)
 - [gokeepasslib](https://github.com/tobischo/gokeepasslib) - KeePass database format for secure token storage
 
 ## Examples
