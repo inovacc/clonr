@@ -12,6 +12,9 @@ clonr
 |       +-- list                             # List all editors
 |       \-- remove                           # Remove a custom editor
 +-- configure                                # Configure clonr settings
++-- data                                     # Export and import clonr data
+|   +-- export                               # Export all data encrypted with password
+|   \-- import                               # Import data from encrypted export
 +-- diff                                     # Show git diff for a repository
 +-- favorite                                 # Mark a repository as favorite
 +-- gh                                       # GitHub operations for repositories
@@ -65,18 +68,30 @@ clonr
 |   +-- list                                 # List all profiles
 |   +-- remove                               # Delete a profile
 |   +-- status                               # Show profile information
-|   \-- use                                  # Set the active profile
+|   \-- use                                  # Set the default profile
 +-- reauthor                                 # Rewrite git history to change author/...
 +-- remove                                   # Remove repository from management
 +-- repo                                     # Repository operations
 |   +-- edit                                 # Open repository in selected editor
 |   \-- open                                 # Open repository folder in file manager
 +-- server                                   # Server management commands
-|   \-- start                                # Start the gRPC server
+|   +-- restart                              # Restart the gRPC server
+|   +-- start                                # Start the gRPC server
+|   +-- status                               # Show server status
+|   \-- stop                                 # Stop the running gRPC server
 +-- service                                  # Manage clonr server as a system service
 +-- snapshot                                 # Export database to JSON snapshot
 +-- stats                                    # Show git statistics for a repository
 +-- status                                   # Show git status of repositories
 +-- unfavorite                               # Remove favorite mark from a repository
 +-- update                                   # Check for and install updates
++-- workspace                                # Manage workspaces
+|   +-- add                                  # Create a new workspace
+|   +-- clone                                # Clone a workspace with a new name
+|   +-- edit                                 # Edit a workspace
+|   +-- info                                 # Show workspace information
+|   +-- list                                 # List all workspaces
+|   +-- move                                 # Move a repository to a workspace
+|   +-- remove                               # Remove a workspace
+|   \-- select                               # Interactively select a workspace
 \-- version                                  # Print version information

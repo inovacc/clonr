@@ -33,6 +33,27 @@ open-after-clone), and private repository support.
 - Private repository auth support (SSH and HTTPS with token)
 - Server API endpoints for favorites, add, map, and configure operations
 - Optional secure storage integration for credentials (system keychain when available)
+- JSON output for all list commands (`--json` flag): ✅
+  - `clonr workspace list --json` ✅
+  - `clonr profile list --json` ✅
+  - `clonr list --json` (repositories)
+  - `clonr org list --json` ✅
+  - `clonr workspace info --json` ✅
+- Workspace management enhancements: ✅
+  - `clonr workspace clone` - Clone workspace with new name
+  - `clonr workspace edit` - Edit workspace properties
+  - `clonr workspace info` - Show detailed workspace information
+- Default profile concept: ✅
+  - Renamed "active" to "default" for profiles
+  - When no `--profile` flag provided, use default profile
+- Server lifecycle commands: ✅
+  - `clonr server stop` - Stop running server via signal
+  - `clonr server restart` - Restart server with PID monitoring (gops)
+  - `clonr server status` - Show server status, PID, uptime
+- Data export/import: ✅
+  - `clonr data export` - Export encrypted data to base58
+  - `clonr data import` - Import from encrypted backup
+  - AES-256-GCM + PBKDF2 encryption
 
 ## Feature Breakdowns
 

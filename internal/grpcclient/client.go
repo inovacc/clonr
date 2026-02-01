@@ -521,7 +521,7 @@ func protoToModelProfile(pr *v1.Profile) *model.Profile {
 		User:           pr.GetUser(),
 		TokenStorage:   model.TokenStorage(pr.GetTokenStorage()),
 		Scopes:         pr.GetScopes(),
-		Active:         pr.GetActive(),
+		Default:        pr.GetActive(), // Map Active to Default from proto
 		EncryptedToken: pr.GetEncryptedToken(),
 		CreatedAt:      pr.GetCreatedAt().AsTime(),
 		LastUsedAt:     pr.GetLastUsedAt().AsTime(),
@@ -541,7 +541,7 @@ func modelToProtoProfile(profile *model.Profile) *v1.Profile {
 		User:           profile.User,
 		TokenStorage:   string(profile.TokenStorage),
 		Scopes:         profile.Scopes,
-		Active:         profile.Active,
+		Active:         profile.Default, // Map Default to Active for proto
 		EncryptedToken: profile.EncryptedToken,
 		CreatedAt:      timestamppb.New(profile.CreatedAt),
 		LastUsedAt:     timestamppb.New(profile.LastUsedAt),

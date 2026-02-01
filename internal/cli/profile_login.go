@@ -125,7 +125,7 @@ func (m *ProfileLoginModel) startOAuth() tea.Msg {
 				User:           result.Username,
 				TokenStorage:   tokenStorage,
 				Scopes:         result.Scopes,
-				Active:         isFirstProfile,
+				Default:        isFirstProfile,
 				EncryptedToken: encryptedToken,
 			}
 
@@ -226,8 +226,8 @@ func (m *ProfileLoginModel) View() string {
 			sb.WriteString(fmt.Sprintf("Host: %s\n", m.profile.Host))
 			sb.WriteString(fmt.Sprintf("Storage: %s\n", m.profile.TokenStorage))
 
-			if m.profile.Active {
-				sb.WriteString("\nThis profile is now active.\n")
+			if m.profile.Default {
+				sb.WriteString("\nThis profile is now the default.\n")
 			}
 		}
 	case stateError:

@@ -30,8 +30,8 @@ type Profile struct {
 	// Scopes are the OAuth scopes granted to this token
 	Scopes []string `json:"scopes"`
 
-	// Active indicates if this is the currently active profile
-	Active bool `json:"active"`
+	// Default indicates if this is the default profile used when none specified
+	Default bool `json:"default"`
 
 	// EncryptedToken stores the token (with ENC: or OPEN: prefix)
 	EncryptedToken []byte `json:"encrypted_token,omitempty"`

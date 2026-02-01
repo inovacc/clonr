@@ -86,7 +86,7 @@ func ModelToProtoProfile(profile *model.Profile) *v1.Profile {
 		User:           profile.User,
 		TokenStorage:   string(profile.TokenStorage),
 		Scopes:         profile.Scopes,
-		Active:         profile.Active,
+		Active:         profile.Default, // Map Default to Active for proto compatibility
 		EncryptedToken: profile.EncryptedToken,
 		CreatedAt:      timestamppb.New(profile.CreatedAt),
 		LastUsedAt:     timestamppb.New(profile.LastUsedAt),
@@ -106,7 +106,7 @@ func ProtoToModelProfile(protoProfile *v1.Profile) *model.Profile {
 		User:           protoProfile.GetUser(),
 		TokenStorage:   model.TokenStorage(protoProfile.GetTokenStorage()),
 		Scopes:         protoProfile.GetScopes(),
-		Active:         protoProfile.GetActive(),
+		Default:        protoProfile.GetActive(), // Map Active to Default from proto
 		EncryptedToken: protoProfile.GetEncryptedToken(),
 		CreatedAt:      protoProfile.GetCreatedAt().AsTime(),
 		LastUsedAt:     protoProfile.GetLastUsedAt().AsTime(),

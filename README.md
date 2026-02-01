@@ -46,7 +46,7 @@ The server runs on port 50051 by default and manages the repository database. Yo
 clonr server start --port 50052
 ```
 
-The server will continue running until you stop it with Ctrl+C.
+The server will continue running until you stop it with Ctrl+C or `clonr server stop`.
 
 ### Option 2: Run Server as a Service (Recommended)
 
@@ -134,8 +134,14 @@ clonr                          # Interactive menu
 - `clonr reauthor`: Rewrite git history to change author/committer identity.
 - `clonr reauthor --list`: List all unique author emails in the repository.
 - `clonr server start`: Start the gRPC server.
+- `clonr server stop`: Stop the running gRPC server.
+- `clonr server restart`: Restart the gRPC server.
+- `clonr server status`: Show server status (PID, uptime, address).
 - `clonr service`: Manage the server as a system service (install, uninstall, start, stop, status).
 - `clonr profile`: Manage GitHub authentication profiles (see below).
+- `clonr workspace`: Manage workspaces for organizing repositories (see below).
+- `clonr data export`: Export all data encrypted with password to base58.
+- `clonr data import`: Import data from encrypted export.
 - `clonr gh`: GitHub CLI integration (see below).
 - `clonr help`: Display help information.
 
@@ -151,10 +157,10 @@ clonr profile add work                  # Opens browser for GitHub OAuth
 clonr profile add personal              # Create another profile
 
 # List all profiles
-clonr profile list                      # Shows all profiles with active marker
+clonr profile list                      # Shows all profiles with default marker
 
-# Switch active profile
-clonr profile use work                  # Set 'work' as active profile
+# Switch default profile
+clonr profile use work                  # Set 'work' as default profile
 
 # View profile details
 clonr profile status                    # Show current profile info
@@ -165,6 +171,7 @@ clonr profile remove old-profile        # Delete a profile
 ```
 
 **Features:**
+- **Default Profile**: When no `--profile` flag is provided, the default profile is used
 - **OAuth Device Flow**: Browser-based GitHub login (like `gh auth login`)
 - **KeePass Storage**: Tokens stored in encrypted KeePass database (`.kdbx` format)
 - **TPM 2.0 Support**: Hardware-backed encryption on Linux - no password required
@@ -203,6 +210,64 @@ Clonr uses KeePass database format (`.kdbx`) for secure token storage, with opti
   ```
 
 **Without TPM:** KeePass storage is not available. Use system keyring or encrypted file storage instead.
+
+### Workspace Management
+
+Workspaces allow you to organize repositories into logical groups (e.g., work, personal, projects):
+
+```sh
+# Create a new workspace
+clonr workspace add work --path ~/clonr/work
+clonr workspace add personal --path ~/clonr/personal --description "Personal projects"
+
+# List all workspaces
+clonr workspace list                    # Shows workspaces with repo counts
+clonr workspace list --json             # JSON output
+
+# View workspace details
+clonr workspace info work               # Shows repos, profiles, disk usage
+clonr workspace info work --json        # JSON output
+
+# Clone a workspace configuration
+clonr workspace clone work corp --path ~/clonr/corp
+
+# Edit a workspace
+clonr workspace edit work --description "Work projects"
+clonr workspace edit work --name company  # Rename workspace
+
+# Move a repository between workspaces
+clonr workspace move https://github.com/user/repo personal
+
+# Remove a workspace (must be empty)
+clonr workspace remove old-workspace
+```
+
+**Features:**
+- **Profile Association**: Each profile points to one workspace
+- **Repository Counting**: Counts repos by workspace field and by path
+- **Disk Usage**: Shows total size of workspace directory
+- **JSON Output**: All list commands support `--json` flag
+
+### Data Export/Import
+
+Export and import all clonr data (profiles, workspaces, repositories, config) with password encryption:
+
+```sh
+# Export all data encrypted with password (outputs base58 to stdout)
+clonr data export > backup.txt
+clonr data export --no-tokens > backup.txt  # Exclude authentication tokens
+
+# Import from encrypted backup
+clonr data import < backup.txt
+clonr data import --file backup.txt
+clonr data import --file backup.txt --merge  # Merge with existing data
+```
+
+**Security:**
+- AES-256-GCM authenticated encryption
+- PBKDF2 key derivation (100,000 iterations)
+- Base58 encoding for safe copy/paste
+- Password minimum 8 characters with confirmation
 
 ### GitHub CLI Integration
 

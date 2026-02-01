@@ -442,7 +442,7 @@ func (b *Bolt) GetProfile(name string) (*model.Profile, error) {
 	return profile, err
 }
 
-// GetActiveProfile retrieves the currently active profile
+// GetActiveProfile retrieves the default profile (called "active" for gRPC compatibility)
 func (b *Bolt) GetActiveProfile() (*model.Profile, error) {
 	var profile *model.Profile
 
@@ -455,7 +455,7 @@ func (b *Bolt) GetActiveProfile() (*model.Profile, error) {
 				return err
 			}
 
-			if p.Active {
+			if p.Default {
 				profile = &p
 
 				return nil
@@ -468,7 +468,7 @@ func (b *Bolt) GetActiveProfile() (*model.Profile, error) {
 	return profile, err
 }
 
-// SetActiveProfile sets the active profile by name
+// SetActiveProfile sets the default profile by name (called "active" for gRPC compatibility)
 func (b *Bolt) SetActiveProfile(name string) error {
 	return b.storage.Update(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(boltBucketProfiles))
@@ -479,16 +479,16 @@ func (b *Bolt) SetActiveProfile(name string) error {
 			return errors.New("profile not found")
 		}
 
-		// Deactivate all profiles and activate the specified one
+		// Clear default from all profiles and set on the specified one
 		if err := bucket.ForEach(func(k, val []byte) error {
 			var p model.Profile
 			if err := json.Unmarshal(val, &p); err != nil {
 				return err
 			}
 
-			p.Active = string(k) == name
+			p.Default = string(k) == name
 
-			if p.Active {
+			if p.Default {
 				p.LastUsedAt = time.Now()
 			}
 

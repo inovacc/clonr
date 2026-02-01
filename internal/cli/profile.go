@@ -18,7 +18,7 @@ var (
 	profileHostStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("240"))
 
-	profileActiveStyle = lipgloss.NewStyle().
+	profileDefaultStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("42"))
 
 	profileWorkspaceStyle = lipgloss.NewStyle().
@@ -31,12 +31,12 @@ type ProfileItem struct {
 }
 
 func (i ProfileItem) Title() string {
-	active := ""
-	if i.profile.Active {
-		active = profileActiveStyle.Render(" (active)")
+	defaultMarker := ""
+	if i.profile.Default {
+		defaultMarker = profileDefaultStyle.Render(" (default)")
 	}
 
-	return profileNameStyle.Render(i.profile.Name) + active
+	return profileNameStyle.Render(i.profile.Name) + defaultMarker
 }
 
 func (i ProfileItem) Description() string {

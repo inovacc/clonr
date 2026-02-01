@@ -48,9 +48,9 @@ func runProfileRemove(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("profile '%s' not found", name)
 	}
 
-	// Warn if deleting active profile
-	if profile.Active && !profileRemoveForce {
-		_, _ = fmt.Fprintf(os.Stdout, "Warning: '%s' is the active profile.\n", name)
+	// Warn if deleting default profile
+	if profile.Default && !profileRemoveForce {
+		_, _ = fmt.Fprintf(os.Stdout, "Warning: '%s' is the default profile.\n", name)
 		_, _ = fmt.Fprint(os.Stdout, "Are you sure you want to delete it? (y/N): ")
 
 		var confirm string
@@ -71,11 +71,11 @@ func runProfileRemove(_ *cobra.Command, args []string) error {
 
 	_, _ = fmt.Fprintf(os.Stdout, "Profile '%s' deleted.\n", name)
 
-	// If we deleted the active profile, suggest setting a new one
-	if profile.Active {
+	// If we deleted the default profile, suggest setting a new one
+	if profile.Default {
 		profiles, listErr := pm.ListProfiles()
 		if listErr == nil && len(profiles) > 0 {
-			_, _ = fmt.Fprintf(os.Stdout, "\nTo set a new active profile: clonr profile use %s\n", profiles[0].Name)
+			_, _ = fmt.Fprintf(os.Stdout, "\nTo set a new default profile: clonr profile use %s\n", profiles[0].Name)
 		}
 	}
 

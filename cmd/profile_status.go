@@ -17,7 +17,7 @@ var profileStatusCmd = &cobra.Command{
 	Short: "Show profile information",
 	Long: `Show detailed information about a profile.
 
-If no name is provided, shows the active profile.
+If no name is provided, shows the default profile.
 
 Examples:
   clonr profile status
@@ -55,7 +55,7 @@ func runProfileStatus(_ *cobra.Command, args []string) error {
 		profile, err = pm.GetActiveProfile()
 		if err != nil {
 			if err == core.ErrNoActiveProfile {
-				_, _ = fmt.Fprintln(os.Stdout, "No active profile.")
+				_, _ = fmt.Fprintln(os.Stdout, "No default profile.")
 				_, _ = fmt.Fprintln(os.Stdout, "\nCreate a profile with: clonr profile add <name>")
 
 				return nil
@@ -85,7 +85,7 @@ func runProfileStatus(_ *cobra.Command, args []string) error {
 
 	_, _ = fmt.Fprintf(os.Stdout, "Storage: %s\n", storage)
 	_, _ = fmt.Fprintf(os.Stdout, "Scopes: %s\n", strings.Join(profile.Scopes, ", "))
-	_, _ = fmt.Fprintf(os.Stdout, "Active: %t\n", profile.Active)
+	_, _ = fmt.Fprintf(os.Stdout, "Default: %t\n", profile.Default)
 	_, _ = fmt.Fprintf(os.Stdout, "Created: %s\n", profile.CreatedAt.Format(time.RFC3339))
 
 	if !profile.LastUsedAt.IsZero() {

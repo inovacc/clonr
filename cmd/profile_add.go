@@ -176,7 +176,7 @@ func runProfileAdd(_ *cobra.Command, args []string) error {
 		User:           username,
 		TokenStorage:   tokenStorage,
 		Scopes:         scopes,
-		Active:         isFirstProfile,
+		Default:        isFirstProfile,
 		EncryptedToken: encryptedToken,
 		CreatedAt:      time.Now(),
 		LastUsedAt:     time.Now(),
@@ -195,9 +195,9 @@ func runProfileAdd(_ *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintf(os.Stdout, "Storage: %s\n", tokenStorage)
 
 	if isFirstProfile {
-		_, _ = fmt.Fprintln(os.Stdout, "\nThis profile is now active.")
+		_, _ = fmt.Fprintln(os.Stdout, "\nThis profile is now the default.")
 	} else {
-		_, _ = fmt.Fprintf(os.Stdout, "\nTo use this profile: clonr profile use %s\n", name)
+		_, _ = fmt.Fprintf(os.Stdout, "\nTo set as default: clonr profile use %s\n", name)
 	}
 
 	return nil
