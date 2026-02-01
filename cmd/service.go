@@ -59,7 +59,7 @@ func (p *program) run() {
 		return
 	}
 
-	args := []string{"server", "start", "--port", fmt.Sprintf("%d", p.port)}
+	args := []string{"server", "start", "--port", fmt.Sprintf("%d", p.port), "--idle-timeout", "0"}
 	cmd := exec.Command(clonrPath, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -110,7 +110,7 @@ func runService(_ *cobra.Command, _ []string) error {
 		Name:        "ClonrServer",
 		DisplayName: "Clonr Repository Server",
 		Description: "Clonr gRPC server for managing Git repository metadata",
-		Arguments:   []string{"server", "start", "--port", fmt.Sprintf("%d", servicePort)},
+		Arguments:   []string{"server", "start", "--port", fmt.Sprintf("%d", servicePort), "--idle-timeout", "0"},
 	}
 
 	prg := &program{port: servicePort}

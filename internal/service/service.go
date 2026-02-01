@@ -35,8 +35,8 @@ func Service(cmd *cobra.Command, args []string, port int) error {
 		return fmt.Errorf("failed to listen on %s: %w", addr, err)
 	}
 
-	// Create gRPC server
-	srv := grpcserver.NewServer(db)
+	// Create gRPC server (no idle timeout for service mode - run forever)
+	srv := grpcserver.NewServer(db, 0)
 
 	// Start server in background
 	go func() {

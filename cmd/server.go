@@ -14,7 +14,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var serverPort int
+var (
+	serverPort        int
+	serverIdleTimeout time.Duration
+)
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
@@ -33,6 +36,7 @@ func init() {
 	rootCmd.AddCommand(serverCmd)
 	serverCmd.AddCommand(serverStartCmd)
 	serverStartCmd.Flags().IntVarP(&serverPort, "port", "p", 50051, "Port to listen on")
+	serverStartCmd.Flags().DurationVar(&serverIdleTimeout, "idle-timeout", 5*time.Minute, "Shutdown after being idle for this duration (0 to disable)")
 }
 
 func runServerStart(cmd *cobra.Command, args []string) error {
@@ -67,7 +71,14 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 		log.Printf("Server info written to local data directory")
 	}
 
-	srvWithHealth := grpcserver.NewServer(db)
+	srvWithHealth := grpcserver.NewServer(db, serverIdleTimeout)
+
+	// Start idle tracker if enabled
+	if srvWithHealth.IdleTracker.IsEnabled() {
+		go srvWithHealth.IdleTracker.Start()
+
+		log.Printf("Idle timeout enabled: server will shutdown after %v of inactivity", serverIdleTimeout)
+	}
 
 	go func() {
 		log.Printf("Starting Clonr gRPC server on %s", addr)
@@ -77,9 +88,19 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 		}
 	}()
 
+	// Wait for shutdown signal (OS signal or idle timeout)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-	<-quit
+
+	select {
+	case <-quit:
+		log.Println("Received shutdown signal...")
+	case <-srvWithHealth.IdleTracker.ShutdownChan():
+		log.Printf("Server idle for %v, shutting down...", serverIdleTimeout)
+	}
+
+	// Stop idle tracker
+	srvWithHealth.IdleTracker.Stop()
 
 	log.Println("Shutting down server...")
 

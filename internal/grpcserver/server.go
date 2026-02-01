@@ -15,18 +15,31 @@ import (
 type ServerWithHealth struct {
 	GRPCServer   *grpc.Server
 	HealthServer *health.Server
+	IdleTracker  *IdleTracker
 }
 
-// NewServer creates a new gRPC server with all interceptors, health service, and registered services
-func NewServer(db database.Store) *ServerWithHealth {
+// NewServer creates a new gRPC server with all interceptors, health service, and registered services.
+// If idleTimeout is > 0, the server will track activity and signal shutdown after being idle.
+func NewServer(db database.Store, idleTimeout time.Duration) *ServerWithHealth {
+	// Create idle tracker
+	idleTracker := NewIdleTracker(idleTimeout)
+
+	// Build interceptor chain
+	interceptors := []grpc.UnaryServerInterceptor{
+		recoveryInterceptor(),
+		loggingInterceptor(),
+		timeoutInterceptor(30 * time.Second),
+	}
+
+	// Add activity interceptor if idle timeout is enabled
+	if idleTracker.IsEnabled() {
+		interceptors = append([]grpc.UnaryServerInterceptor{activityInterceptor(idleTracker)}, interceptors...)
+	}
+
 	// Server options
 	opts := []grpc.ServerOption{
-		// Chain interceptors in order: recovery -> logging -> timeout
-		grpc.ChainUnaryInterceptor(
-			recoveryInterceptor(),
-			loggingInterceptor(),
-			timeoutInterceptor(30*time.Second),
-		),
+		// Chain interceptors in order: activity -> recovery -> logging -> timeout
+		grpc.ChainUnaryInterceptor(interceptors...),
 		// Connection timeout (per guide)
 		grpc.ConnectionTimeout(10 * time.Second),
 		// Keepalive settings
@@ -55,5 +68,6 @@ func NewServer(db database.Store) *ServerWithHealth {
 	return &ServerWithHealth{
 		GRPCServer:   srv,
 		HealthServer: healthServer,
+		IdleTracker:  idleTracker,
 	}
 }
