@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/inovacc/clonr/internal/core"
+	"github.com/inovacc/clonr/internal/crypto/tpm"
 	"github.com/inovacc/clonr/internal/model"
 )
 
@@ -109,7 +110,7 @@ func (m *ProfileLoginModel) startOAuth() tea.Msg {
 
 			if keyErr := core.SetToken(m.profileName, m.host, result.Token); keyErr != nil {
 				// Keyring not available, use encrypted storage
-				encryptedToken, err = core.EncryptToken(result.Token, m.profileName, m.host)
+				encryptedToken, err = tpm.EncryptToken(result.Token, m.profileName, m.host)
 				if err != nil {
 					return
 				}

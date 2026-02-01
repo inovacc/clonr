@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/inovacc/clonr/internal/application"
 )
 
 func TestIsClonrProcessRunning_InvalidPID(t *testing.T) {
@@ -153,7 +155,7 @@ func TestSaveServerAddress(t *testing.T) {
 		t.Skipf("Cannot get home directory: %v", err)
 	}
 
-	configDir := filepath.Join(homeDir, ".config", "clonr")
+	configDir := filepath.Join(homeDir, ".config", application.AppName)
 	configPath := filepath.Join(configDir, "client.json")
 
 	// Backup existing config if present
@@ -215,7 +217,7 @@ func TestDiscoverServerAddress_Default(t *testing.T) {
 	// Remove any server.json file temporarily
 	dataDir, err := os.UserCacheDir()
 	if err == nil {
-		serverInfoPath := filepath.Join(dataDir, "clonr", "server.json")
+		serverInfoPath := filepath.Join(dataDir, application.AppName, "server.json")
 
 		if data, err := os.ReadFile(serverInfoPath); err == nil {
 			defer func() {

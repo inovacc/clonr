@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// mockStore implements database.Store for testing
+// mockStore implements store.Store for testing
 type mockStore struct {
 	pingErr             error
 	saveRepoErr         error

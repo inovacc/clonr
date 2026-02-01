@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/inovacc/clonr/internal/application"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -17,7 +19,7 @@ func TestDefaultConfig(t *testing.T) {
 		t.Fatalf("failed to get home dir: %v", err)
 	}
 
-	expectedDir := filepath.Join(homeDir, "clonr")
+	expectedDir := filepath.Join(homeDir, application.AppName)
 	if cfg.DefaultCloneDir != expectedDir {
 		t.Errorf("DefaultCloneDir = %q, want %q", cfg.DefaultCloneDir, expectedDir)
 	}
@@ -200,7 +202,7 @@ func TestDefaultConfig_ContainsClonrDir(t *testing.T) {
 	cfg := DefaultConfig()
 
 	// DefaultCloneDir should contain "clonr"
-	if !strings.Contains(cfg.DefaultCloneDir, "clonr") {
+	if !strings.Contains(cfg.DefaultCloneDir, application.AppName) {
 		t.Errorf("DefaultCloneDir = %q, should contain 'clonr'", cfg.DefaultCloneDir)
 	}
 }

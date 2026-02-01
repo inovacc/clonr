@@ -3,7 +3,7 @@ package grpcserver
 import (
 	"time"
 
-	"github.com/inovacc/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/store"
 	v1 "github.com/inovacc/clonr/pkg/api/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -20,7 +20,7 @@ type ServerWithHealth struct {
 
 // NewServer creates a new gRPC server with all interceptors, health service, and registered services.
 // If idleTimeout is > 0, the server will track activity and signal shutdown after being idle.
-func NewServer(db database.Store, idleTimeout time.Duration) *ServerWithHealth {
+func NewServer(db store.Store, idleTimeout time.Duration) *ServerWithHealth {
 	// Create idle tracker
 	idleTracker := NewIdleTracker(idleTimeout)
 

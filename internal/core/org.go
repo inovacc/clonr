@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v67/github"
+	"github.com/inovacc/clonr/internal/application"
 	"github.com/inovacc/clonr/internal/grpcclient"
 	"golang.org/x/oauth2"
 )
@@ -127,7 +128,7 @@ func getCloneDir() (string, error) {
 			return "", fmt.Errorf("failed to get home directory: %w", err)
 		}
 
-		return filepath.Join(home, "clonr"), nil
+		return filepath.Join(home, application.AppName), nil
 	}
 
 	cfg, err := client.GetConfig()
@@ -137,7 +138,7 @@ func getCloneDir() (string, error) {
 			return "", fmt.Errorf("failed to get home directory: %w", err)
 		}
 
-		return filepath.Join(home, "clonr"), nil
+		return filepath.Join(home, application.AppName), nil
 	}
 
 	return cfg.DefaultCloneDir, nil

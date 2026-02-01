@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/gops/goprocess"
+	"github.com/inovacc/clonr/internal/application"
 )
 
 // ErrNoServerInfo indicates no server info file exists
@@ -30,7 +31,7 @@ func getServerInfoPath() (string, error) {
 		return "", fmt.Errorf("failed to get local data directory: %w", err)
 	}
 
-	return filepath.Join(dataDir, "clonr", "server.json"), nil
+	return filepath.Join(dataDir, application.AppName, "server.json"), nil
 }
 
 // ReadServerInfo reads the server info file if it exists
@@ -70,9 +71,9 @@ func IsClonrProcessRunning(pid int) bool {
 	// Look for a process with matching PID
 	for _, proc := range processes {
 		if proc.PID == pid {
-			// Verify it's actually a clonr process by checking executable name
-			return strings.Contains(strings.ToLower(proc.Exec), "clonr") ||
-				strings.Contains(strings.ToLower(proc.Path), "clonr")
+			// Verify it's actually a clonr process by checking the executable name
+			return strings.Contains(strings.ToLower(proc.Exec), application.AppName) ||
+				strings.Contains(strings.ToLower(proc.Path), application.AppName)
 		}
 	}
 
@@ -110,7 +111,7 @@ func WriteServerInfo(port int) error {
 		return fmt.Errorf("failed to get local data directory: %w", err)
 	}
 
-	clonrDir := filepath.Join(dataDir, "clonr")
+	clonrDir := filepath.Join(dataDir, application.AppName)
 	if err := os.MkdirAll(clonrDir, 0755); err != nil {
 		return fmt.Errorf("failed to create clonr directory: %w", err)
 	}
@@ -135,13 +136,13 @@ func WriteServerInfo(port int) error {
 	return nil
 }
 
-// RemoveServerInfo removes the server info file (called when server stops)
+// RemoveServerInfo removes the server info file (called when the server stops)
 func RemoveServerInfo() {
 	dataDir, err := os.UserCacheDir()
 	if err != nil {
 		return // Ignore errors on cleanup
 	}
 
-	serverInfoPath := filepath.Join(dataDir, "clonr", "server.json")
+	serverInfoPath := filepath.Join(dataDir, application.AppName, "server.json")
 	_ = os.Remove(serverInfoPath) // Ignore errors
 }

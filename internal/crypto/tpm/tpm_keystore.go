@@ -1,8 +1,9 @@
-package core
+package tpm
 
 import (
 	"path/filepath"
 
+	"github.com/inovacc/clonr/internal/application"
 	"github.com/inovacc/sealbox"
 )
 
@@ -11,7 +12,7 @@ var cacheDir string
 func init() {
 	var err error
 
-	cacheDir, err = GetClonrConfigDir()
+	cacheDir, err = application.GetApplicationDirectory()
 	if err != nil {
 		panic(err)
 	}

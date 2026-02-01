@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/inovacc/clonr/internal/core"
+	"github.com/inovacc/clonr/internal/crypto/tpm"
 	"github.com/inovacc/clonr/internal/grpcclient"
 	"github.com/inovacc/clonr/internal/model"
 	"github.com/spf13/cobra"
@@ -156,7 +157,7 @@ func runProfileAdd(_ *cobra.Command, args []string) error {
 
 	if err := core.SetToken(name, profileAddHost, token); err != nil {
 		// Keyring not available, use encrypted storage
-		encryptedToken, err = core.EncryptToken(token, name, profileAddHost)
+		encryptedToken, err = tpm.EncryptToken(token, name, profileAddHost)
 		if err != nil {
 			return fmt.Errorf("failed to encrypt token: %w", err)
 		}

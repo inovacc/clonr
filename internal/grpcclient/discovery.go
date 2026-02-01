@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/gops/goprocess"
+	"github.com/inovacc/clonr/internal/application"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -54,7 +55,7 @@ func discoverServerAddress() string {
 	// Location: AppData\Local\clonr on Windows, ~/.cache/clonr on Linux, ~/Library/Caches/clonr on macOS
 	dataDir, err := os.UserCacheDir()
 	if err == nil {
-		serverInfoPath := filepath.Join(dataDir, "clonr", "server.json")
+		serverInfoPath := filepath.Join(dataDir, application.AppName, "server.json")
 		if data, err := os.ReadFile(serverInfoPath); err == nil {
 			var info ServerInfo
 			if err := json.Unmarshal(data, &info); err == nil {
@@ -80,10 +81,10 @@ func discoverServerAddress() string {
 		}
 	}
 
-	// 4. Check client config file (still in .config for backwards compatibility)
+	// 4. Check the client config file (still in .config for backwards compatibility)
 	homeDir, homeErr := os.UserHomeDir()
 	if homeErr == nil {
-		configPath := filepath.Join(homeDir, ".config", "clonr", "client.json")
+		configPath := filepath.Join(homeDir, ".config", application.AppName, "client.json")
 		if data, err := os.ReadFile(configPath); err == nil {
 			var cfg ClientConfig
 			if err := json.Unmarshal(data, &cfg); err == nil && cfg.ServerAddress != "" {
@@ -113,8 +114,8 @@ func isClonrProcessRunning(pid int) bool {
 	for _, proc := range processes {
 		if proc.PID == pid {
 			// Verify it's actually a clonr process by checking executable name
-			return strings.Contains(strings.ToLower(proc.Exec), "clonr") ||
-				strings.Contains(strings.ToLower(proc.Path), "clonr")
+			return strings.Contains(strings.ToLower(proc.Exec), application.AppName) ||
+				strings.Contains(strings.ToLower(proc.Path), application.AppName)
 		}
 	}
 
@@ -205,7 +206,7 @@ func SaveServerAddress(address string) error {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	configDir := filepath.Join(homeDir, ".config", "clonr")
+	configDir := filepath.Join(homeDir, ".config", application.AppName)
 	if err := os.MkdirAll(configDir, 0755); err != nil {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}

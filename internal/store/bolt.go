@@ -1,6 +1,6 @@
 //go:build !sqlite
 
-package database
+package store
 
 import (
 	"encoding/json"

@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/inovacc/clonr/internal/application"
 )
 
 func TestGetServerInfoPath(t *testing.T) {
@@ -24,7 +26,7 @@ func TestGetServerInfoPath(t *testing.T) {
 	}
 
 	// Should contain clonr directory
-	if filepath.Base(filepath.Dir(path)) != "clonr" {
+	if filepath.Base(filepath.Dir(path)) != application.AppName {
 		t.Errorf("getServerInfoPath() parent dir = %q, want clonr", filepath.Base(filepath.Dir(path)))
 	}
 }

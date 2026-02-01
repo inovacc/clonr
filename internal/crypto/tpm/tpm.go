@@ -1,4 +1,4 @@
-package core
+package tpm
 
 import (
 	"crypto/aes"
@@ -95,6 +95,7 @@ func EncryptToken(token, profileName, host string) ([]byte, error) {
 		if errors.Is(err, ErrNoEncryption) {
 			return []byte(OpenPrefix + token), nil
 		}
+
 		return nil, fmt.Errorf("%w: %w", ErrEncryptionFailed, err)
 	}
 
@@ -130,13 +131,13 @@ func DecryptToken(ciphertext []byte, profileName, host string) (string, error) {
 	data := string(ciphertext)
 
 	// Check for OPEN: prefix (plain text, no encryption)
-	if strings.HasPrefix(data, OpenPrefix) {
-		return strings.TrimPrefix(data, OpenPrefix), nil
+	if after, ok := strings.CutPrefix(data, OpenPrefix); ok {
+		return after, nil
 	}
 
 	// Check for ENC: prefix and strip it
-	if strings.HasPrefix(data, EncPrefix) {
-		ciphertext = []byte(strings.TrimPrefix(data, EncPrefix))
+	if after, ok := strings.CutPrefix(data, EncPrefix); ok {
+		ciphertext = []byte(after)
 	}
 
 	// Need TPM to decrypt
@@ -198,7 +199,7 @@ func PromptForPassword(prompt string) (string, error) {
 	return string(bytePassword), nil
 }
 
-// GetKeePassPasswordTPM gets the KeePass password from TPM-sealed key.
+// GetKeePassPasswordTPM gets the KeePass password from a TPM-sealed key.
 // If no sealed key exists, it will be created silently.
 func GetKeePassPasswordTPM() (string, error) {
 	if !IsTPMAvailable() {
@@ -217,7 +218,7 @@ func GetKeePassPasswordTPM() (string, error) {
 		}
 	}
 
-	tpm, err := NewTPMKeyManager()
+	instance, err := NewTPMKeyManager()
 	if err != nil {
 		return "", fmt.Errorf("%w: %v", ErrKeePassPasswordFailed, err)
 	}
@@ -227,7 +228,7 @@ func GetKeePassPasswordTPM() (string, error) {
 		return "", fmt.Errorf("%w: %v", ErrKeePassPasswordFailed, err)
 	}
 
-	key, err := tpm.UnsealKey(sealedData)
+	key, err := instance.UnsealKey(sealedData)
 	if err != nil {
 		return "", fmt.Errorf("%w: %v", ErrKeePassPasswordFailed, err)
 	}

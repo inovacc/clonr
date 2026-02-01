@@ -4,9 +4,9 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-)
 
-const appName = "clonr"
+	"github.com/inovacc/clonr/internal/application"
+)
 
 var (
 	once       sync.Once
@@ -23,7 +23,7 @@ func getAppDataDir() {
 		panic(err)
 	}
 
-	AppdataDir = filepath.Join(dir, appName)
+	AppdataDir = filepath.Join(dir, application.AppName)
 
 	if err := os.MkdirAll(AppdataDir, os.ModePerm); err != nil {
 		panic(err)

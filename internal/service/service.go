@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/inovacc/clonr/internal/database"
 	"github.com/inovacc/clonr/internal/grpcserver"
+	"github.com/inovacc/clonr/internal/store"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +17,7 @@ func Service(cmd *cobra.Command, args []string, port int) error {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// Initialize database
-	db := database.GetDB()
+	db := store.GetDB()
 
 	// If port not specified via flag, try to get from config
 	if port == 50051 {

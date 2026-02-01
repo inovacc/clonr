@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/inovacc/clonr/internal/database"
 	"github.com/inovacc/clonr/internal/grpcserver"
+	"github.com/inovacc/clonr/internal/store"
 	"github.com/spf13/cobra"
 )
 
@@ -47,7 +47,7 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	db := database.GetDB()
+	db := store.GetDB()
 
 	// Use configured port if default not overridden
 	if serverPort == 50051 {

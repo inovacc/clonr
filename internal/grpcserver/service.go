@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/inovacc/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/store"
 	v1 "github.com/inovacc/clonr/pkg/api/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -14,11 +14,11 @@ import (
 type Service struct {
 	v1.UnimplementedClonrServiceServer
 
-	db database.Store
+	db store.Store
 }
 
 // NewService creates a new gRPC service instance
-func NewService(db database.Store) *Service {
+func NewService(db store.Store) *Service {
 	return &Service{db: db}
 }
 

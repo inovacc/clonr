@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/inovacc/clonr/internal/application"
 	"github.com/tobischo/gokeepasslib/v3"
 	w "github.com/tobischo/gokeepasslib/v3/wrappers"
 )
@@ -24,7 +25,7 @@ type KeePassManager struct {
 
 // NewKeePassManager creates or opens a KeePass database
 func NewKeePassManager(masterPassword string) (*KeePassManager, error) {
-	configDir, err := GetClonrConfigDir()
+	configDir, err := application.GetApplicationDirectory()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config directory: %w", err)
 	}
@@ -36,7 +37,7 @@ func NewKeePassManager(masterPassword string) (*KeePassManager, error) {
 		password: masterPassword,
 	}
 
-	// Check if database exists
+	// Check if a database exists
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		if err := kpm.createDatabase(); err != nil {
 			return nil, fmt.Errorf("failed to create database: %w", err)
@@ -52,7 +53,7 @@ func NewKeePassManager(masterPassword string) (*KeePassManager, error) {
 
 // GetKeePassDBPath returns the path to the KeePass database
 func GetKeePassDBPath() (string, error) {
-	configDir, err := GetClonrConfigDir()
+	configDir, err := application.GetApplicationDirectory()
 	if err != nil {
 		return "", fmt.Errorf("failed to get config directory: %w", err)
 	}
@@ -79,18 +80,18 @@ func (kpm *KeePassManager) createDatabase() error {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	// Create new database
+	// Create a new database
 	db := gokeepasslib.NewDatabase()
 	db.Options = &gokeepasslib.DBOptions{}
 
-	// Set master password
+	// Set the master password
 	db.Credentials = gokeepasslib.NewPasswordCredentials(kpm.password)
 
-	// Create root group
+	// Create a root group
 	rootGroup := gokeepasslib.NewGroup()
 	rootGroup.Name = keepassGroupRoot
 
-	// Create Profiles group for storing tokens
+	// Create a Profiles group for storing tokens
 	profilesGroup := gokeepasslib.NewGroup()
 	profilesGroup.Name = keepassGroupTokens
 	rootGroup.Groups = append(rootGroup.Groups, profilesGroup)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/inovacc/clonr/internal/crypto/tpm"
 	"github.com/inovacc/clonr/internal/grpcclient"
 	"github.com/inovacc/clonr/internal/model"
 )
@@ -156,7 +157,7 @@ func (pm *ProfileManager) deleteToken(name, host string, storage model.TokenStor
 
 // getKeePassManager returns a KeePass manager using TPM or password
 func getKeePassManager() (*KeePassManager, error) {
-	password, err := GetKeePassPassword()
+	password, err := tpm.GetKeePassPassword()
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +287,7 @@ func (pm *ProfileManager) getTokenFromProfile(profile *model.Profile) (string, e
 			return "", ErrTokenNotFound
 		}
 
-		token, err := DecryptToken(profile.EncryptedToken, profile.Name, profile.Host)
+		token, err := tpm.DecryptToken(profile.EncryptedToken, profile.Name, profile.Host)
 		if err != nil {
 			return "", fmt.Errorf("failed to decrypt token: %w", err)
 		}
@@ -356,7 +357,7 @@ func (pm *ProfileManager) RefreshProfile(ctx context.Context, name string) error
 			return fmt.Errorf("failed to store token in keyring: %w", err)
 		}
 	default:
-		encryptedToken, err := EncryptToken(result.Token, name, profile.Host)
+		encryptedToken, err := tpm.EncryptToken(result.Token, name, profile.Host)
 		if err != nil {
 			return fmt.Errorf("failed to encrypt token: %w", err)
 		}

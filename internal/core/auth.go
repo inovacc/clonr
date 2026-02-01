@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/cli/go-gh/v2/pkg/auth"
+	"github.com/inovacc/clonr/internal/crypto/tpm"
 	"github.com/inovacc/clonr/internal/grpcclient"
 	"github.com/inovacc/clonr/internal/model"
 )
@@ -167,7 +168,7 @@ func tokenFromProfile(profile *model.Profile) (string, error) {
 			return "", ErrTokenNotFound
 		}
 
-		return DecryptToken(profile.EncryptedToken, profile.Name, profile.Host)
+		return tpm.DecryptToken(profile.EncryptedToken, profile.Name, profile.Host)
 	default:
 		return "", ErrTokenNotFound
 	}
@@ -175,7 +176,7 @@ func tokenFromProfile(profile *model.Profile) (string, error) {
 
 // getKeePassManagerForAuth returns a KeePass manager using TPM or password
 func getKeePassManagerForAuth() (*KeePassManager, error) {
-	password, err := GetKeePassPassword()
+	password, err := tpm.GetKeePassPassword()
 	if err != nil {
 		return nil, err
 	}

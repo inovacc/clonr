@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/inovacc/clonr/internal/application"
 )
 
 // ZenHubTokenSource indicates where the ZenHub token was found
@@ -88,7 +90,7 @@ func loadZenHubConfigToken() (string, error) {
 
 // getZenHubConfigPath returns the path to the ZenHub config file
 func getZenHubConfigPath() (string, error) {
-	configDir, err := GetClonrConfigDir()
+	configDir, err := application.GetApplicationDirectory()
 	if err != nil {
 		return "", fmt.Errorf("cannot determine config directory: %w", err)
 	}
@@ -108,10 +110,10 @@ func GetZenHubDefaultWorkspace() (string, error) {
 		return "", err
 	}
 
-	var config ZenHubConfig
-	if err := json.Unmarshal(data, &config); err != nil {
+	var hubConfig ZenHubConfig
+	if err := json.Unmarshal(data, &hubConfig); err != nil {
 		return "", err
 	}
 
-	return config.DefaultWorkspace, nil
+	return hubConfig.DefaultWorkspace, nil
 }

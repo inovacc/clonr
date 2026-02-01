@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/inovacc/clonr/internal/application"
 )
 
 // Sentinel errors for Jira configuration
@@ -253,7 +255,7 @@ func loadJiraConfigCredentials(instanceName string) (*JiraCredentials, error) {
 
 // getJiraConfigPath returns the path to the Jira config file
 func getJiraConfigPath() (string, error) {
-	configDir, err := GetClonrConfigDir()
+	configDir, err := application.GetApplicationDirectory()
 	if err != nil {
 		return "", fmt.Errorf("cannot determine config directory: %w", err)
 	}

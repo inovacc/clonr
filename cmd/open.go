@@ -7,7 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/inovacc/clonr/internal/cli"
-	"github.com/inovacc/clonr/internal/database"
+	"github.com/inovacc/clonr/internal/store"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +30,7 @@ var openCmd = &cobra.Command{
 		if selected == nil {
 			return nil
 		}
-		db := database.GetDB()
+		db := store.GetDB()
 		cfg, err := db.GetConfig()
 		if err != nil {
 			return fmt.Errorf("failed to get config: %w", err)

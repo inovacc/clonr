@@ -23,7 +23,7 @@ var (
 	errClient error
 )
 
-// Client wraps the gRPC client and provides methods matching the database.Store interface
+// Client wraps the gRPC client and provides methods matching the store.Store interface
 type Client struct {
 	conn    *grpc.ClientConn
 	service v1.ClonrServiceClient
@@ -45,9 +45,7 @@ func lazyLoad() {
 	addr := discoverServerAddress()
 
 	// Use grpc.NewClient (v1.78.0+) instead of deprecated DialContext
-	conn, err := grpc.NewClient(addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		errClient = fmt.Errorf("failed to create gRPC client: %w", err)
 		return
@@ -69,7 +67,7 @@ func lazyLoad() {
 			return
 		}
 
-		// Wait for server to be ready
+		// Wait for the server to be ready
 		addr = fmt.Sprintf("localhost:%d", defaultServerPort)
 		if waitErr := waitForServer(addr); waitErr != nil {
 			errClient = fmt.Errorf("server started but not ready: %w", waitErr)

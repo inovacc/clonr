@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/inovacc/clonr/internal/application"
 	"github.com/zalando/go-keyring"
 )
 
 const (
 	// keyringService is the service name used for keyring entries
-	keyringService = "clonr"
+	keyringService = application.AppName
 
 	// keyringTimeout is the timeout for keyring operations
 	keyringTimeout = 5 * time.Second

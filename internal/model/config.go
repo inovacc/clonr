@@ -3,6 +3,8 @@ package model
 import (
 	"os"
 	"path/filepath"
+
+	"github.com/inovacc/clonr/internal/application"
 )
 
 // Editor represents a custom editor configuration.
@@ -47,7 +49,7 @@ func DefaultConfig() Config {
 	}
 
 	return Config{
-		DefaultCloneDir: filepath.Join(homeDir, "clonr"),
+		DefaultCloneDir: filepath.Join(homeDir, application.AppName),
 		Editor:          "code", // VS Code as default
 		Terminal:        "",
 		MonitorInterval: 300, // 5 minutes
