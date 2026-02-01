@@ -1,0 +1,119 @@
+package zenhub
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/inovacc/clonr/internal/application"
+)
+
+// ZenHubTokenSource indicates where the ZenHub token was found
+type ZenHubTokenSource string
+
+const (
+	ZenHubTokenSourceFlag   ZenHubTokenSource = "flag"
+	ZenHubTokenSourceEnv    ZenHubTokenSource = "ZENHUB_TOKEN"
+	ZenHubTokenSourceConfig ZenHubTokenSource = "config"
+	ZenHubTokenSourceNone   ZenHubTokenSource = "none"
+)
+
+// ZenHubConfig represents the ZenHub configuration file structure
+type ZenHubConfig struct {
+	Token            string `json:"token"`
+	DefaultWorkspace string `json:"default_workspace,omitempty"`
+}
+
+// ResolveZenHubToken attempts to find a ZenHub token from multiple sources.
+// Priority order:
+//  1. flagToken (explicit --token flag)
+//  2. ZENHUB_TOKEN environment variable
+//  3. ~/.config/clonr/zenhub.json config file
+func ResolveZenHubToken(flagToken string) (token string, source ZenHubTokenSource, err error) {
+	// 1. Flag has the highest priority
+	if flagToken != "" {
+		return flagToken, ZenHubTokenSourceFlag, nil
+	}
+
+	// 2. Check ZENHUB_TOKEN env var
+	if token = os.Getenv("ZENHUB_TOKEN"); token != "" {
+		return token, ZenHubTokenSourceEnv, nil
+	}
+
+	// 3. Try config file
+	configToken, err := loadZenHubConfigToken()
+	if err == nil && configToken != "" {
+		return configToken, ZenHubTokenSourceConfig, nil
+	}
+
+	// 4. No token found
+	return "", ZenHubTokenSourceNone, fmt.Errorf(`ZenHub API token required
+
+Provide a token via one of:
+  * ZENHUB_TOKEN env var     (recommended)
+  * --token flag
+  * ~/.config/clonr/zenhub.json config file
+
+Get your ZenHub API token at: https://app.zenhub.com/settings/tokens`)
+}
+
+// loadZenHubConfigToken loads token from the ZenHub config file
+func loadZenHubConfigToken() (string, error) {
+	configPath, err := getZenHubConfigPath()
+	if err != nil {
+		return "", err
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+
+		return "", fmt.Errorf("failed to read ZenHub config: %w", err)
+	}
+
+	var config ZenHubConfig
+	if err := json.Unmarshal(data, &config); err != nil {
+		return "", fmt.Errorf("failed to parse ZenHub config: %w", err)
+	}
+
+	// Handle token reference to env var
+	if envVar, found := strings.CutPrefix(config.Token, "env:"); found {
+		return os.Getenv(envVar), nil
+	}
+
+	return config.Token, nil
+}
+
+// getZenHubConfigPath returns the path to the ZenHub config file
+func getZenHubConfigPath() (string, error) {
+	configDir, err := application.GetApplicationDirectory()
+	if err != nil {
+		return "", fmt.Errorf("cannot determine config directory: %w", err)
+	}
+
+	return filepath.Join(configDir, "zenhub.json"), nil
+}
+
+// GetZenHubDefaultWorkspace returns the default workspace ID from config
+func GetZenHubDefaultWorkspace() (string, error) {
+	configPath, err := getZenHubConfigPath()
+	if err != nil {
+		return "", err
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return "", err
+	}
+
+	var hubConfig ZenHubConfig
+	if err := json.Unmarshal(data, &hubConfig); err != nil {
+		return "", err
+	}
+
+	return hubConfig.DefaultWorkspace, nil
+}

@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/inovacc/clonr/internal/grpcclient"
+	"github.com/inovacc/clonr/internal/client/grpc"
 )
 
 // AddOptions holds optional parameters for adding a repo.
@@ -48,7 +48,7 @@ func AddRepo(path string, _ AddOptions) (string, error) {
 		}
 	}
 
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to server: %w", err)
 	}

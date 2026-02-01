@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/inovacc/clonr/internal/jira"
 )
 
 // Token page URLs
@@ -45,7 +47,7 @@ func DetectJiraProject(arg, projectFlag string) (projectKey string, err error) {
 	}
 
 	// 3. Try config file default
-	defaultProject, err := GetJiraDefaultProject("")
+	defaultProject, err := jira.GetJiraDefaultProject("")
 	if err == nil && defaultProject != "" {
 		return defaultProject, nil
 	}

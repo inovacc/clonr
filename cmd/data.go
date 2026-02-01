@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcutil/base58"
-	"github.com/inovacc/clonr/internal/grpcclient"
+	"github.com/inovacc/clonr/internal/client/grpc"
 	"github.com/inovacc/clonr/internal/model"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/pbkdf2"
@@ -98,7 +98,7 @@ func init() {
 }
 
 func runDataExport(_ *cobra.Command, _ []string) error {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return err
 	}
@@ -256,7 +256,7 @@ func runDataImport(_ *cobra.Command, _ []string) error {
 	}
 
 	// Get client
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return err
 	}

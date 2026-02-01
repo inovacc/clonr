@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/inovacc/clonr/internal/grpcclient"
+	"github.com/inovacc/clonr/internal/client/grpc"
 	"github.com/inovacc/clonr/internal/model"
 )
 
@@ -47,7 +47,7 @@ func DefaultSnapshotOptions() CreateSnapshotOptions {
 
 // CreateSnapshot creates a database snapshot with optional branch info
 func CreateSnapshot(opts CreateSnapshotOptions) (*Snapshot, error) {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to server: %w", err)
 	}

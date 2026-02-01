@@ -487,7 +487,7 @@ func writeAIContextMarkdown(w io.Writer, ctx AIContext, opts AIContextOptions) e
 	sb.WriteString("```\n")
 	sb.WriteString("clonr/\n")
 
-	// Sort keys for consistent output
+	// Sort keys for a consistent output
 	keys := make([]string, 0, len(ctx.Architecture.Structure))
 	for k := range ctx.Architecture.Structure {
 		keys = append(keys, k)

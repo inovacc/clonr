@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v67/github"
-	"github.com/inovacc/clonr/internal/grpcclient"
+	"github.com/inovacc/clonr/internal/client/grpc"
 	"golang.org/x/oauth2"
 )
 
@@ -355,7 +355,7 @@ func (w *GitHubClientWrapper) fetchUserReposWithRetry(ctx context.Context, usern
 
 // fetchReposWithRetry tries to fetch repos as org first, then falls back to user
 func (w *GitHubClientWrapper) fetchReposWithRetry(ctx context.Context, name string) ([]*github.Repository, bool, error) {
-	// Try as organization first
+	// Try as an organization first
 	repos, err := w.fetchOrgReposWithRetry(ctx, name)
 	if err == nil {
 		return repos, false, nil // isUser = false
@@ -391,7 +391,7 @@ func PrepareMirror(orgName, token string, opts MirrorOptions) (*MirrorPlan, erro
 		slog.String("dirty_strategy", opts.DirtyStrategy.String()),
 	)
 
-	// Create rate-limit-aware GitHub client
+	// Create a rate-limit-aware GitHub client
 	rateCfg := opts.RateLimitConfig
 	if rateCfg.MaxRetries == 0 {
 		rateCfg = DefaultRateLimitConfig()
@@ -425,8 +425,8 @@ func PrepareMirror(orgName, token string, opts MirrorOptions) (*MirrorPlan, erro
 		slog.Int("after", len(filteredRepos)),
 	)
 
-	// Get config to determine base directory
-	grpcClient, err := grpcclient.GetClient()
+	// Get config to determine the base directory
+	grpcClient, err := grpc.GetClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to server: %w", err)
 	}
@@ -438,7 +438,7 @@ func PrepareMirror(orgName, token string, opts MirrorOptions) (*MirrorPlan, erro
 
 	baseDir := filepath.Join(cfg.DefaultCloneDir, orgName)
 
-	// For each repo, determine action (clone/update/skip)
+	// For each repo, determine an action (clone/update/skip)
 	mirrorRepos := make([]MirrorRepo, len(filteredRepos))
 	for i, repo := range filteredRepos {
 		path := filepath.Join(baseDir, repo.GetName())
@@ -479,7 +479,7 @@ func PrepareMirror(orgName, token string, opts MirrorOptions) (*MirrorPlan, erro
 
 // determineAction decides whether to clone, update, or skip
 func determineAction(repo *github.Repository, path string, logger *slog.Logger) (action, reason string, skipReason SkipReason) {
-	// Check if directory exists on disk
+	// Check if a directory exists on disk
 	_, err := os.Stat(path)
 	existsOnDisk := !os.IsNotExist(err)
 
@@ -548,7 +548,7 @@ func isGitRepo(path string) bool {
 	return err == nil && info.IsDir()
 }
 
-// isRepoDirty checks if repo has uncommitted changes
+// there isRepoDirty checks if repo has uncommitted changes
 func isRepoDirty(path string) bool {
 	cmd := exec.Command("git", "-C", path, "status", "--porcelain")
 
@@ -631,7 +631,7 @@ func MirrorCloneRepo(repoURL, path string, shallow bool) error {
 	return nil
 }
 
-// MirrorUpdateRepo pulls latest changes for mirroring with dirty repo strategy support
+// MirrorUpdateRepo pulls the latest changes for mirroring with dirty repo strategy support
 func MirrorUpdateRepo(repoURL, path string, strategy DirtyRepoStrategy, logger *slog.Logger) error {
 	// Check for uncommitted changes
 	if isRepoDirty(path) {
@@ -676,9 +676,9 @@ func MirrorUpdateRepo(repoURL, path string, strategy DirtyRepoStrategy, logger *
 	return nil
 }
 
-// SaveMirroredRepo saves the repo to database and gathers statistics
+// SaveMirroredRepo saves the repo to a database and gathers statistics
 func SaveMirroredRepo(repoURL, path string) error {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return fmt.Errorf("failed to connect to server: %w", err)
 	}
@@ -724,7 +724,7 @@ func SaveMirroredRepo(repoURL, path string) error {
 	return nil
 }
 
-// applyFilters applies user-specified filters to repo list
+// applyFilters applies user-specified filters to a repo list
 func applyFilters(repos []*github.Repository, opts MirrorOptions) []*github.Repository {
 	filtered := make([]*github.Repository, 0, len(repos))
 

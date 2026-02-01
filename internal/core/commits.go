@@ -266,7 +266,5 @@ func FormatRepoStats(stats *RepoStats) string {
 		return ""
 	}
 
-	return fmt.Sprintf("%d commits (%d recent) | +%d -%d",
-		stats.TotalCommits, stats.RecentCommits,
-		stats.Additions, stats.Deletions)
+	return fmt.Sprintf("%d commits (%d recent) | +%d -%d", stats.TotalCommits, stats.RecentCommits, stats.Additions, stats.Deletions)
 }

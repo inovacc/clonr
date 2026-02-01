@@ -99,7 +99,7 @@ func GetPRStatus(token, owner, repo string, prNumber int, opts PRStatusOptions) 
 
 	status := convertPRToStatus(pr)
 
-	// Get reviews to determine review state
+	// Get reviews to determine the review state
 	reviews, _, err := client.PullRequests.ListReviews(ctx, owner, repo, prNumber, &github.ListOptions{PerPage: 100})
 	if err != nil {
 		logger.Warn("failed to get PR reviews",

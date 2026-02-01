@@ -60,7 +60,7 @@ func runDiff(cmd *cobra.Command, args []string) error {
 	var repoURL string
 
 	if len(args) > 0 {
-		// Path provided as argument
+		// Path provided as an argument
 		repoPath = args[0]
 	} else {
 		// Interactive repository selection

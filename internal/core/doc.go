@@ -7,7 +7,7 @@
 // # Design Principles
 //
 //   - Functions return errors instead of printing to stdout/stderr
-//   - All database operations go through grpcclient.GetClient()
+//   - All database operations go through grpc.GetClient()
 //   - UI-specific logic belongs in the cli package, not here
 //
 // # Clone Operations

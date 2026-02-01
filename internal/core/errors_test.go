@@ -41,7 +41,7 @@ func TestNetworkError(t *testing.T) {
 	}
 
 	// Test Unwrap
-	if err.Unwrap() != innerErr {
+	if !errors.Is(innerErr, err.Unwrap()) {
 		t.Error("NetworkError.Unwrap() should return the inner error")
 	}
 }

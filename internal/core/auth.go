@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/cli/go-gh/v2/pkg/auth"
+	"github.com/inovacc/clonr/internal/client/grpc"
 	"github.com/inovacc/clonr/internal/crypto/tpm"
-	"github.com/inovacc/clonr/internal/grpcclient"
 	"github.com/inovacc/clonr/internal/model"
 )
 
@@ -95,7 +95,7 @@ Create a token at: https://github.com/settings/tokens`)
 
 // getProfileToken retrieves a token from a specific profile
 func getProfileToken(profileName, host string) (string, error) {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return "", err
 	}
@@ -119,7 +119,7 @@ func getProfileToken(profileName, host string) (string, error) {
 
 // getActiveProfileToken retrieves the token from the active profile
 func getActiveProfileToken(host string) (string, error) {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		// Server not running, skip profile token
 		return "", nil //nolint:nilerr // intentionally ignore error when server not running

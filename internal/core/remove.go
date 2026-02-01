@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/inovacc/clonr/internal/grpcclient"
+	"github.com/inovacc/clonr/internal/client/grpc"
 )
 
 func RemoveRepo(urlStr string) error {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return fmt.Errorf("failed to connect to server: %w", err)
 	}

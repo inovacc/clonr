@@ -76,7 +76,7 @@ type DirtyRepoStrategy int
 const (
 	DirtyStrategySkip  DirtyRepoStrategy = iota // Skip with warning (default)
 	DirtyStrategyStash                          // Stash changes, pull, unstash
-	DirtyStrategyReset                          // Reset to clean state (destructive)
+	DirtyStrategyReset                          // Reset to a clean state (destructive)
 )
 
 func (s DirtyRepoStrategy) String() string {

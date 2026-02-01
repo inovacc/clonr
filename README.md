@@ -627,7 +627,7 @@ clonr/
 - **gRPC Communication**: Unary RPCs with 30-second timeouts for all operations
 - **Server Discovery**: Environment variable → config file → default (localhost:50051)
 - **Database Singleton**: Server uses `database.GetDB()` for BoltDB/SQLite access
-- **Client Singleton**: Client uses `grpcclient.GetClient()` to connect to server
+- **Client Singleton**: Client uses `grpc.GetClient()` to connect to server
 - **Bubbletea UIs**: Beautiful, interactive terminal interfaces
 - **Cobra CLI**: Modern command-line interface with subcommands
 - **Dual Database Support**: Choose BoltDB (default) or SQLite at build time

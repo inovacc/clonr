@@ -11,7 +11,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/inovacc/clonr/internal/cli"
-	"github.com/inovacc/clonr/internal/grpcclient"
+	"github.com/inovacc/clonr/internal/client/grpc"
+	"github.com/inovacc/clonr/internal/core"
 	"github.com/inovacc/clonr/internal/model"
 	"github.com/spf13/cobra"
 )
@@ -129,6 +130,23 @@ Examples:
 	RunE: runWorkspaceInfo,
 }
 
+var workspaceMapCmd = &cobra.Command{
+	Use:   "map <name>",
+	Short: "Scan workspace directory for Git repositories",
+	Long: `Scan the workspace's directory for existing Git repositories and register them.
+
+This command scans the workspace's configured path for Git repositories and
+registers them with this workspace.
+
+Examples:
+  clonr workspace map work                  # Scan and register repos
+  clonr workspace map work --dry-run        # Preview without adding
+  clonr workspace map work --depth 3        # Limit scan depth
+  clonr workspace map work --json           # Output as JSON`,
+	Args: cobra.ExactArgs(1),
+	RunE: runWorkspaceMap,
+}
+
 var (
 	workspaceAddPath        string
 	workspaceAddDescription string
@@ -139,6 +157,10 @@ var (
 	workspaceEditPath       string
 	workspaceEditDesc       string
 	workspaceInfoJSON       bool
+	workspaceMapDryRun      bool
+	workspaceMapDepth       int
+	workspaceMapJSON        bool
+	workspaceMapVerbose     bool
 )
 
 func init() {
@@ -153,6 +175,7 @@ func init() {
 	workspaceCmd.AddCommand(workspaceCloneCmd)
 	workspaceCmd.AddCommand(workspaceEditCmd)
 	workspaceCmd.AddCommand(workspaceInfoCmd)
+	workspaceCmd.AddCommand(workspaceMapCmd)
 
 	// Add flags
 	workspaceAddCmd.Flags().StringVar(&workspaceAddPath, "path", "", "Base directory for this workspace (required)")
@@ -169,19 +192,24 @@ func init() {
 
 	workspaceInfoCmd.Flags().BoolVar(&workspaceInfoJSON, "json", false, "Output as JSON")
 
+	workspaceMapCmd.Flags().BoolVar(&workspaceMapDryRun, "dry-run", false, "Show what would be added without actually adding")
+	workspaceMapCmd.Flags().IntVar(&workspaceMapDepth, "depth", 0, "Maximum directory depth to scan (0 = unlimited)")
+	workspaceMapCmd.Flags().BoolVar(&workspaceMapJSON, "json", false, "Output results as JSON")
+	workspaceMapCmd.Flags().BoolVarP(&workspaceMapVerbose, "verbose", "v", false, "Show verbose output")
+
 	_ = workspaceAddCmd.MarkFlagRequired("path")
 }
 
 func runWorkspaceAdd(_ *cobra.Command, args []string) error {
 	name := args[0]
 
-	client, err := grpcclient.GetClient()
+	grpcClient, err := grpc.GetClient()
 	if err != nil {
 		return err
 	}
 
 	// Check if workspace already exists
-	exists, err := client.WorkspaceExists(name)
+	exists, err := grpcClient.WorkspaceExists(name)
 	if err != nil {
 		return fmt.Errorf("failed to check workspace existence: %w", err)
 	}
@@ -230,7 +258,7 @@ func runWorkspaceAdd(_ *cobra.Command, args []string) error {
 		UpdatedAt:   time.Now(),
 	}
 
-	if err := client.SaveWorkspace(workspace); err != nil {
+	if err := grpcClient.SaveWorkspace(workspace); err != nil {
 		return fmt.Errorf("failed to save workspace: %w", err)
 	}
 
@@ -251,7 +279,7 @@ type WorkspaceListItem struct {
 }
 
 func runWorkspaceList(_ *cobra.Command, _ []string) error {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return err
 	}
@@ -332,7 +360,7 @@ func runWorkspaceList(_ *cobra.Command, _ []string) error {
 }
 
 // countReposInWorkspace counts repos by workspace name and by path
-func countReposInWorkspace(client *grpcclient.Client, workspaceName, workspacePath string, allRepos []model.Repository) int {
+func countReposInWorkspace(client *grpc.Client, workspaceName, workspacePath string, allRepos []model.Repository) int {
 	// Get repos by workspace field
 	repos, err := client.GetReposByWorkspace(workspaceName)
 	if err != nil {
@@ -370,7 +398,7 @@ func countProfilesInWorkspace(workspaceName string, profiles []model.Profile) in
 func runWorkspaceRemove(_ *cobra.Command, args []string) error {
 	name := args[0]
 
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return err
 	}
@@ -408,7 +436,7 @@ func runWorkspaceMove(_ *cobra.Command, args []string) error {
 	repoURL := args[0]
 	targetWorkspace := args[1]
 
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return err
 	}
@@ -461,7 +489,7 @@ func runWorkspaceClone(_ *cobra.Command, args []string) error {
 	sourceName := args[0]
 	newName := args[1]
 
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return err
 	}
@@ -555,7 +583,7 @@ func runWorkspaceEdit(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("at least one of --name, --path, or --description must be provided")
 	}
 
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return err
 	}
@@ -703,7 +731,7 @@ type WorkspaceInfoItem struct {
 }
 
 func runWorkspaceInfo(_ *cobra.Command, args []string) error {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return err
 	}
@@ -896,4 +924,42 @@ func isPathWithin(childPath, parentPath string) bool {
 	}
 
 	return strings.HasPrefix(child, parent)
+}
+
+func runWorkspaceMap(_ *cobra.Command, args []string) error {
+	name := args[0]
+
+	client, err := grpc.GetClient()
+	if err != nil {
+		return err
+	}
+
+	// Get the workspace
+	workspace, err := client.GetWorkspace(name)
+	if err != nil {
+		return fmt.Errorf("failed to get workspace: %w", err)
+	}
+
+	if workspace == nil {
+		return fmt.Errorf("workspace '%s' not found", name)
+	}
+
+	// Check if path exists
+	if _, err := os.Stat(workspace.Path); os.IsNotExist(err) {
+		return fmt.Errorf("workspace path does not exist: %s", workspace.Path)
+	}
+
+	_, _ = fmt.Fprintf(os.Stdout, "Scanning workspace '%s' at %s...\n\n", name, workspace.Path)
+
+	// Build map options
+	opts := core.MapOptions{
+		DryRun:    workspaceMapDryRun,
+		MaxDepth:  workspaceMapDepth,
+		Exclude:   core.DefaultExcludeDirs,
+		JSON:      workspaceMapJSON,
+		Verbose:   workspaceMapVerbose,
+		Workspace: name,
+	}
+
+	return core.MapReposWithOptions([]string{workspace.Path}, opts)
 }

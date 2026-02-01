@@ -168,4 +168,3 @@ func DecryptToken(ciphertext []byte, profileName, host string) (string, error) {
 
 	return string(plaintext), nil
 }
-

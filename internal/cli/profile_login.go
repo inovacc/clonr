@@ -87,7 +87,7 @@ func (m *ProfileLoginModel) startOAuth() tea.Msg {
 
 	ctx := context.Background()
 
-	// Run OAuth flow with device code callback
+	// Run OAuth flow with a device code callback
 	flow := core.NewOAuthFlow(m.host, m.scopes)
 
 	// Channel to receive device code
@@ -97,11 +97,11 @@ func (m *ProfileLoginModel) startOAuth() tea.Msg {
 		deviceCodeCh <- deviceCodeMsg{code: code, url: url}
 	})
 
-	// Run OAuth in goroutine
+	// Run OAuth in a goroutine
 	go func() {
 		result, err := flow.Run(ctx)
 		if err != nil {
-			// Send error through device code channel with empty values to signal error
+			// Send error through a device code channel with empty values to signal error
 		} else {
 			// Encrypt and store the token
 			encryptedToken, err := tpm.EncryptToken(result.Token, m.profileName, m.host)
@@ -109,14 +109,14 @@ func (m *ProfileLoginModel) startOAuth() tea.Msg {
 				return
 			}
 
-			// Determine storage type based on whether data is encrypted or open
+			// Determine a storage type based on whether data is encrypted or open
 			tokenStorage := model.TokenStorageEncrypted
 			if tpm.IsDataOpen(encryptedToken) {
 				tokenStorage = model.TokenStorageOpen
 			}
 
-			// Get client to check if first profile
-			client, clientErr := pm.ListProfiles() //nolint:contextcheck // client manages its own timeout
+			// Get the client to check if first profile
+			client, clientErr := pm.ListProfiles() //nolint:contextcheck // a client manages its own timeout
 			isFirstProfile := clientErr == nil && len(client) == 0
 
 			profile := &model.Profile{
@@ -145,33 +145,33 @@ func (m *ProfileLoginModel) startOAuth() tea.Msg {
 
 // Update handles messages
 func (m *ProfileLoginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
+	switch keyMsg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
+		switch keyMsg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		}
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 
-		m.spinner, cmd = m.spinner.Update(msg)
+		m.spinner, cmd = m.spinner.Update(keyMsg)
 
 		return m, cmd
 	case deviceCodeMsg:
-		m.deviceCode = msg.code
-		m.verificationURL = msg.url
+		m.deviceCode = keyMsg.code
+		m.verificationURL = keyMsg.url
 		m.state = stateWaitingForAuth
 
 		return m, m.spinner.Tick
 	case oauthResultMsg:
-		if msg.err != nil {
-			m.err = msg.err
+		if keyMsg.err != nil {
+			m.err = keyMsg.err
 			m.state = stateError
 
 			return m, tea.Quit
 		}
 
-		m.profile = msg.profile
+		m.profile = keyMsg.profile
 		m.state = stateComplete
 
 		return m, tea.Quit

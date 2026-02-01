@@ -60,14 +60,14 @@ func (m MainMenuModel) Init() tea.Cmd {
 }
 
 func (m MainMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
+	switch keyMsg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.list.SetWidth(msg.Width)
+		m.list.SetWidth(keyMsg.Width)
 
 		return m, nil
 
 	case tea.KeyMsg:
-		switch keypress := msg.String(); keypress {
+		switch keypress := keyMsg.String(); keypress {
 		case "ctrl+c", "q":
 			m.quitting = true
 

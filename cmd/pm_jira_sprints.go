@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/inovacc/clonr/internal/core"
+	"github.com/inovacc/clonr/internal/jira"
 	"github.com/spf13/cobra"
 )
 
@@ -98,7 +99,7 @@ func runJiraSprintsList(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve credentials
-	creds, err := core.ResolveJiraCredentials(tokenFlag, emailFlag, urlFlag)
+	creds, err := jira.ResolveJiraCredentials(tokenFlag, emailFlag, urlFlag)
 	if err != nil {
 		return err
 	}
@@ -112,7 +113,7 @@ func runJiraSprintsList(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create client
-	client, err := core.CreateJiraClient(creds, core.JiraClientOptions{Logger: logger})
+	client, err := jira.CreateJiraClient(creds, jira.JiraClientOptions{Logger: logger})
 	if err != nil {
 		return fmt.Errorf("failed to create Jira client: %w", err)
 	}
@@ -123,7 +124,7 @@ func runJiraSprintsList(cmd *cobra.Command, args []string) error {
 			_, _ = fmt.Fprintf(os.Stderr, "Finding board for project %s...\n", projectKey)
 		}
 
-		boardID, err = core.GetBoardIDForProject(client, projectKey, logger)
+		boardID, err = jira.GetBoardIDForProject(client, projectKey, logger)
 		if err != nil {
 			return err
 		}
@@ -134,12 +135,12 @@ func runJiraSprintsList(cmd *cobra.Command, args []string) error {
 	}
 
 	// Fetch sprints
-	opts := core.ListJiraSprintsOptions{
+	opts := jira.ListJiraSprintsOptions{
 		State:  state,
 		Logger: logger,
 	}
 
-	sprints, err := core.ListJiraSprints(client, boardID, opts)
+	sprints, err := jira.ListJiraSprints(client, boardID, opts)
 	if err != nil {
 		return fmt.Errorf("failed to fetch sprints: %w", err)
 	}
@@ -205,7 +206,7 @@ func runJiraSprintsCurrent(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve credentials
-	creds, err := core.ResolveJiraCredentials(tokenFlag, emailFlag, urlFlag)
+	creds, err := jira.ResolveJiraCredentials(tokenFlag, emailFlag, urlFlag)
 	if err != nil {
 		return err
 	}
@@ -219,7 +220,7 @@ func runJiraSprintsCurrent(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create client
-	client, err := core.CreateJiraClient(creds, core.JiraClientOptions{Logger: logger})
+	client, err := jira.CreateJiraClient(creds, jira.JiraClientOptions{Logger: logger})
 	if err != nil {
 		return fmt.Errorf("failed to create Jira client: %w", err)
 	}
@@ -230,7 +231,7 @@ func runJiraSprintsCurrent(cmd *cobra.Command, args []string) error {
 			_, _ = fmt.Fprintf(os.Stderr, "Finding board for project %s...\n", projectKey)
 		}
 
-		boardID, err = core.GetBoardIDForProject(client, projectKey, logger)
+		boardID, err = jira.GetBoardIDForProject(client, projectKey, logger)
 		if err != nil {
 			return err
 		}
@@ -241,11 +242,11 @@ func runJiraSprintsCurrent(cmd *cobra.Command, args []string) error {
 	}
 
 	// Fetch current sprint
-	opts := core.GetCurrentSprintOptions{
+	opts := jira.GetCurrentSprintOptions{
 		Logger: logger,
 	}
 
-	current, err := core.GetCurrentSprint(client, boardID, opts)
+	current, err := jira.GetCurrentSprint(client, boardID, opts)
 	if err != nil {
 		return fmt.Errorf("failed to fetch current sprint: %w", err)
 	}
@@ -308,7 +309,7 @@ func runJiraBoardsList(cmd *cobra.Command, args []string) error {
 	name, _ := cmd.Flags().GetString("name")
 
 	// Resolve credentials
-	creds, err := core.ResolveJiraCredentials(tokenFlag, emailFlag, urlFlag)
+	creds, err := jira.ResolveJiraCredentials(tokenFlag, emailFlag, urlFlag)
 	if err != nil {
 		return err
 	}
@@ -322,7 +323,7 @@ func runJiraBoardsList(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create client
-	client, err := core.CreateJiraClient(creds, core.JiraClientOptions{Logger: logger})
+	client, err := jira.CreateJiraClient(creds, jira.JiraClientOptions{Logger: logger})
 	if err != nil {
 		return fmt.Errorf("failed to create Jira client: %w", err)
 	}
@@ -332,14 +333,14 @@ func runJiraBoardsList(cmd *cobra.Command, args []string) error {
 	}
 
 	// Fetch boards
-	opts := core.ListJiraBoardsOptions{
+	opts := jira.ListJiraBoardsOptions{
 		ProjectKey: projectKey,
 		Type:       boardType,
 		Name:       name,
 		Logger:     logger,
 	}
 
-	boards, err := core.ListJiraBoards(client, opts)
+	boards, err := jira.ListJiraBoards(client, opts)
 	if err != nil {
 		return fmt.Errorf("failed to fetch boards: %w", err)
 	}

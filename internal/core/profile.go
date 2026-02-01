@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/inovacc/clonr/internal/client/grpc"
 	"github.com/inovacc/clonr/internal/crypto/tpm"
-	"github.com/inovacc/clonr/internal/grpcclient"
 	"github.com/inovacc/clonr/internal/model"
 )
 
@@ -21,18 +21,18 @@ var (
 	// ErrNoActiveProfile is returned when no profile is active
 	ErrNoActiveProfile = errors.New("no active profile")
 
-	// ErrTokenNotFound is returned when token cannot be retrieved
+	// ErrTokenNotFound is returned when the token cannot be retrieved
 	ErrTokenNotFound = errors.New("token not found")
 )
 
 // ProfileManager handles profile operations
 type ProfileManager struct {
-	client *grpcclient.Client
+	client *grpc.Client
 }
 
 // NewProfileManager creates a new ProfileManager
 func NewProfileManager() (*ProfileManager, error) {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to server: %w", err)
 	}
@@ -43,7 +43,7 @@ func NewProfileManager() (*ProfileManager, error) {
 // CreateProfile creates a new profile with OAuth authentication
 func (pm *ProfileManager) CreateProfile(ctx context.Context, name, host string, scopes []string) (*model.Profile, string, error) {
 	// Check if a profile already exists
-	exists, err := pm.client.ProfileExists(name) //nolint:contextcheck // client manages its own timeout
+	exists, err := pm.client.ProfileExists(name) //nolint:contextcheck // a client manages its own timeout
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to check profile existence: %w", err)
 	}
@@ -83,7 +83,7 @@ func (pm *ProfileManager) CreateProfile(ctx context.Context, name, host string, 
 	}
 
 	// Check if this is the first profile (make it active)
-	profiles, err := pm.client.ListProfiles() //nolint:contextcheck // client manages its own timeout
+	profiles, err := pm.client.ListProfiles() //nolint:contextcheck // a client manages its own timeout
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to list profiles: %w", err)
 	}
@@ -104,7 +104,7 @@ func (pm *ProfileManager) CreateProfile(ctx context.Context, name, host string, 
 	}
 
 	// Save profile to BoltDB
-	if err := pm.client.SaveProfile(profile); err != nil { //nolint:contextcheck // client manages its own timeout
+	if err := pm.client.SaveProfile(profile); err != nil { //nolint:contextcheck // a client manages its own timeout
 		return nil, "", fmt.Errorf("failed to save profile: %w", err)
 	}
 
@@ -123,7 +123,7 @@ func (pm *ProfileManager) storeToken(name, host, token string) ([]byte, model.To
 		return nil, "", fmt.Errorf("failed to encrypt token: %w", err)
 	}
 
-	// Determine storage type based on whether data is encrypted or open
+	// Determine a storage type based on whether data is encrypted or open
 	storageType := model.TokenStorageEncrypted
 	if tpm.IsDataOpen(encryptedToken) {
 		storageType = model.TokenStorageOpen
@@ -131,7 +131,6 @@ func (pm *ProfileManager) storeToken(name, host, token string) ([]byte, model.To
 
 	return encryptedToken, storageType, nil
 }
-
 
 // GetProfile retrieves a profile by name
 func (pm *ProfileManager) GetProfile(name string) (*model.Profile, error) {
@@ -183,7 +182,7 @@ func (pm *ProfileManager) ListProfiles() ([]model.Profile, error) {
 
 // DeleteProfile removes a profile and its stored token
 func (pm *ProfileManager) DeleteProfile(name string) error {
-	// Get profile first to know where token is stored
+	// Get a profile first to know where the token is stored
 	profile, err := pm.client.GetProfile(name)
 	if err != nil {
 		return fmt.Errorf("failed to get profile: %w", err)
@@ -241,7 +240,7 @@ func (pm *ProfileManager) getTokenFromProfile(profile *model.Profile) (string, e
 
 // ValidateProfileToken checks if a profile's token is still valid
 func (pm *ProfileManager) ValidateProfileToken(ctx context.Context, name string) (bool, error) {
-	profile, err := pm.client.GetProfile(name) //nolint:contextcheck // client manages its own timeout
+	profile, err := pm.client.GetProfile(name) //nolint:contextcheck // a client manages its own timeout
 	if err != nil {
 		return false, fmt.Errorf("failed to get profile: %w", err)
 	}
@@ -265,7 +264,7 @@ func (pm *ProfileManager) ValidateProfileToken(ctx context.Context, name string)
 
 // RefreshProfile refreshes a profile's OAuth token
 func (pm *ProfileManager) RefreshProfile(ctx context.Context, name string) error {
-	profile, err := pm.client.GetProfile(name) //nolint:contextcheck // client manages its own timeout
+	profile, err := pm.client.GetProfile(name) //nolint:contextcheck // a client manages its own timeout
 	if err != nil {
 		return fmt.Errorf("failed to get profile: %w", err)
 	}
@@ -295,5 +294,5 @@ func (pm *ProfileManager) RefreshProfile(ctx context.Context, name string) error
 	profile.User = result.Username
 	profile.LastUsedAt = time.Now()
 
-	return pm.client.SaveProfile(profile) //nolint:contextcheck // client manages its own timeout
+	return pm.client.SaveProfile(profile) //nolint:contextcheck // a client manages its own timeout
 }

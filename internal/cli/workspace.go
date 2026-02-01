@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/inovacc/clonr/internal/grpcclient"
+	"github.com/inovacc/clonr/internal/client/grpc"
 	"github.com/inovacc/clonr/internal/model"
 )
 
@@ -74,7 +74,7 @@ type WorkspaceSelectorModel struct {
 
 // NewWorkspaceSelector creates a new workspace selector TUI
 func NewWorkspaceSelector(allowCreate bool) (WorkspaceSelectorModel, error) {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return WorkspaceSelectorModel{err: err}, err
 	}
@@ -89,7 +89,7 @@ func NewWorkspaceSelector(allowCreate bool) (WorkspaceSelectorModel, error) {
 		items = append(items, WorkspaceItem{workspace: w})
 	}
 
-	// Add "Create new workspace" option if allowed
+	// Add the "Create new workspace" option if allowed
 	if allowCreate {
 		items = append(items, WorkspaceItem{isNew: true})
 	}
@@ -99,7 +99,7 @@ func NewWorkspaceSelector(allowCreate bool) (WorkspaceSelectorModel, error) {
 	l.SetShowStatusBar(true)
 	l.SetFilteringEnabled(true)
 
-	// Create text inputs for new workspace
+	// Create text inputs for a new workspace
 	nameInput := textinput.New()
 	nameInput.Placeholder = "workspace-name"
 	nameInput.Focus()
@@ -142,15 +142,15 @@ func (m WorkspaceSelectorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateCreating(msg)
 	}
 
-	switch msg := msg.(type) {
+	switch keyMsg := msg.(type) {
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v)
+		m.list.SetSize(keyMsg.Width-h, keyMsg.Height-v)
 
 		return m, nil
 
 	case tea.KeyMsg:
-		switch msg.String() {
+		switch keyMsg.String() {
 		case "ctrl+c", "q", "esc":
 			m.quitting = true
 
@@ -198,7 +198,7 @@ func (m WorkspaceSelectorModel) updateCreating(msg tea.Msg) (tea.Model, tea.Cmd)
 
 	switch keyMsg.String() {
 	case "ctrl+c", "esc":
-		// Go back to list
+		// Go back to the list
 		m.creating = false
 		m.nameInput.Reset()
 		m.pathInput.Reset()
@@ -226,7 +226,7 @@ func (m WorkspaceSelectorModel) updateCreating(msg tea.Msg) (tea.Model, tea.Cmd)
 			m.nameInput.Blur()
 			m.pathInput.Focus()
 
-			// Suggest path based on name
+			// Suggest a path based on name
 			if m.pathInput.Value() == "" {
 				m.pathInput.SetValue(fmt.Sprintf("~/clonr/%s", m.nameInput.Value()))
 			}

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	git_nerds "github.com/inovacc/git-nerds"
+	gitnerds "github.com/inovacc/git-nerds"
 )
 
 // ReauthorOptions contains options for rewriting git author history.
@@ -45,13 +45,13 @@ func Reauthor(opts ReauthorOptions) (*ReauthorResult, error) {
 	}
 
 	// Open repository using git-nerds
-	repo, err := git_nerds.Open(repoPath)
+	repo, err := gitnerds.Open(repoPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open repository: %w", err)
 	}
 
 	// Convert options
-	nerdsOpts := git_nerds.ReauthorOptions{
+	nerdsOpts := gitnerds.ReauthorOptions{
 		OldEmail: opts.OldEmail,
 		NewEmail: opts.NewEmail,
 		NewName:  opts.NewName,
@@ -83,7 +83,7 @@ func ListAuthors(repoPath string) ([]string, error) {
 		repoPath = cwd
 	}
 
-	repo, err := git_nerds.Open(repoPath)
+	repo, err := gitnerds.Open(repoPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open repository: %w", err)
 	}
@@ -102,7 +102,7 @@ func CountCommitsByEmail(repoPath, email string) (int, error) {
 		repoPath = cwd
 	}
 
-	repo, err := git_nerds.Open(repoPath)
+	repo, err := gitnerds.Open(repoPath)
 	if err != nil {
 		return 0, fmt.Errorf("failed to open repository: %w", err)
 	}

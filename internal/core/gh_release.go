@@ -203,7 +203,7 @@ func CreateRelease(token, owner, repo string, opts CreateReleaseOptions) (*Relea
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
 
-	// Prepare release request
+	// Prepare a release request
 	releaseReq := &github.RepositoryRelease{
 		TagName:              github.String(opts.TagName),
 		Draft:                github.Bool(opts.Draft),

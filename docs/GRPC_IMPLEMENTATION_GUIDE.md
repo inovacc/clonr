@@ -674,7 +674,7 @@ func runBackup(cmd *cobra.Command, args []string) error {
 
     // 2. Create gRPC client
     fmt.Printf("Connecting to server at %s...\n", serverAddr)
-    client, err := grpcclient.NewClient(serverAddr)
+    client, err := grpc.NewClient(serverAddr)
     if err != nil {
         return fmt.Errorf("failed to connect to server: %w", err)
     }
@@ -1164,10 +1164,10 @@ func doRequest() {
 }
 
 // GOOD: Reuse connection
-var globalClient *grpcclient.Client
+var globalClient *grpc.Client
 
 func init() {
-    globalClient, _ = grpcclient.NewClient(addr)
+    globalClient, _ = grpc.NewClient(addr)
 }
 
 func doRequest() {

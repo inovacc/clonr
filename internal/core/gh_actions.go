@@ -208,10 +208,7 @@ func GetWorkflowRunStatus(token, owner, repo string, runID int64, opts GetWorkfl
 	if opts.IncludeJobs {
 		jobs, err := getWorkflowJobs(ctx, client, owner, repo, runID, logger)
 		if err != nil {
-			logger.Warn("failed to get workflow jobs",
-				slog.Int64("run_id", runID),
-				slog.String("error", err.Error()),
-			)
+			logger.Warn("failed to get workflow jobs", slog.Int64("run_id", runID), slog.String("error", err.Error()))
 		} else {
 			detail.Jobs = jobs
 		}
@@ -300,13 +297,13 @@ func convertWorkflowRun(run *github.WorkflowRun) *WorkflowRun {
 	}
 
 	wr := &WorkflowRun{
+		HeadSHA:    sha,
 		ID:         run.GetID(),
 		Name:       run.GetName(),
 		Status:     run.GetStatus(),
 		Conclusion: run.GetConclusion(),
 		Branch:     run.GetHeadBranch(),
 		Event:      run.GetEvent(),
-		HeadSHA:    sha,
 		Actor:      run.GetActor().GetLogin(),
 		RunNumber:  run.GetRunNumber(),
 		RunAttempt: run.GetRunAttempt(),
@@ -325,7 +322,7 @@ func convertWorkflowRun(run *github.WorkflowRun) *WorkflowRun {
 	// Get head commit message if available
 	if run.HeadCommit != nil && run.HeadCommit.Message != nil {
 		msg := *run.HeadCommit.Message
-		// Truncate to first line
+		// Truncate to the first line
 		if idx := findNewline(msg); idx > 0 {
 			msg = msg[:idx]
 		}

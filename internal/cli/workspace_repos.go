@@ -7,8 +7,8 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/inovacc/clonr/internal/client/grpc"
 	"github.com/inovacc/clonr/internal/core"
-	"github.com/inovacc/clonr/internal/grpcclient"
 	"github.com/inovacc/clonr/internal/model"
 )
 
@@ -35,7 +35,7 @@ var (
 				MarginTop(1)
 )
 
-// WorkspaceRepoItem wraps a repository for display in workspace view
+// WorkspaceRepoItem wraps a repository for display in the workspace view
 type WorkspaceRepoItem struct {
 	repo model.Repository
 }
@@ -72,7 +72,7 @@ type WorkspaceReposModel struct {
 
 // NewWorkspaceReposModel creates a new workspace-based repo browser
 func NewWorkspaceReposModel() (WorkspaceReposModel, error) {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return WorkspaceReposModel{err: err}, err
 	}
@@ -88,7 +88,7 @@ func NewWorkspaceReposModel() (WorkspaceReposModel, error) {
 		}, nil
 	}
 
-	// Find active workspace index
+	// Find an active workspace index
 	activeIdx := 0
 
 	for i, ws := range workspaces {
@@ -112,7 +112,7 @@ func NewWorkspaceReposModel() (WorkspaceReposModel, error) {
 		reposByWorkspace[ws.Name] = []model.Repository{}
 	}
 
-	// Add "unassigned" category for repos without workspace
+	// Add an "unassigned" category for repos without a workspace
 	reposByWorkspace[""] = []model.Repository{}
 
 	// Group repos by workspace
@@ -194,7 +194,7 @@ func (m WorkspaceReposModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "esc":
-			// If filtering, let list handle it; otherwise quit
+			// If filtering, let a list handle it; otherwise quit
 			if m.repoList.FilterState() != list.Unfiltered {
 				var cmd tea.Cmd
 
@@ -238,16 +238,16 @@ func (m WorkspaceReposModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "s":
-			// Set current workspace as active
+			// Set the current workspace as active
 			if len(m.workspaces) > 0 {
-				client, err := grpcclient.GetClient()
+				client, err := grpc.GetClient()
 				if err == nil {
 					wsName := m.workspaces[m.currentWorkspace].Name
 
 					if err := client.SetActiveWorkspace(wsName); err == nil {
 						// Update local state
 						for i := range m.workspaces {
-							m.workspaces[i].Active = (i == m.currentWorkspace)
+							m.workspaces[i].Active = i == m.currentWorkspace
 						}
 					}
 				}

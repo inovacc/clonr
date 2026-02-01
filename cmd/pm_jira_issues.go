@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/inovacc/clonr/internal/core"
+	"github.com/inovacc/clonr/internal/jira"
 	"github.com/spf13/cobra"
 )
 
@@ -134,7 +135,7 @@ func runJiraIssuesList(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve credentials
-	creds, err := core.ResolveJiraCredentials(tokenFlag, emailFlag, urlFlag)
+	creds, err := jira.ResolveJiraCredentials(tokenFlag, emailFlag, urlFlag)
 	if err != nil {
 		return err
 	}
@@ -154,7 +155,7 @@ func runJiraIssuesList(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create client
-	client, err := core.CreateJiraClient(creds, core.JiraClientOptions{Logger: logger})
+	client, err := jira.CreateJiraClient(creds, jira.JiraClientOptions{Logger: logger})
 	if err != nil {
 		return fmt.Errorf("failed to create Jira client: %w", err)
 	}
@@ -164,7 +165,7 @@ func runJiraIssuesList(cmd *cobra.Command, args []string) error {
 	}
 
 	// Fetch issues
-	opts := core.ListJiraIssuesOptions{
+	opts := jira.ListJiraIssuesOptions{
 		Status:    status,
 		Assignee:  assignee,
 		Reporter:  reporter,
@@ -178,7 +179,7 @@ func runJiraIssuesList(cmd *cobra.Command, args []string) error {
 		Logger:    logger,
 	}
 
-	issues, err := core.ListJiraIssues(client, projectKey, opts)
+	issues, err := jira.ListJiraIssues(client, projectKey, opts)
 	if err != nil {
 		return fmt.Errorf("failed to fetch issues: %w", err)
 	}
@@ -252,7 +253,7 @@ func runJiraIssuesCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve credentials
-	creds, err := core.ResolveJiraCredentials(tokenFlag, emailFlag, urlFlag)
+	creds, err := jira.ResolveJiraCredentials(tokenFlag, emailFlag, urlFlag)
 	if err != nil {
 		return err
 	}
@@ -272,7 +273,7 @@ func runJiraIssuesCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create client
-	client, err := core.CreateJiraClient(creds, core.JiraClientOptions{Logger: logger})
+	client, err := jira.CreateJiraClient(creds, jira.JiraClientOptions{Logger: logger})
 	if err != nil {
 		return fmt.Errorf("failed to create Jira client: %w", err)
 	}
@@ -282,7 +283,7 @@ func runJiraIssuesCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create issue
-	opts := core.CreateJiraIssueOptions{
+	opts := jira.CreateJiraIssueOptions{
 		Summary:     summary,
 		Description: description,
 		IssueType:   issueType,
@@ -292,7 +293,7 @@ func runJiraIssuesCreate(cmd *cobra.Command, args []string) error {
 		Logger:      logger,
 	}
 
-	created, err := core.CreateJiraIssue(client, projectKey, opts)
+	created, err := jira.CreateJiraIssue(client, projectKey, opts)
 	if err != nil {
 		return fmt.Errorf("failed to create issue: %w", err)
 	}
@@ -329,7 +330,7 @@ func runJiraIssuesView(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve credentials
-	creds, err := core.ResolveJiraCredentials(tokenFlag, emailFlag, urlFlag)
+	creds, err := jira.ResolveJiraCredentials(tokenFlag, emailFlag, urlFlag)
 	if err != nil {
 		return err
 	}
@@ -343,13 +344,13 @@ func runJiraIssuesView(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create client
-	client, err := core.CreateJiraClient(creds, core.JiraClientOptions{Logger: logger})
+	client, err := jira.CreateJiraClient(creds, jira.JiraClientOptions{Logger: logger})
 	if err != nil {
 		return fmt.Errorf("failed to create Jira client: %w", err)
 	}
 
 	// Fetch issue
-	issue, err := core.GetJiraIssue(client, issueKey, core.GetJiraIssueOptions{Logger: logger})
+	issue, err := jira.GetJiraIssue(client, issueKey, jira.GetJiraIssueOptions{Logger: logger})
 	if err != nil {
 		return fmt.Errorf("failed to fetch issue: %w", err)
 	}
@@ -419,7 +420,7 @@ func runJiraIssuesTransition(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve credentials
-	creds, err := core.ResolveJiraCredentials(tokenFlag, emailFlag, urlFlag)
+	creds, err := jira.ResolveJiraCredentials(tokenFlag, emailFlag, urlFlag)
 	if err != nil {
 		return err
 	}
@@ -433,19 +434,19 @@ func runJiraIssuesTransition(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create client
-	client, err := core.CreateJiraClient(creds, core.JiraClientOptions{Logger: logger})
+	client, err := jira.CreateJiraClient(creds, jira.JiraClientOptions{Logger: logger})
 	if err != nil {
 		return fmt.Errorf("failed to create Jira client: %w", err)
 	}
 
-	opts := core.TransitionJiraIssueOptions{
+	opts := jira.TransitionJiraIssueOptions{
 		Comment: comment,
 		Logger:  logger,
 	}
 
 	// If no target status, show available transitions
 	if targetStatus == "" {
-		transitions, err := core.GetJiraTransitions(client, issueKey, opts)
+		transitions, err := jira.GetJiraTransitions(client, issueKey, opts)
 		if err != nil {
 			return fmt.Errorf("failed to get transitions: %w", err)
 		}
@@ -473,7 +474,7 @@ func runJiraIssuesTransition(cmd *cobra.Command, args []string) error {
 		_, _ = fmt.Fprintf(os.Stderr, "Transitioning %s to %s...\n", issueKey, targetStatus)
 	}
 
-	result, err := core.TransitionJiraIssue(client, issueKey, targetStatus, opts)
+	result, err := jira.TransitionJiraIssue(client, issueKey, targetStatus, opts)
 	if err != nil {
 		return err
 	}

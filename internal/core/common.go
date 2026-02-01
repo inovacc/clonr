@@ -216,7 +216,7 @@ func hasSchemePrefix(s string) bool {
 // Priority:
 //  1. Explicit argument (owner/repo format)
 //  2. --repo flag value
-//  3. Current directory's git config (remote origin)
+//  3. The current directory's git config (remote origin)
 //
 // Returns owner, repo, and any error encountered.
 func DetectRepository(arg, repoFlag string) (owner, repo string, err error) {
@@ -230,7 +230,7 @@ func DetectRepository(arg, repoFlag string) (owner, repo string, err error) {
 		return parseOwnerRepo(repoFlag)
 	}
 
-	// 3. Try to detect from current directory
+	// 3. Try to detect from the current directory
 	return detectFromCurrentDir()
 }
 

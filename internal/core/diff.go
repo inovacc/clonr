@@ -82,7 +82,7 @@ func GetDiff(repoPath string, opts DiffOptions) (*DiffResult, error) {
 	return result, nil
 }
 
-// GetDiffFiles returns list of changed files.
+// GetDiffFiles returns a list of changed files.
 func GetDiffFiles(repoPath string, staged bool) ([]string, error) {
 	args := []string{"-C", repoPath, "diff", "--name-only"}
 

@@ -9,13 +9,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/inovacc/clonr/internal/client/grpc"
 	"github.com/inovacc/clonr/internal/giturl"
-	"github.com/inovacc/clonr/internal/grpcclient"
 )
 
 // CloneOptions configures the clone operation
 type CloneOptions struct {
-	Force     bool     // Force clone even if repo exists (removes existing)
+	Force     bool     // Force clone even if the repo exists (removes existing)
 	GitArgs   []string // Additional git clone arguments
 	Protocol  string   // Preferred protocol (https or ssh), empty for auto-detect
 	Workspace string   // Workspace to clone into (empty for active workspace or default)
@@ -35,7 +35,7 @@ type CloneResult struct {
 //   - "repo" (uses current GitHub user)
 //   - "owner/repo"
 //   - "https://github.com/owner/repo"
-//   - "https://github.com/owner/repo/blob/main/file.go#L10" (strips extra path)
+//   - "https://github.com/owner/repo/blob/main/file.go#L10" (strips an extra path)
 //   - "git@github.com:owner/repo.git"
 //
 // Arguments format: <repository> [<directory>] [-- <gitflags>...]
@@ -47,7 +47,7 @@ func PrepareClone(args []string, opts CloneOptions) (*CloneResult, error) {
 	}
 
 	// Parse arguments: <repository> [<directory>] [<gitflags>...]
-	// After Cobra processing, "--" is stripped so we detect git flags by "-" prefix
+	// After Cobra processing, "--" is stripped so we detect git flags by the "-" prefix
 	repoArg := args[0]
 	remaining := args[1:]
 
@@ -97,13 +97,13 @@ func PrepareClone(args []string, opts CloneOptions) (*CloneResult, error) {
 
 	cloneURL := repo.CloneURL(protocol)
 
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to server: %w", err)
 	}
 
 	// Build canonical URL for database operations
-	canonicalURL, err := url.Parse(fmt.Sprintf("https://%s/%s/%s", repo.Host, repo.Owner, repo.Name))
+	canonicalURL, err := fixURL(repo.Host, repo.Owner, repo.Name)
 	if err != nil {
 		return nil, fmt.Errorf("error building canonical URL: %w", err)
 	}
@@ -136,7 +136,7 @@ func PrepareClone(args []string, opts CloneOptions) (*CloneResult, error) {
 	// Determine workspace
 	workspace := opts.Workspace
 	if workspace == "" {
-		// Try to get active workspace
+		// Try to get an active workspace
 		activeWorkspace, err := client.GetActiveWorkspace()
 		if err == nil && activeWorkspace != nil {
 			workspace = activeWorkspace.Name
@@ -252,7 +252,7 @@ func PrepareClonePath(args []string, opts CloneOptions) (*url.URL, string, error
 	}
 
 	// Convert to URL for backwards compatibility
-	uri, err := url.Parse(fmt.Sprintf("https://%s/%s/%s", result.Repository.Host, result.Repository.Owner, result.Repository.Name))
+	uri, err := fixURL(result.Repository.Host, result.Repository.Owner, result.Repository.Name)
 	if err != nil {
 		return nil, "", err
 	}
@@ -267,7 +267,7 @@ func SaveClonedRepo(uri *url.URL, savePath string) error {
 
 // SaveClonedRepoWithWorkspace saves the cloned repository with workspace
 func SaveClonedRepoWithWorkspace(uri *url.URL, savePath string, workspace string) error {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return fmt.Errorf("failed to connect to server: %w", err)
 	}
@@ -297,7 +297,7 @@ func SaveClonedRepoWithWorkspace(uri *url.URL, savePath string, workspace string
 
 // SaveClonedRepoFromResult saves the repository using CloneResult
 func SaveClonedRepoFromResult(result *CloneResult) error {
-	uri, err := url.Parse(fmt.Sprintf("https://%s/%s/%s", result.Repository.Host, result.Repository.Owner, result.Repository.Name))
+	uri, err := fixURL(result.Repository.Host, result.Repository.Owner, result.Repository.Name)
 	if err != nil {
 		return fmt.Errorf("error building URL: %w", err)
 	}
@@ -344,4 +344,8 @@ func PullRepo(path string) error {
 	}
 
 	return nil
+}
+
+func fixURL(host, owner, repo string) (*url.URL, error) {
+	return url.Parse(fmt.Sprintf("https://%s/%s/%s", host, owner, repo))
 }

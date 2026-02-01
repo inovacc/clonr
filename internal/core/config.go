@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/inovacc/clonr/internal/grpcclient"
+	"github.com/inovacc/clonr/internal/client/grpc"
 	"github.com/inovacc/clonr/internal/model"
 )
 
 // ShowConfig displays the current configuration
 func ShowConfig() error {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return fmt.Errorf("failed to connect to server: %w", err)
 	}
@@ -33,7 +33,7 @@ func ShowConfig() error {
 
 // ResetConfig resets the configuration to default values
 func ResetConfig() error {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return fmt.Errorf("failed to connect to server: %w", err)
 	}

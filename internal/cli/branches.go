@@ -66,15 +66,15 @@ func (m BranchListModel) Init() tea.Cmd {
 }
 
 func (m BranchListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
+	switch keyMsg := msg.(type) {
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v)
+		m.list.SetSize(keyMsg.Width-h, keyMsg.Height-v)
 
 		return m, nil
 
 	case tea.KeyMsg:
-		switch msg.String() {
+		switch keyMsg.String() {
 		case "ctrl+c", "q", "esc":
 			m.quitting = true
 

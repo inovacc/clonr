@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/inovacc/clonr/internal/grpcclient"
+	"github.com/inovacc/clonr/internal/client/grpc"
 	"github.com/inovacc/clonr/internal/model"
 )
 
@@ -66,7 +66,7 @@ type ProfileSelectorModel struct {
 
 // NewProfileSelector creates a new profile selector TUI
 func NewProfileSelector() (ProfileSelectorModel, error) {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return ProfileSelectorModel{err: err}, err
 	}

@@ -1,4 +1,4 @@
-// Package database provides the storage abstraction layer for Clonr.
+// Package store provides the storage abstraction layer for Clonr.
 //
 // The package defines the [Store] interface which abstracts all database
 // operations. The storage backend is BoltDB, an embedded key-value store.

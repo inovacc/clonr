@@ -372,7 +372,7 @@ func getContributorIssues(ctx context.Context, client *github.Client, owner, rep
 }
 
 func truncateMessage(msg string, maxLen int) string {
-	// Get first line only
+	// Get the first line only
 	for i, c := range msg {
 		if c == '\n' {
 			msg = msg[:i]

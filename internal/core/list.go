@@ -3,13 +3,13 @@ package core
 import (
 	"fmt"
 
-	"github.com/inovacc/clonr/internal/grpcclient"
+	"github.com/inovacc/clonr/internal/client/grpc"
 	"github.com/inovacc/clonr/internal/model"
 )
 
 // ListRepos returns all repositories.
 func ListRepos() ([]model.Repository, error) {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to server: %w", err)
 	}
@@ -19,7 +19,7 @@ func ListRepos() ([]model.Repository, error) {
 
 // ListReposFiltered returns repos optionally filtered by favoritesOnly.
 func ListReposFiltered(favoritesOnly bool) ([]model.Repository, error) {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to server: %w", err)
 	}
@@ -30,7 +30,7 @@ func ListReposFiltered(favoritesOnly bool) ([]model.Repository, error) {
 // ListReposFilteredByWorkspace returns repos filtered by workspace.
 // Server-side filtering is used for efficiency.
 func ListReposFilteredByWorkspace(workspace string, favoritesOnly bool) ([]model.Repository, error) {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to server: %w", err)
 	}

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/inovacc/clonr/internal/core"
+	"github.com/inovacc/clonr/internal/zenhub"
 	"github.com/spf13/cobra"
 )
 
@@ -266,7 +267,7 @@ func runZenHubBoard(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve ZenHub token
-	zhToken, _, err := core.ResolveZenHubToken(tokenFlag)
+	zhToken, _, err := zenhub.ResolveZenHubToken(tokenFlag)
 	if err != nil {
 		return err
 	}
@@ -296,13 +297,13 @@ func runZenHubBoard(cmd *cobra.Command, args []string) error {
 		_, _ = fmt.Fprintf(os.Stderr, "Fetching repository ID for %s/%s...\n", owner, repo)
 	}
 
-	repoID, err := core.GetGitHubRepoID(ghToken, owner, repo, logger)
+	repoID, err := zenhub.GetGitHubRepoID(ghToken, owner, repo, logger)
 	if err != nil {
 		return fmt.Errorf("failed to get repository ID: %w", err)
 	}
 
 	// Create ZenHub client
-	zhClient, err := core.CreateZenHubClient(zhToken, core.ZenHubClientOptions{Logger: logger})
+	zhClient, err := zenhub.CreateZenHubClient(zhToken, zenhub.ZenHubClientOptions{Logger: logger})
 	if err != nil {
 		return fmt.Errorf("failed to create ZenHub client: %w", err)
 	}
@@ -312,12 +313,12 @@ func runZenHubBoard(cmd *cobra.Command, args []string) error {
 	}
 
 	// Fetch board
-	opts := core.GetZenHubBoardOptions{
+	opts := zenhub.GetZenHubBoardOptions{
 		IncludeIssueDetails: showDetails,
 		Logger:              logger,
 	}
 
-	board, err := core.GetZenHubBoard(zhClient, repoID, fmt.Sprintf("%s/%s", owner, repo), opts)
+	board, err := zenhub.GetZenHubBoard(zhClient, repoID, fmt.Sprintf("%s/%s", owner, repo), opts)
 	if err != nil {
 		return fmt.Errorf("failed to fetch board: %w", err)
 	}
@@ -376,7 +377,7 @@ func runZenHubEpics(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve ZenHub token
-	zhToken, _, err := core.ResolveZenHubToken(tokenFlag)
+	zhToken, _, err := zenhub.ResolveZenHubToken(tokenFlag)
 	if err != nil {
 		return err
 	}
@@ -406,13 +407,13 @@ func runZenHubEpics(cmd *cobra.Command, args []string) error {
 		_, _ = fmt.Fprintf(os.Stderr, "Fetching repository ID for %s/%s...\n", owner, repo)
 	}
 
-	repoID, err := core.GetGitHubRepoID(ghToken, owner, repo, logger)
+	repoID, err := zenhub.GetGitHubRepoID(ghToken, owner, repo, logger)
 	if err != nil {
 		return fmt.Errorf("failed to get repository ID: %w", err)
 	}
 
 	// Create ZenHub client
-	zhClient, err := core.CreateZenHubClient(zhToken, core.ZenHubClientOptions{Logger: logger})
+	zhClient, err := zenhub.CreateZenHubClient(zhToken, zenhub.ZenHubClientOptions{Logger: logger})
 	if err != nil {
 		return fmt.Errorf("failed to create ZenHub client: %w", err)
 	}
@@ -422,11 +423,11 @@ func runZenHubEpics(cmd *cobra.Command, args []string) error {
 	}
 
 	// Fetch epics
-	opts := core.GetZenHubEpicsOptions{
+	opts := zenhub.GetZenHubEpicsOptions{
 		Logger: logger,
 	}
 
-	epics, err := core.GetZenHubEpics(zhClient, repoID, fmt.Sprintf("%s/%s", owner, repo), opts)
+	epics, err := zenhub.GetZenHubEpics(zhClient, repoID, fmt.Sprintf("%s/%s", owner, repo), opts)
 	if err != nil {
 		return fmt.Errorf("failed to fetch epics: %w", err)
 	}
@@ -482,7 +483,7 @@ func runZenHubIssue(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve ZenHub token
-	zhToken, _, err := core.ResolveZenHubToken(tokenFlag)
+	zhToken, _, err := zenhub.ResolveZenHubToken(tokenFlag)
 	if err != nil {
 		return err
 	}
@@ -512,13 +513,13 @@ func runZenHubIssue(cmd *cobra.Command, args []string) error {
 		_, _ = fmt.Fprintf(os.Stderr, "Fetching repository ID for %s/%s...\n", owner, repo)
 	}
 
-	repoID, err := core.GetGitHubRepoID(ghToken, owner, repo, logger)
+	repoID, err := zenhub.GetGitHubRepoID(ghToken, owner, repo, logger)
 	if err != nil {
 		return fmt.Errorf("failed to get repository ID: %w", err)
 	}
 
 	// Create ZenHub client
-	zhClient, err := core.CreateZenHubClient(zhToken, core.ZenHubClientOptions{Logger: logger})
+	zhClient, err := zenhub.CreateZenHubClient(zhToken, zenhub.ZenHubClientOptions{Logger: logger})
 	if err != nil {
 		return fmt.Errorf("failed to create ZenHub client: %w", err)
 	}
@@ -528,11 +529,11 @@ func runZenHubIssue(cmd *cobra.Command, args []string) error {
 	}
 
 	// Fetch issue
-	opts := core.GetZenHubIssueOptions{
+	opts := zenhub.GetZenHubIssueOptions{
 		Logger: logger,
 	}
 
-	issue, err := core.GetZenHubIssue(zhClient, repoID, issueNumber, opts)
+	issue, err := zenhub.GetZenHubIssue(zhClient, repoID, issueNumber, opts)
 	if err != nil {
 		return fmt.Errorf("failed to fetch issue: %w", err)
 	}
@@ -616,7 +617,7 @@ func runZenHubWorkspaces(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve ZenHub token
-	zhToken, _, err := core.ResolveZenHubToken(tokenFlag)
+	zhToken, _, err := zenhub.ResolveZenHubToken(tokenFlag)
 	if err != nil {
 		return err
 	}
@@ -646,13 +647,13 @@ func runZenHubWorkspaces(cmd *cobra.Command, args []string) error {
 		_, _ = fmt.Fprintf(os.Stderr, "Fetching repository ID for %s/%s...\n", owner, repo)
 	}
 
-	repoID, err := core.GetGitHubRepoID(ghToken, owner, repo, logger)
+	repoID, err := zenhub.GetGitHubRepoID(ghToken, owner, repo, logger)
 	if err != nil {
 		return fmt.Errorf("failed to get repository ID: %w", err)
 	}
 
 	// Create ZenHub client
-	zhClient, err := core.CreateZenHubClient(zhToken, core.ZenHubClientOptions{Logger: logger})
+	zhClient, err := zenhub.CreateZenHubClient(zhToken, zenhub.ZenHubClientOptions{Logger: logger})
 	if err != nil {
 		return fmt.Errorf("failed to create ZenHub client: %w", err)
 	}
@@ -662,11 +663,11 @@ func runZenHubWorkspaces(cmd *cobra.Command, args []string) error {
 	}
 
 	// Fetch workspaces
-	opts := core.GetZenHubWorkspacesOptions{
+	opts := zenhub.GetZenHubWorkspacesOptions{
 		Logger: logger,
 	}
 
-	workspaces, err := core.GetZenHubWorkspaces(zhClient, repoID, fmt.Sprintf("%s/%s", owner, repo), opts)
+	workspaces, err := zenhub.GetZenHubWorkspaces(zhClient, repoID, fmt.Sprintf("%s/%s", owner, repo), opts)
 	if err != nil {
 		return fmt.Errorf("failed to fetch workspaces: %w", err)
 	}
@@ -726,7 +727,7 @@ func runZenHubIssues(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve ZenHub token
-	zhToken, _, err := core.ResolveZenHubToken(tokenFlag)
+	zhToken, _, err := zenhub.ResolveZenHubToken(tokenFlag)
 	if err != nil {
 		return err
 	}
@@ -756,13 +757,13 @@ func runZenHubIssues(cmd *cobra.Command, args []string) error {
 		_, _ = fmt.Fprintf(os.Stderr, "Fetching repository ID for %s/%s...\n", owner, repo)
 	}
 
-	repoID, err := core.GetGitHubRepoID(ghToken, owner, repo, logger)
+	repoID, err := zenhub.GetGitHubRepoID(ghToken, owner, repo, logger)
 	if err != nil {
 		return fmt.Errorf("failed to get repository ID: %w", err)
 	}
 
 	// Create ZenHub client
-	zhClient, err := core.CreateZenHubClient(zhToken, core.ZenHubClientOptions{Logger: logger})
+	zhClient, err := zenhub.CreateZenHubClient(zhToken, zenhub.ZenHubClientOptions{Logger: logger})
 	if err != nil {
 		return fmt.Errorf("failed to create ZenHub client: %w", err)
 	}
@@ -787,7 +788,7 @@ func runZenHubIssues(cmd *cobra.Command, args []string) error {
 	}
 
 	// Fetch enriched issues
-	opts := core.GetEnrichedIssuesOptions{
+	opts := zenhub.GetEnrichedIssuesOptions{
 		State:       stateFilter,
 		Labels:      labelsFilter,
 		Pipeline:    pipelineFilter,
@@ -798,7 +799,7 @@ func runZenHubIssues(cmd *cobra.Command, args []string) error {
 		Logger:      logger,
 	}
 
-	issues, err := core.GetEnrichedIssues(zhClient, ghToken, owner, repo, repoID, opts)
+	issues, err := zenhub.GetEnrichedIssues(zhClient, ghToken, owner, repo, repoID, opts)
 	if err != nil {
 		return fmt.Errorf("failed to fetch enriched issues: %w", err)
 	}
@@ -820,7 +821,7 @@ func runZenHubIssues(cmd *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintf(os.Stdout, "\nZenHub Issues: %s/%s\n", owner, repo)
 
 	// Group by pipeline
-	pipelineIssues := make(map[string][]core.EnrichedIssue)
+	pipelineIssues := make(map[string][]zenhub.EnrichedIssue)
 	pipelineOrder := make([]string, 0)
 	totalPoints := 0
 
@@ -959,7 +960,7 @@ func runZenHubEpicDetail(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve ZenHub token
-	zhToken, _, err := core.ResolveZenHubToken(tokenFlag)
+	zhToken, _, err := zenhub.ResolveZenHubToken(tokenFlag)
 	if err != nil {
 		return err
 	}
@@ -989,13 +990,13 @@ func runZenHubEpicDetail(cmd *cobra.Command, args []string) error {
 		_, _ = fmt.Fprintf(os.Stderr, "Fetching repository ID for %s/%s...\n", owner, repo)
 	}
 
-	repoID, err := core.GetGitHubRepoID(ghToken, owner, repo, logger)
+	repoID, err := zenhub.GetGitHubRepoID(ghToken, owner, repo, logger)
 	if err != nil {
 		return fmt.Errorf("failed to get repository ID: %w", err)
 	}
 
 	// Create ZenHub client
-	zhClient, err := core.CreateZenHubClient(zhToken, core.ZenHubClientOptions{Logger: logger})
+	zhClient, err := zenhub.CreateZenHubClient(zhToken, zenhub.ZenHubClientOptions{Logger: logger})
 	if err != nil {
 		return fmt.Errorf("failed to create ZenHub client: %w", err)
 	}
@@ -1005,12 +1006,12 @@ func runZenHubEpicDetail(cmd *cobra.Command, args []string) error {
 	}
 
 	// Fetch epic with children
-	opts := core.GetEpicWithChildrenOptions{
+	opts := zenhub.GetEpicWithChildrenOptions{
 		IncludeClosedChildren: includeClosed,
 		Logger:                logger,
 	}
 
-	epic, err := core.GetEpicWithChildren(zhClient, ghToken, owner, repo, repoID, epicNumber, opts)
+	epic, err := zenhub.GetEpicWithChildren(zhClient, ghToken, owner, repo, repoID, epicNumber, opts)
 	if err != nil {
 		return fmt.Errorf("failed to fetch epic: %w", err)
 	}
@@ -1121,7 +1122,7 @@ func runZenHubMove(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve ZenHub token
-	zhToken, _, err := core.ResolveZenHubToken(tokenFlag)
+	zhToken, _, err := zenhub.ResolveZenHubToken(tokenFlag)
 	if err != nil {
 		return err
 	}
@@ -1151,13 +1152,13 @@ func runZenHubMove(cmd *cobra.Command, args []string) error {
 		_, _ = fmt.Fprintf(os.Stderr, "Fetching repository ID for %s/%s...\n", owner, repo)
 	}
 
-	repoID, err := core.GetGitHubRepoID(ghToken, owner, repo, logger)
+	repoID, err := zenhub.GetGitHubRepoID(ghToken, owner, repo, logger)
 	if err != nil {
 		return fmt.Errorf("failed to get repository ID: %w", err)
 	}
 
 	// Create ZenHub client
-	zhClient, err := core.CreateZenHubClient(zhToken, core.ZenHubClientOptions{Logger: logger})
+	zhClient, err := zenhub.CreateZenHubClient(zhToken, zenhub.ZenHubClientOptions{Logger: logger})
 	if err != nil {
 		return fmt.Errorf("failed to create ZenHub client: %w", err)
 	}
@@ -1167,12 +1168,12 @@ func runZenHubMove(cmd *cobra.Command, args []string) error {
 	}
 
 	// Move issue
-	opts := core.MoveIssueOptions{
+	opts := zenhub.MoveIssueOptions{
 		Position: positionFlag,
 		Logger:   logger,
 	}
 
-	result, err := core.MoveIssue(zhClient, repoID, issueNumber, pipelineFlag, opts)
+	result, err := zenhub.MoveIssue(zhClient, repoID, issueNumber, pipelineFlag, opts)
 	if err != nil {
 		return fmt.Errorf("failed to move issue: %w", err)
 	}

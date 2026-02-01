@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/google/gops/goprocess"
-	"github.com/inovacc/clonr/internal/grpcserver"
+	"github.com/inovacc/clonr/internal/process"
+	"github.com/inovacc/clonr/internal/server/grpc"
 	"github.com/inovacc/clonr/internal/store"
 	"github.com/spf13/cobra"
 )
@@ -20,6 +20,7 @@ import (
 var (
 	serverPort        int
 	serverIdleTimeout time.Duration
+	procs             = process.NewProcess()
 )
 
 var serverCmd = &cobra.Command{
@@ -79,10 +80,12 @@ func init() {
 }
 
 func runServerStart(cmd *cobra.Command, args []string) error {
+	_, _ = cmd, args
+
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	// Check if server is already running - silent abort if so
-	if grpcserver.IsServerRunning() != nil {
+	// Check if the server is already running - silent abort if so
+	if grpc.IsServerRunning() != nil {
 		return nil
 	}
 
@@ -103,14 +106,14 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to listen on %s: %w", addr, err)
 	}
 
-	// Write server info file for client discovery
-	if err := grpcserver.WriteServerInfo(serverPort); err != nil {
+	// Write a server info file for client discovery
+	if err := grpc.WriteServerInfo(serverPort); err != nil {
 		log.Printf("Warning: failed to write server info file: %v", err)
 	} else {
 		log.Printf("Server info written to local data directory")
 	}
 
-	srvWithHealth := grpcserver.NewServer(db, serverIdleTimeout)
+	srvWithHealth := grpc.NewServer(db, serverIdleTimeout)
 
 	// Start idle tracker if enabled
 	if srvWithHealth.IdleTracker.IsEnabled() {
@@ -127,7 +130,7 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 		}
 	}()
 
-	// Wait for shutdown signal (OS signal or idle timeout)
+	// Wait for a shutdown signal (OS signal or idle timeout)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
@@ -154,7 +157,7 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 		close(stopChan)
 	}()
 
-	// Wait for graceful stop or force stop after 30 seconds
+	// Wait for a graceful stop or force stop after 30 seconds
 	select {
 	case <-stopChan:
 		log.Println("Server stopped gracefully")
@@ -164,14 +167,14 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 	}
 
 	// Clean up server info file
-	grpcserver.RemoveServerInfo()
+	grpc.RemoveServerInfo()
 	log.Println("Server info file removed")
 
 	return nil
 }
 
 func runServerStop(_ *cobra.Command, _ []string) error {
-	info := grpcserver.IsServerRunning()
+	info := grpc.IsServerRunning()
 	if info == nil {
 		_, _ = fmt.Fprintln(os.Stdout, "Server is not running")
 		return nil
@@ -195,9 +198,9 @@ func runServerStop(_ *cobra.Command, _ []string) error {
 }
 
 func runServerRestart(cmd *cobra.Command, args []string) error {
-	info := grpcserver.IsServerRunning()
+	info := grpc.IsServerRunning()
 
-	// If server is running, stop it first
+	// If the server is running, stop it first
 	if info != nil {
 		_, _ = fmt.Fprintf(os.Stdout, "Stopping server (PID: %d)...\n", info.PID)
 
@@ -220,7 +223,7 @@ func runServerRestart(cmd *cobra.Command, args []string) error {
 }
 
 func runServerStatus(_ *cobra.Command, _ []string) error {
-	info := grpcserver.IsServerRunning()
+	info := grpc.IsServerRunning()
 	if info == nil {
 		_, _ = fmt.Fprintln(os.Stdout, "Server status: stopped")
 		return nil
@@ -254,12 +257,16 @@ func terminateProcess(pid int) error {
 
 // waitForProcessExit waits for a process to exit using gops to monitor
 func waitForProcessExit(pid int, timeout time.Duration) error {
+	if err := procs.ListProcesses(); err != nil {
+		return fmt.Errorf("failed to list processes: %w", err)
+	}
+
 	deadline := time.Now().Add(timeout)
 	checkInterval := 100 * time.Millisecond
 
 	for time.Now().Before(deadline) {
 		// Use goprocess to check if the process is still running
-		if !isProcessRunning(pid) {
+		if !procs.IsProcessRunning(pid) {
 			return nil
 		}
 
@@ -267,17 +274,4 @@ func waitForProcessExit(pid int, timeout time.Duration) error {
 	}
 
 	return fmt.Errorf("process %d still running after %v", pid, timeout)
-}
-
-// isProcessRunning checks if a process with the given PID is still running
-func isProcessRunning(pid int) bool {
-	processes := goprocess.FindAll()
-
-	for _, proc := range processes {
-		if proc.PID == pid {
-			return true
-		}
-	}
-
-	return false
 }

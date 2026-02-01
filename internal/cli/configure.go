@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/inovacc/clonr/internal/grpcclient"
+	"github.com/inovacc/clonr/internal/client/grpc"
 	"github.com/inovacc/clonr/internal/model"
 )
 
@@ -27,13 +27,13 @@ var (
 type ConfigureModel struct {
 	focusIndex int
 	inputs     []textinput.Model
-	client     *grpcclient.Client
+	client     *grpc.Client
 	Saved      bool
 	Err        error
 }
 
 func NewConfigureModel() (ConfigureModel, error) {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return ConfigureModel{}, fmt.Errorf("failed to connect to server: %w", err)
 	}

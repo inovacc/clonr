@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -149,20 +150,34 @@ func printOrgsTable(orgs []core.Organization) {
 	_, _ = fmt.Fprintf(os.Stdout, "Total: %d organizations\n", len(orgs))
 }
 
+// OrgListItem represents an organization in JSON output
+type OrgListItem struct {
+	Login      string `json:"login"`
+	Name       string `json:"name"`
+	Repos      int    `json:"repos"`
+	Mirrored   bool   `json:"mirrored"`
+	LocalRepos int    `json:"local_repos"`
+}
+
 func printOrgsJSON(orgs []core.Organization) {
-	_, _ = fmt.Fprintln(os.Stdout, "[")
+	items := make([]OrgListItem, 0, len(orgs))
 
-	for i, org := range orgs {
-		comma := ","
-		if i == len(orgs)-1 {
-			comma = ""
-		}
-
-		_, _ = fmt.Fprintf(os.Stdout, `  {"login": %q, "name": %q, "repos": %d, "mirrored": %t, "local_repos": %d}%s`+"\n",
-			org.Login, org.Name, org.RepoCount, org.IsMirrored, org.LocalRepos, comma)
+	for _, org := range orgs {
+		items = append(items, OrgListItem{
+			Login:      org.Login,
+			Name:       org.Name,
+			Repos:      org.RepoCount,
+			Mirrored:   org.IsMirrored,
+			LocalRepos: org.LocalRepos,
+		})
 	}
 
-	_, _ = fmt.Fprintln(os.Stdout, "]")
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+
+	if err := enc.Encode(items); err != nil {
+		slog.Error("failed to encode organizations", slog.Any("error", err))
+	}
 }
 
 func padRight(s string, length int) string {

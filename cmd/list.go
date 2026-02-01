@@ -7,8 +7,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/inovacc/clonr/internal/cli"
+	"github.com/inovacc/clonr/internal/client/grpc"
 	"github.com/inovacc/clonr/internal/core"
-	"github.com/inovacc/clonr/internal/grpcclient"
 	"github.com/spf13/cobra"
 )
 
@@ -123,7 +123,7 @@ type WorkspaceWithRepos struct {
 }
 
 func listReposGroupedByWorkspace() error {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func listReposGroupedByWorkspace() error {
 		reposByWorkspace[ws.Name] = []core.RepoWithStats{}
 	}
 
-	// Add unassigned group
+	// Add an unassigned group
 	reposByWorkspace[""] = []core.RepoWithStats{}
 
 	for _, repo := range repos {

@@ -9,16 +9,17 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/inovacc/clonr/internal/grpcclient"
+	"github.com/inovacc/clonr/internal/client/grpc"
 )
 
 // MapOptions configures the repository mapping operation
 type MapOptions struct {
-	DryRun   bool     // Don't actually add repos, just show what would be added
-	MaxDepth int      // Maximum directory depth to scan (0 = unlimited)
-	Exclude  []string // Directory names to skip (e.g., node_modules, vendor)
-	JSON     bool     // Output results as JSON
-	Verbose  bool     // Show verbose output
+	DryRun    bool     // Don't actually add repos, just show what would be added
+	MaxDepth  int      // Maximum directory depth to scan (0 = unlimited)
+	Exclude   []string // Directory names to skip (e.g., node_modules, vendor)
+	JSON      bool     // Output results as JSON
+	Verbose   bool     // Show verbose output
+	Workspace string   // Workspace to assign to found repos (empty = no workspace)
 }
 
 // MapResult contains the result of a mapping operation
@@ -86,13 +87,13 @@ func MapReposWithOptions(args []string, opts MapOptions) error {
 		rootDir = args[0]
 	}
 
-	// Resolve to absolute path
+	// Resolve to an absolute path
 	absRoot, err := filepath.Abs(rootDir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve path: %w", err)
 	}
 
-	// Check if directory exists
+	// Check if a directory exists
 	info, err := os.Stat(absRoot)
 	if err != nil {
 		return fmt.Errorf("directory not found: %w", err)
@@ -109,16 +110,16 @@ func MapReposWithOptions(args []string, opts MapOptions) error {
 		Errors:       make([]MappedRepoErr, 0),
 	}
 
-	var client *grpcclient.Client
+	var client *grpc.Client
 
 	if !opts.DryRun {
-		client, err = grpcclient.GetClient()
+		client, err = grpc.GetClient()
 		if err != nil {
 			return fmt.Errorf("failed to connect to server: %w", err)
 		}
 	}
 
-	// Build exclude map for fast lookups
+	// Build exclude a map for fast lookups
 	excludeMap := make(map[string]bool)
 	for _, dir := range opts.Exclude {
 		excludeMap[dir] = true
@@ -219,15 +220,22 @@ func MapReposWithOptions(args []string, opts MapOptions) error {
 			}
 
 			// Add to database
-			if err := client.SaveRepo(dotGit.URL, repoPath); err != nil {
+			var saveErr error
+			if opts.Workspace != "" {
+				saveErr = client.SaveRepoWithWorkspace(dotGit.URL, repoPath, opts.Workspace)
+			} else {
+				saveErr = client.SaveRepo(dotGit.URL, repoPath)
+			}
+
+			if saveErr != nil {
 				result.Errors = append(result.Errors, MappedRepoErr{
 					Path:  repoPath,
-					Error: err.Error(),
+					Error: saveErr.Error(),
 				})
 				result.TotalErrors++
 
 				if !opts.JSON {
-					log.Printf("Failed to add %s: %v\n", repoPath, err)
+					log.Printf("Failed to add %s: %v\n", repoPath, saveErr)
 				}
 			} else {
 				result.Found = append(result.Found, repo)

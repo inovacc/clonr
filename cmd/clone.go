@@ -8,8 +8,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/inovacc/clonr/internal/cli"
+	"github.com/inovacc/clonr/internal/client/grpc"
 	"github.com/inovacc/clonr/internal/core"
-	"github.com/inovacc/clonr/internal/grpcclient"
 	"github.com/inovacc/clonr/internal/model"
 	"github.com/spf13/cobra"
 )
@@ -92,19 +92,19 @@ func runClone(cmd *cobra.Command, args []string) error {
 		Workspace: workspace,
 	}
 
-	// Get client to check profiles and workspaces
-	client, err := grpcclient.GetClient()
+	// Get a client to check profiles and workspaces
+	client, err := grpc.GetClient()
 	if err != nil {
 		return err
 	}
 
-	// If profile specified via flag, set it as active
+	// If profile specified via a flag, set it as active
 	if profile != "" {
 		if err := client.SetActiveProfile(profile); err != nil {
 			return fmt.Errorf("failed to set active profile '%s': %w", profile, err)
 		}
 
-		// Get profile to check for workspace
+		// Get a profile to check for workspace
 		p, err := client.GetProfile(profile)
 		if err != nil {
 			return fmt.Errorf("failed to get profile '%s': %w", profile, err)
@@ -144,12 +144,12 @@ func runClone(cmd *cobra.Command, args []string) error {
 			if selected != nil {
 				profile = selected.Name
 
-				// Set selected profile as active for authentication
+				// Set the selected profile as active for authentication
 				if err := client.SetActiveProfile(profile); err != nil {
 					return fmt.Errorf("failed to set active profile: %w", err)
 				}
 
-				// If profile has a workspace and no workspace was specified, use it
+				// If a profile has a workspace and no workspace was specified, use it
 				if workspace == "" && selected.Workspace != "" {
 					opts.Workspace = selected.Workspace
 					_, _ = fmt.Fprintf(os.Stdout, "Using profile '%s' (workspace: %s)\n", selected.Name, selected.Workspace)
@@ -191,7 +191,7 @@ func runClone(cmd *cobra.Command, args []string) error {
 
 			switch {
 			case selected == nil:
-				// User cancelled - use active workspace
+				// User canceled - use active workspace
 				active, err := client.GetActiveWorkspace()
 				if err == nil && active != nil {
 					opts.Workspace = active.Name
@@ -235,8 +235,8 @@ func runClone(cmd *cobra.Command, args []string) error {
 	return core.SaveClonedRepoFromResult(result)
 }
 
-func createDefaultWorkspace(client *grpcclient.Client) error {
-	// Get config to use as default path
+func createDefaultWorkspace(client *grpc.Client) error {
+	// Get config to use as a default path
 	cfg, err := client.GetConfig()
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
@@ -260,8 +260,8 @@ func createDefaultWorkspace(client *grpcclient.Client) error {
 	return nil
 }
 
-func createWorkspaceFromSelection(client *grpcclient.Client, ws *model.Workspace) error {
-	// Expand ~ to home directory
+func createWorkspaceFromSelection(client *grpc.Client, ws *model.Workspace) error {
+	// Expand ~ to the home directory
 	path := ws.Path
 	if len(path) > 0 && path[0] == '~' {
 		home, err := os.UserHomeDir()
@@ -272,13 +272,13 @@ func createWorkspaceFromSelection(client *grpcclient.Client, ws *model.Workspace
 		path = filepath.Join(home, path[1:])
 	}
 
-	// Make path absolute
+	// Make the path absolute
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return fmt.Errorf("failed to resolve path: %w", err)
 	}
 
-	// Create directory if it doesn't exist
+	// Create a directory if it doesn't exist
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
 		if err := os.MkdirAll(absPath, 0755); err != nil {
 			return fmt.Errorf("failed to create directory: %w", err)

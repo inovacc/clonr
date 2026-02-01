@@ -11,9 +11,9 @@ import (
 const AppName = "clonr"
 
 var (
-	once     sync.Once
-	appDir   string
-	errorDir error
+	once   sync.Once
+	appDir string
+	errDir error
 )
 
 // GetApplicationDirectory returns the clonr configuration directory path.
@@ -22,11 +22,11 @@ var (
 func GetApplicationDirectory() (string, error) {
 	once.Do(lazyLoad)
 
-	if errorDir != nil {
-		return "", errorDir
+	if errDir != nil {
+		return "", errDir
 	}
 
-	return appDir, errorDir
+	return appDir, errDir
 }
 
 func lazyLoad() {
@@ -45,7 +45,7 @@ func lazyLoad() {
 	}
 
 	if err != nil {
-		errorDir = fmt.Errorf("failed to get config directory: %w", err)
+		errDir = fmt.Errorf("failed to get config directory: %w", err)
 	}
 
 	appDir = filepath.Join(baseDir, AppName)

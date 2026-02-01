@@ -1,0 +1,224 @@
+package grpc
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"time"
+
+	"github.com/inovacc/clonr/internal/application"
+	"github.com/inovacc/clonr/internal/process"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+)
+
+const (
+	defaultServerPort  = 50051
+	serverStartRetries = 20
+	serverRetryDelay   = 500 * time.Millisecond
+)
+
+var procs = process.NewProcess()
+
+// ClientConfig holds client configuration for connecting to the server
+type ClientConfig struct {
+	ServerAddress  string `json:"server_address"`
+	TimeoutSeconds int    `json:"timeout_seconds"`
+}
+
+// ServerInfo contains information about a running server (matches grpc.ServerInfo)
+type ServerInfo struct {
+	Address   string    `json:"address"`
+	Port      int       `json:"port"`
+	PID       int       `json:"pid"`
+	StartedAt time.Time `json:"started_at"`
+}
+
+// discoverServerAddress determines the server address to connect to
+// Priority:
+// 1. CLONR_SERVER environment variable (if set, use it directly)
+// 2. ~/.config/clonr/server.json (written by running server)
+// 3. Probe common ports for a running server (50051-50055)
+// 4. ~/.config/clonr/client.json config file
+// 5. Default: localhost:50051
+func discoverServerAddress() string {
+	// 1. Check environment variable - if explicitly set, trust it
+	if addr := os.Getenv("CLONR_SERVER"); addr != "" {
+		return addr
+	}
+
+	// 2. Check the server info file (written by server when it starts)
+	// Location: AppData\Local\clonr on Windows, ~/.cache/clonr on Linux, ~/Library/Caches/clonr on macOS
+	dataDir, err := os.UserCacheDir()
+	if err == nil {
+		serverInfoPath := filepath.Join(dataDir, application.AppName, "server.json")
+		if data, err := os.ReadFile(serverInfoPath); err == nil {
+			var info ServerInfo
+			if err := json.Unmarshal(data, &info); err == nil {
+				// First check if the PID is a running clonr process (fast, no network)
+				if isClonrProcessRunning(info.PID) {
+					// Process exists, verify it's responding via gRPC
+					if isServerRunning(info.Address) {
+						return info.Address
+					}
+				}
+				// Server info exists but server not running - clean up stale file
+				_ = os.Remove(serverInfoPath)
+			}
+		}
+	}
+
+	// 3. Probe common ports to find a running server
+	commonPorts := []int{50051, 50052, 50053, 50054, 50055}
+	for _, port := range commonPorts {
+		addr := fmt.Sprintf("localhost:%d", port)
+		if isServerRunning(addr) {
+			return addr
+		}
+	}
+
+	// 4. Check the client config file (still in .config for backwards compatibility)
+	homeDir, homeErr := os.UserHomeDir()
+	if homeErr == nil {
+		configPath := filepath.Join(homeDir, ".config", application.AppName, "client.json")
+		if data, err := os.ReadFile(configPath); err == nil {
+			var cfg ClientConfig
+			if err := json.Unmarshal(data, &cfg); err == nil && cfg.ServerAddress != "" {
+				// Verify the configured server is actually running
+				if isServerRunning(cfg.ServerAddress) {
+					return cfg.ServerAddress
+				}
+			}
+		}
+	}
+
+	// 5. Default fallback
+	return "localhost:50051"
+}
+
+// there isClonrProcessRunning checks if a clonr server with the given PID is running.
+// Uses a process to verify it's actually a Go process with clonr executable.
+func isClonrProcessRunning(pid int) bool {
+	if pid <= 0 {
+		return false
+	}
+
+	// Get all running Go processes
+	if err := procs.ListProcesses(); err != nil {
+		return false
+	}
+
+	return procs.ProcessExists(pid, application.AppName)
+}
+
+// there isServerRunning checks if a gRPC server is running at the given address
+func isServerRunning(address string) bool {
+	// First, a quick TCP port check
+	conn, err := net.DialTimeout("tcp", address, 500*time.Millisecond)
+	if err != nil {
+		return false
+	}
+
+	_ = conn.Close()
+
+	// Port is open, now verify it's actually a healthy gRPC server using health check (per guide)
+	grpcConn, err := grpc.NewClient(address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return false
+	}
+
+	defer func() {
+		_ = grpcConn.Close()
+	}()
+
+	// Use standard health check protocol instead of custom Ping
+	healthClient := healthpb.NewHealthClient(grpcConn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+
+	resp, err := healthClient.Check(ctx, &healthpb.HealthCheckRequest{})
+	if err != nil {
+		return false
+	}
+
+	return resp.GetStatus() == healthpb.HealthCheckResponse_SERVING
+}
+
+// startOnDemandServer spawns a detached clonr server process
+func startOnDemandServer(port int) error {
+	exePath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to get executable path: %w", err)
+	}
+
+	args := []string{
+		"server", "start",
+		"--port", fmt.Sprintf("%d", port),
+	}
+
+	cmd := exec.Command(exePath, args...)
+	cmd.Stdin = nil
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	setProcAttr(cmd)
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start server process: %w", err)
+	}
+
+	// Don't wait - let it run independently
+	go func() { _ = cmd.Wait() }()
+
+	return nil
+}
+
+// waitForServer polls until server is ready or timeout
+func waitForServer(address string) error {
+	for range serverStartRetries {
+		time.Sleep(serverRetryDelay)
+
+		if isServerRunning(address) {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("server failed to start after %d retries", serverStartRetries)
+}
+
+// SaveServerAddress saves the server address to the config file
+func SaveServerAddress(address string) error {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	configDir := filepath.Join(homeDir, ".config", application.AppName)
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	cfg := ClientConfig{
+		ServerAddress:  address,
+		TimeoutSeconds: 30,
+	}
+
+	data, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	configPath := filepath.Join(configDir, "client.json")
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	return nil
+}

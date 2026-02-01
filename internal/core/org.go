@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/go-github/v67/github"
 	"github.com/inovacc/clonr/internal/application"
-	"github.com/inovacc/clonr/internal/grpcclient"
+	"github.com/inovacc/clonr/internal/client/grpc"
 	"golang.org/x/oauth2"
 )
 
@@ -120,7 +120,7 @@ func ListOrganizations(token string, opts ListOrganizationsOptions) ([]Organizat
 
 // getCloneDir retrieves the clone directory from config
 func getCloneDir() (string, error) {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		// Fallback to default if server not running
 		home, err := os.UserHomeDir()

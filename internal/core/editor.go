@@ -3,7 +3,7 @@ package core
 import (
 	"fmt"
 
-	"github.com/inovacc/clonr/internal/grpcclient"
+	"github.com/inovacc/clonr/internal/client/grpc"
 	"github.com/inovacc/clonr/internal/model"
 )
 
@@ -42,7 +42,7 @@ func AddCustomEditor(editor model.Editor) error {
 		return fmt.Errorf("editor command is required")
 	}
 
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return fmt.Errorf("failed to connect to server: %w", err)
 	}
@@ -52,14 +52,14 @@ func AddCustomEditor(editor model.Editor) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	// Check if editor already exists
+	// Check if the editor already exists
 	for _, e := range cfg.CustomEditors {
 		if e.Name == editor.Name {
 			return fmt.Errorf("editor %q already exists", editor.Name)
 		}
 	}
 
-	// Check if command already exists in custom editors
+	// Check if the command already exists in custom editors
 	for _, e := range cfg.CustomEditors {
 		if e.Command == editor.Command {
 			return fmt.Errorf("editor with command %q already exists as %q", editor.Command, e.Name)
@@ -77,7 +77,7 @@ func AddCustomEditor(editor model.Editor) error {
 
 // RemoveCustomEditor removes a custom editor from the configuration.
 func RemoveCustomEditor(name string) error {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return fmt.Errorf("failed to connect to server: %w", err)
 	}
@@ -116,7 +116,7 @@ func RemoveCustomEditor(name string) error {
 
 // GetCustomEditors returns the list of custom editors from configuration.
 func GetCustomEditors() ([]model.Editor, error) {
-	client, err := grpcclient.GetClient()
+	client, err := grpc.GetClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to server: %w", err)
 	}

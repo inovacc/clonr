@@ -60,7 +60,7 @@ Clonr uses a **unified binary** with **gRPC client-server architecture**:
 #### Client Side (`clonr <command>`)
 - **Lightweight commands** that connect to server via gRPC for database operations
 - Executes git operations (clone, pull) **locally** on the client machine
-- Uses `grpcclient.GetClient()` singleton to connect to server
+- Uses `grpc.GetClient()` singleton to connect to server
 - Cobra-based CLI with subcommands (located in `cmd/`)
 - Bubbletea TUI components (located in `internal/cli/`)
 
@@ -79,7 +79,7 @@ The **client** uses a singleton gRPC client pattern:
 
 - `internal/grpcclient/client.go` provides `GetClient()` singleton
 - Client methods mirror the `Store` interface exactly (all 12 methods)
-- **Core business logic** (`internal/core/*.go`) uses `grpcclient.GetClient()` instead of `database.GetDB()`
+- **Core business logic** (`internal/core/*.go`) uses `grpc.GetClient()` instead of `database.GetDB()`
 - Server discovery priority: `CLONR_SERVER` env var → server.json (with PID check) → port probe → `localhost:50051`
 - Uses `goprocess` to verify PIDs are actually running clonr processes
 - 30-second timeout on all gRPC requests
@@ -382,7 +382,7 @@ Configuration is stored in the **server's database** (not files):
 - Monitor interval in seconds (default: 300)
 - Server port (default: 50051)
 
-**Client access:** `grpcclient.GetClient().GetConfig()` and `.SaveConfig()`
+**Client access:** `grpc.GetClient().GetConfig()` and `.SaveConfig()`
 **Server access:** `database.GetDB().GetConfig()` and `.SaveConfig()`
 
 ### Automatic Server Discovery
@@ -426,7 +426,7 @@ Client **automatically discovers** running servers without configuration:
 
 1. Create new command file in `cmd/foo.go` using Cobra pattern
 2. Add corresponding business logic in `internal/core/foo.go`
-3. Core logic should use `grpcclient.GetClient()` for database operations
+3. Core logic should use `grpc.GetClient()` for database operations
 4. If interactive UI needed, create Bubbletea model in `internal/cli/foo.go`
 5. Register command in `cmd/root.go` init function
 
@@ -447,7 +447,7 @@ func init() {
 
 // internal/core/foo.go
 func DoFoo(args []string) error {
-    client, err := grpcclient.GetClient()
+    client, err := grpc.GetClient()
     if err != nil {
         return fmt.Errorf("failed to connect to server: %w", err)
     }
@@ -461,7 +461,7 @@ func DoFoo(args []string) error {
 **Core business logic** uses the gRPC client singleton:
 
 ```go
-client, err := grpcclient.GetClient()
+client, err := grpc.GetClient()
 if err != nil {
     return fmt.Errorf("failed to connect to server: %w", err)
 }
@@ -492,7 +492,7 @@ If you need to add a new database operation:
 5. Run `make proto` to regenerate code
 6. Implement RPC in `internal/grpcserver/service.go`
 7. Add client wrapper method in `internal/grpcclient/client.go`
-8. Use in core logic via `grpcclient.GetClient()`
+8. Use in core logic via `grpc.GetClient()`
 
 ### Error Handling
 

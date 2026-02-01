@@ -51,7 +51,7 @@ func (m CloneModel) Init() tea.Cmd {
 }
 
 func (m CloneModel) cloneRepo() tea.Msg {
-	// Use git client with credential helper for authentication
+	// Use git client with a credential helper for authentication
 	client := git.NewClient()
 
 	err := client.Clone(context.Background(), m.url, m.path)
@@ -63,9 +63,9 @@ func (m CloneModel) cloneRepo() tea.Msg {
 }
 
 func (m CloneModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
+	switch keyMsg := msg.(type) {
 	case tea.KeyMsg:
-		if msg.String() == "ctrl+c" {
+		if keyMsg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
 
@@ -76,14 +76,14 @@ func (m CloneModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case cloneCompleteMsg:
 		m.cloning = false
 		m.done = true
-		m.err = msg.err
+		m.err = keyMsg.err
 
 		return m, tea.Quit
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 
-		m.spinner, cmd = m.spinner.Update(msg)
+		m.spinner, cmd = m.spinner.Update(keyMsg)
 
 		return m, cmd
 	}

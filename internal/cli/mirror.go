@@ -114,9 +114,9 @@ func (m *MirrorModel) Init() tea.Cmd {
 }
 
 func (m *MirrorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
+	switch keyMsg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
+		switch keyMsg.String() {
 		case "q", "ctrl+c":
 			// Close channels to stop workers
 			close(m.workQueue)
@@ -130,8 +130,8 @@ func (m *MirrorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case mirrorStartMsg:
 		m.mu.Lock()
-		m.active[msg.repo.Name] = activeOperation{
-			repo:      msg.repo,
+		m.active[keyMsg.repo.Name] = activeOperation{
+			repo:      keyMsg.repo,
 			startTime: time.Now(),
 		}
 		m.mu.Unlock()
@@ -141,18 +141,18 @@ func (m *MirrorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case mirrorResultMsg:
 		// Remove from active
 		m.mu.Lock()
-		delete(m.active, msg.result.Repo.Name)
+		delete(m.active, keyMsg.result.Repo.Name)
 		m.mu.Unlock()
 
-		// Update counters based on result
-		m.results = append(m.results, msg.result)
+		// Update counters based on a result
+		m.results = append(m.results, keyMsg.result)
 		m.current++
 
 		switch {
-		case msg.result.Repo.Action == "skip":
+		case keyMsg.result.Repo.Action == "skip":
 			m.skipped++
-		case msg.result.Success:
-			switch msg.result.Repo.Action {
+		case keyMsg.result.Success:
+			switch keyMsg.result.Repo.Action {
 			case "clone":
 				m.cloned++
 			case "update":
@@ -162,8 +162,8 @@ func (m *MirrorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.failed++
 		}
 
-		// Add to activity log
-		m.addActivity(msg.result)
+		// Add to the activity log
+		m.addActivity(keyMsg.result)
 
 		// Check if done
 		if m.current >= m.total {
@@ -180,7 +180,7 @@ func (m *MirrorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 
-		m.spinner, cmd = m.spinner.Update(msg)
+		m.spinner, cmd = m.spinner.Update(keyMsg)
 
 		return m, cmd
 	}
@@ -226,8 +226,7 @@ func (m *MirrorModel) View() string {
 		for _, op := range m.active {
 			icon := m.spinner.View()
 
-			b.WriteString(infoStyle.Render(fmt.Sprintf("  [%s] %s - %sing...\n",
-				icon, op.repo.Name, op.repo.Action)))
+			b.WriteString(infoStyle.Render(fmt.Sprintf("  [%s] %s - %sing...\n", icon, op.repo.Name, op.repo.Action)))
 		}
 
 		b.WriteString("\n")
@@ -300,7 +299,7 @@ func (m *MirrorModel) startWorkers() tea.Cmd {
 	return func() tea.Msg {
 		var wg sync.WaitGroup
 
-		// Spawn N workers (based on parallel flag)
+		// Spawn N workers (based on a parallel flag)
 		for i := 0; i < m.plan.Parallel; i++ {
 			wg.Go(func() {
 				for {
