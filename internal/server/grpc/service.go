@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/url"
 
+	v1 "github.com/inovacc/clonr/internal/api/v1"
 	"github.com/inovacc/clonr/internal/store"
-	v1 "github.com/inovacc/clonr/pkg/api/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

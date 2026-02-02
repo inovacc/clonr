@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/inovacc/clonr/internal/application"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -213,7 +214,7 @@ func buildAIContext(root *cobra.Command, opts AIContextOptions) AIContext {
 // buildAIOverview creates the application overview
 func buildAIOverview() AIOverview {
 	return AIOverview{
-		Name:        "clonr",
+		Name:        application.AppName,
 		Description: "A Git repository manager for developers who work with multiple repositories. Provides an interactive interface for cloning, organizing, and working with multiple repositories efficiently.",
 		Principles: []string{
 			"Multi-repo first: Designed for managing many repositories",

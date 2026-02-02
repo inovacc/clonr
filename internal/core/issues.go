@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/google/go-github/v67/github"
-	"golang.org/x/oauth2"
 )
 
 // Issue represents a GitHub issue with essential fields
@@ -92,9 +91,7 @@ func FetchAndSaveIssues(repoURL, repoPath string, opts FetchIssuesOptions) error
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := NewGitHubClient(ctx, token)
 
 	// Fetch all issues (open and closed)
 	issues, err := fetchAllIssues(ctx, client, owner, repo, opts.IncludePRs, logger)
@@ -383,9 +380,7 @@ func ListIssuesFromAPI(token, owner, repo string, opts ListIssuesOptions) (*Issu
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := NewGitHubClient(ctx, token)
 
 	opt := &github.IssueListByRepoOptions{
 		State:       opts.State,
@@ -496,9 +491,7 @@ func CreateIssue(token, owner, repo string, opts CreateIssueOptions) (*CreatedIs
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := NewGitHubClient(ctx, token)
 
 	issueReq := &github.IssueRequest{
 		Title: github.String(opts.Title),
@@ -566,9 +559,7 @@ func CloseIssue(token, owner, repo string, issueNumber int, opts CloseIssueOptio
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := NewGitHubClient(ctx, token)
 
 	// Add comment if provided
 	if opts.Comment != "" {

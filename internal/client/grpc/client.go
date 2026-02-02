@@ -7,14 +7,14 @@ import (
 	"sync"
 	"time"
 
+	v1 "github.com/inovacc/clonr/internal/api/v1"
+	"github.com/inovacc/clonr/internal/mapper"
 	"github.com/inovacc/clonr/internal/model"
-	v1 "github.com/inovacc/clonr/pkg/api/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var (
@@ -203,7 +203,7 @@ func (c *Client) GetAllRepos() ([]model.Repository, error) {
 
 	repos := make([]model.Repository, len(resp.GetRepositories()))
 	for i, pr := range resp.GetRepositories() {
-		repos[i] = protoToModelRepository(pr)
+		repos[i] = mapper.ProtoToModelRepository(pr)
 	}
 
 	return repos, nil
@@ -224,7 +224,7 @@ func (c *Client) GetRepos(workspace string, favoritesOnly bool) ([]model.Reposit
 
 	repos := make([]model.Repository, len(resp.GetRepositories()))
 	for i, pr := range resp.GetRepositories() {
-		repos[i] = protoToModelRepository(pr)
+		repos[i] = mapper.ProtoToModelRepository(pr)
 	}
 
 	return repos, nil
@@ -302,7 +302,7 @@ func (c *Client) GetConfig() (*model.Config, error) {
 		return nil, fmt.Errorf("no configuration returned")
 	}
 
-	return protoToModelConfig(resp.GetConfig()), nil
+	return mapper.ProtoToModelConfig(resp.GetConfig()), nil
 }
 
 // SaveConfig saves the application configuration
@@ -311,7 +311,7 @@ func (c *Client) SaveConfig(cfg *model.Config) error {
 	defer cancel()
 
 	resp, err := c.service.SaveConfig(ctx, &v1.SaveConfigRequest{
-		Config: modelToProtoConfig(cfg),
+		Config: mapper.ModelToProtoConfig(cfg),
 	})
 	if err != nil {
 		return handleGRPCError(err)
@@ -354,50 +354,13 @@ func handleGRPCError(err error) error {
 	}
 }
 
-// protoToModelRepository converts a proto Repository to model.Repository
-func protoToModelRepository(pr *v1.Repository) model.Repository {
-	return model.Repository{
-		ID:          uint(pr.GetId()),
-		UID:         pr.GetUid(),
-		URL:         pr.GetUrl(),
-		Path:        pr.GetPath(),
-		Workspace:   pr.GetWorkspace(),
-		Favorite:    pr.GetFavorite(),
-		ClonedAt:    pr.GetClonedAt().AsTime(),
-		UpdatedAt:   pr.GetUpdatedAt().AsTime(),
-		LastChecked: pr.GetLastChecked().AsTime(),
-	}
-}
-
-// protoToModelConfig converts a proto Config to model.Config
-func protoToModelConfig(pc *v1.Config) *model.Config {
-	return &model.Config{
-		DefaultCloneDir: pc.GetDefaultCloneDir(),
-		Editor:          pc.GetEditor(),
-		Terminal:        pc.GetTerminal(),
-		MonitorInterval: int(pc.GetMonitorInterval()),
-		ServerPort:      int(pc.GetServerPort()),
-	}
-}
-
-// modelToProtoConfig converts a model.Config to proto Config
-func modelToProtoConfig(cfg *model.Config) *v1.Config {
-	return &v1.Config{
-		DefaultCloneDir: cfg.DefaultCloneDir,
-		Editor:          cfg.Editor,
-		Terminal:        cfg.Terminal,
-		MonitorInterval: int32(cfg.MonitorInterval),
-		ServerPort:      int32(cfg.ServerPort),
-	}
-}
-
 // SaveProfile saves or updates a profile via gRPC
 func (c *Client) SaveProfile(profile *model.Profile) error {
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 
 	resp, err := c.service.SaveProfile(ctx, &v1.SaveProfileRequest{
-		Profile: modelToProtoProfile(profile),
+		Profile: mapper.ModelToProtoProfile(profile),
 	})
 	if err != nil {
 		return handleGRPCError(err)
@@ -422,7 +385,7 @@ func (c *Client) GetProfile(name string) (*model.Profile, error) {
 		return nil, handleGRPCError(err)
 	}
 
-	return protoToModelProfile(resp.GetProfile()), nil
+	return mapper.ProtoToModelProfile(resp.GetProfile()), nil
 }
 
 // GetActiveProfile retrieves the currently active profile
@@ -435,7 +398,7 @@ func (c *Client) GetActiveProfile() (*model.Profile, error) {
 		return nil, handleGRPCError(err)
 	}
 
-	return protoToModelProfile(resp.GetProfile()), nil
+	return mapper.ProtoToModelProfile(resp.GetProfile()), nil
 }
 
 // SetActiveProfile sets the active profile by name
@@ -469,7 +432,7 @@ func (c *Client) ListProfiles() ([]model.Profile, error) {
 
 	profiles := make([]model.Profile, len(resp.GetProfiles()))
 	for i, pr := range resp.GetProfiles() {
-		profiles[i] = *protoToModelProfile(pr)
+		profiles[i] = *mapper.ProtoToModelProfile(pr)
 	}
 
 	return profiles, nil
@@ -509,53 +472,13 @@ func (c *Client) ProfileExists(name string) (bool, error) {
 	return resp.GetExists(), nil
 }
 
-// protoToModelProfile converts a proto Profile to model.Profile
-func protoToModelProfile(pr *v1.Profile) *model.Profile {
-	if pr == nil {
-		return nil
-	}
-
-	return &model.Profile{
-		Name:           pr.GetName(),
-		Host:           pr.GetHost(),
-		User:           pr.GetUser(),
-		TokenStorage:   model.TokenStorage(pr.GetTokenStorage()),
-		Scopes:         pr.GetScopes(),
-		Default:        pr.GetActive(), // Map Active to Default from proto
-		EncryptedToken: pr.GetEncryptedToken(),
-		CreatedAt:      pr.GetCreatedAt().AsTime(),
-		LastUsedAt:     pr.GetLastUsedAt().AsTime(),
-		Workspace:      pr.GetWorkspace(),
-	}
-}
-
-// modelToProtoProfile converts a model.Profile to proto Profile
-func modelToProtoProfile(profile *model.Profile) *v1.Profile {
-	if profile == nil {
-		return nil
-	}
-
-	return &v1.Profile{
-		Name:           profile.Name,
-		Host:           profile.Host,
-		User:           profile.User,
-		TokenStorage:   string(profile.TokenStorage),
-		Scopes:         profile.Scopes,
-		Active:         profile.Default, // Map Default to Active for proto
-		EncryptedToken: profile.EncryptedToken,
-		CreatedAt:      timestamppb.New(profile.CreatedAt),
-		LastUsedAt:     timestamppb.New(profile.LastUsedAt),
-		Workspace:      profile.Workspace,
-	}
-}
-
 // SaveWorkspace saves or updates a workspace via gRPC
 func (c *Client) SaveWorkspace(workspace *model.Workspace) error {
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 
 	resp, err := c.service.SaveWorkspace(ctx, &v1.SaveWorkspaceRequest{
-		Workspace: modelToProtoWorkspace(workspace),
+		Workspace: mapper.ModelToProtoWorkspace(workspace),
 	})
 	if err != nil {
 		return handleGRPCError(err)
@@ -580,7 +503,7 @@ func (c *Client) GetWorkspace(name string) (*model.Workspace, error) {
 		return nil, handleGRPCError(err)
 	}
 
-	return protoToModelWorkspace(resp.GetWorkspace()), nil
+	return mapper.ProtoToModelWorkspace(resp.GetWorkspace()), nil
 }
 
 // GetActiveWorkspace retrieves the currently active workspace
@@ -593,7 +516,7 @@ func (c *Client) GetActiveWorkspace() (*model.Workspace, error) {
 		return nil, handleGRPCError(err)
 	}
 
-	return protoToModelWorkspace(resp.GetWorkspace()), nil
+	return mapper.ProtoToModelWorkspace(resp.GetWorkspace()), nil
 }
 
 // SetActiveWorkspace sets the active workspace by name
@@ -627,7 +550,7 @@ func (c *Client) ListWorkspaces() ([]model.Workspace, error) {
 
 	workspaces := make([]model.Workspace, len(resp.GetWorkspaces()))
 	for i, pw := range resp.GetWorkspaces() {
-		workspaces[i] = *protoToModelWorkspace(pw)
+		workspaces[i] = *mapper.ProtoToModelWorkspace(pw)
 	}
 
 	return workspaces, nil
@@ -700,36 +623,4 @@ func (c *Client) UpdateRepoWorkspace(urlStr string, workspace string) error {
 	}
 
 	return nil
-}
-
-// protoToModelWorkspace converts a proto Workspace to model.Workspace
-func protoToModelWorkspace(pw *v1.Workspace) *model.Workspace {
-	if pw == nil {
-		return nil
-	}
-
-	return &model.Workspace{
-		Name:        pw.GetName(),
-		Description: pw.GetDescription(),
-		Path:        pw.GetPath(),
-		Active:      pw.GetActive(),
-		CreatedAt:   pw.GetCreatedAt().AsTime(),
-		UpdatedAt:   pw.GetUpdatedAt().AsTime(),
-	}
-}
-
-// modelToProtoWorkspace converts a model.Workspace to proto Workspace
-func modelToProtoWorkspace(workspace *model.Workspace) *v1.Workspace {
-	if workspace == nil {
-		return nil
-	}
-
-	return &v1.Workspace{
-		Name:        workspace.Name,
-		Description: workspace.Description,
-		Path:        workspace.Path,
-		Active:      workspace.Active,
-		CreatedAt:   timestamppb.New(workspace.CreatedAt),
-		UpdatedAt:   timestamppb.New(workspace.UpdatedAt),
-	}
 }

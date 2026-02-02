@@ -63,8 +63,8 @@ var File_v1_common_proto protoreflect.FileDescriptor
 const file_v1_common_proto_rawDesc = "" +
 	"\n" +
 	"\x0fv1/common.proto\x12\bclonr.v1\"\a\n" +
-	"\x05EmptyB\x89\x01\n" +
-	"\fcom.clonr.v1B\vCommonProtoP\x01Z+github.com/inovacc/clonr/pkg/api/v1;clonrv1\xa2\x02\x03CXX\xaa\x02\bClonr.V1\xca\x02\bClonr\\V1\xe2\x02\x14Clonr\\V1\\GPBMetadata\xea\x02\tClonr::V1b\x06proto3"
+	"\x05EmptyB\x8e\x01\n" +
+	"\fcom.clonr.v1B\vCommonProtoP\x01Z0github.com/inovacc/clonr/internal/api/v1;clonrv1\xa2\x02\x03CXX\xaa\x02\bClonr.V1\xca\x02\bClonr\\V1\xe2\x02\x14Clonr\\V1\\GPBMetadata\xea\x02\tClonr::V1b\x06proto3"
 
 var (
 	file_v1_common_proto_rawDescOnce sync.Once

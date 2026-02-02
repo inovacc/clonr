@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/google/go-github/v67/github"
-	"golang.org/x/oauth2"
 )
 
 // PRStatus represents the status of a pull request
@@ -87,9 +86,7 @@ func GetPRStatus(token, owner, repo string, prNumber int, opts PRStatusOptions) 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := NewGitHubClient(ctx, token)
 
 	// Get PR details
 	pr, _, err := client.PullRequests.Get(ctx, owner, repo, prNumber)
@@ -168,9 +165,7 @@ func listPRs(token, owner, repo string, opts ListPRsOptions) (*PRsData, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := NewGitHubClient(ctx, token)
 
 	listOpts := &github.PullRequestListOptions{
 		State:       opts.State,

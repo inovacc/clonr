@@ -322,10 +322,16 @@ clonr/
 │   ├── ROADMAP.md                    # Project roadmap
 │   └── ...                           # Other documentation
 ├── internal/
+│   ├── application/                  # Application constants and paths
+│   │   └── application.go            # AppName, AppExeName constants, GetApplicationDirectory()
+│   ├── auth/                         # Generic authentication utilities
+│   │   └── resolver.go               # Token resolver framework (builder pattern)
 │   ├── cli/                          # Bubbletea TUI components
 │   │   └── profile_login.go          # OAuth device flow TUI
 │   ├── core/                         # Business logic (uses gRPC client)
 │   │   ├── auth.go                   # Token resolution with profile support
+│   │   ├── context.go                # Context timeout helpers (WithShortTimeout, etc.)
+│   │   ├── gh_client.go              # GitHub OAuth client creation helper
 │   │   ├── profile.go                # Profile management logic
 │   │   ├── oauth.go                  # GitHub OAuth device flow
 │   │   ├── keyring.go                # Secure keyring storage
@@ -334,19 +340,25 @@ clonr/
 │   │   ├── tpm.go                    # TPM 2.0 key sealing (Linux only)
 │   │   ├── tpm_stub.go               # TPM stub for non-Linux platforms
 │   │   └── tpm_keystore.go           # TPM sealed key storage
+│   ├── encoding/                     # Encoding and file utilities
+│   │   ├── json.go                   # Generic LoadJSON[T], SaveJSON[T], ParseJSON[T]
+│   │   └── file.go                   # FileExists, EnsureDir, WriteFileSecure
 │   ├── git/                          # Git client with credential helper
 │   │   └── client.go                 # Centralized git operations (gh CLI pattern)
+│   ├── mapper/                       # Shared type conversions
+│   │   └── grpc.go                   # Proto ↔ Model conversions (shared by server/client)
 │   ├── security/                     # Security scanning (gitleaks)
 │   │   └── leaks.go                  # Secret detection in commits/files
 │   ├── database/                     # Database abstraction (server-side)
 │   ├── model/                        # Data models (Repository, Config, Profile)
-│   ├── grpcserver/                   # gRPC server implementation
-│   │   ├── server.go                 # Server setup
+│   ├── server/grpc/                  # gRPC server implementation
+│   │   ├── server.go                 # Server setup with interceptor chain
 │   │   ├── serverinfo.go             # Server info file & PID checking
 │   │   ├── service.go                # RPC implementations (12 methods)
-│   │   ├── mapper.go                 # Proto ↔ Model conversions
-│   │   └── interceptors.go           # Logging, recovery, timeout
-│   ├── grpcclient/                   # gRPC client wrapper
+│   │   ├── mapper.go                 # Delegates to internal/mapper
+│   │   ├── validation.go             # gRPC validation helpers (RequiredString, etc.)
+│   │   └── interceptors.go           # Logging, recovery, timeout, context check
+│   ├── client/grpc/                  # gRPC client wrapper
 │   │   ├── client.go                 # Client methods (mirrors Store)
 │   │   └── discovery.go              # Server address discovery + PID check
 │   └── monitor/                      # Repository monitoring
@@ -355,11 +367,126 @@ clonr/
 │   ├── repository.proto              # Repository messages + 9 RPCs
 │   ├── config.proto                  # Config messages + 2 RPCs
 │   └── clonr.proto                   # Service definition (12 RPCs)
-├── pkg/api/v1/                       # Generated protobuf code
+├── internal/api/v1/                       # Generated protobuf code
 │   ├── *.pb.go                       # Generated Go code
 │   └── *_grpc.pb.go                  # Generated gRPC code
 └── scripts/proto/                    # Proto generation
     └── generate.go                   # Cross-platform proto gen
+```
+
+### Shared Utility Packages
+
+The codebase uses several shared utility packages to avoid code duplication:
+
+#### `internal/application` - Application Constants
+
+Centralized application name and path constants:
+
+```go
+const (
+    AppName           = "clonr"      // Used for directories, process identification
+    AppExeName        = "clonr"      // Executable name (no extension)
+    AppExeNameWindows = "clonr.exe"  // Windows executable name
+)
+
+// Get application config directory (cross-platform)
+dir, err := application.GetApplicationDirectory()
+```
+
+#### `internal/mapper` - Proto ↔ Model Conversions
+
+Shared conversion functions used by both server and client:
+
+```go
+import "github.com/inovacc/clonr/internal/mapper"
+
+// Convert between proto and model types
+protoRepo := mapper.ModelToProtoRepository(repo)
+modelRepo := mapper.ProtoToModelRepository(protoRepo)
+
+// Available: Repository, Config, Profile, Workspace conversions
+```
+
+#### `internal/core` - Business Logic Helpers
+
+**GitHub Client Helper** (`gh_client.go`):
+```go
+// Create authenticated GitHub client (replaces 16+ duplicate patterns)
+client := core.NewGitHubClient(ctx, token)
+
+// Or with fresh background context
+client := core.NewGitHubClientWithContext(token)
+
+// For direct HTTP requests (e.g., asset downloads)
+httpClient := core.NewOAuth2HTTPClient(ctx, token)
+```
+
+**Context Helpers** (`context.go`):
+```go
+// Predefined timeouts
+ctx, cancel := core.WithShortTimeout()   // 30 seconds
+ctx, cancel := core.WithMediumTimeout()  // 2 minutes
+ctx, cancel := core.WithLongTimeout()    // 5 minutes
+ctx, cancel := core.WithXLongTimeout()   // 10 minutes
+
+// Custom timeout
+ctx, cancel := core.WithTimeout(45 * time.Second)
+```
+
+#### `internal/auth` - Token Resolution Framework
+
+Generic token resolver with builder pattern:
+
+```go
+import "github.com/inovacc/clonr/internal/auth"
+
+result, err := auth.NewResolver("GitHub").
+    WithFlagValue(flagToken).
+    WithEnvs("GITHUB_TOKEN", "GH_TOKEN").
+    WithProvider(customProvider).
+    WithHelpMessage("Get token at: https://github.com/settings/tokens").
+    Resolve()
+
+// result.Token, result.Source, result.Name
+```
+
+#### `internal/encoding` - File and JSON Utilities
+
+Generic file and JSON operations:
+
+```go
+import "github.com/inovacc/clonr/internal/encoding"
+
+// Load/save JSON with generics
+config, err := encoding.LoadJSON[Config](path)  // Returns nil, nil if not exists
+err := encoding.SaveJSON(path, config)
+
+// File utilities
+if encoding.FileExists(path) { ... }
+if encoding.DirExists(path) { ... }
+err := encoding.EnsureDir(path)
+err := encoding.WriteFileSecure(path, data)  // 0600 permissions
+```
+
+#### `internal/server/grpc` - gRPC Validation Helpers
+
+Reusable validation functions for service methods:
+
+```go
+// In service method implementations
+if err := RequiredString(req.GetName(), "name"); err != nil {
+    return nil, err
+}
+if err := RequiredURL(req.GetUrl()); err != nil {
+    return nil, err
+}
+if err := RequiredOneOf(map[string]string{"url": url, "path": path}); err != nil {
+    return nil, err
+}
+
+// Error helpers
+return nil, NotFoundError("repository")
+return nil, InternalErrorf("failed to save: %v", err)
 ```
 
 ### Repository Model

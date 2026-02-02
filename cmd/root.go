@@ -3,11 +3,12 @@ package cmd
 import (
 	"os"
 
+	"github.com/inovacc/clonr/internal/application"
 	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "clonr",
+	Use:   application.AppName,
 	Short: "A Git repository manager",
 	Long: `Clonr is a command-line tool for managing Git repositories efficiently.
 It provides an interactive interface for cloning, organizing, and working with

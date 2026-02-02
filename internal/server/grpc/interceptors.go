@@ -50,6 +50,23 @@ func recoveryInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
+// contextCheckInterceptor checks for context cancellation before processing.
+// This provides fast-fail behavior for already-canceled requests.
+func contextCheckInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		if err := ctx.Err(); err != nil {
+			if err == context.Canceled {
+				return nil, status.Error(codes.Canceled, "request canceled")
+			}
+			if err == context.DeadlineExceeded {
+				return nil, status.Error(codes.DeadlineExceeded, "request deadline exceeded")
+			}
+			return nil, status.Errorf(codes.Internal, "context error: %v", err)
+		}
+		return handler(ctx, req)
+	}
+}
+
 // timeoutInterceptor enforces a maximum timeout for all requests
 func timeoutInterceptor(timeout time.Duration) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {

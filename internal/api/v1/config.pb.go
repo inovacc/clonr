@@ -286,8 +286,8 @@ const file_v1_config_proto_rawDesc = "" +
 	"\x11SaveConfigRequest\x12(\n" +
 	"\x06config\x18\x01 \x01(\v2\x10.clonr.v1.ConfigR\x06config\".\n" +
 	"\x12SaveConfigResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccessB\x89\x01\n" +
-	"\fcom.clonr.v1B\vConfigProtoP\x01Z+github.com/inovacc/clonr/pkg/api/v1;clonrv1\xa2\x02\x03CXX\xaa\x02\bClonr.V1\xca\x02\bClonr\\V1\xe2\x02\x14Clonr\\V1\\GPBMetadata\xea\x02\tClonr::V1b\x06proto3"
+	"\asuccess\x18\x01 \x01(\bR\asuccessB\x8e\x01\n" +
+	"\fcom.clonr.v1B\vConfigProtoP\x01Z0github.com/inovacc/clonr/internal/api/v1;clonrv1\xa2\x02\x03CXX\xaa\x02\bClonr.V1\xca\x02\bClonr\\V1\xe2\x02\x14Clonr\\V1\\GPBMetadata\xea\x02\tClonr::V1b\x06proto3"
 
 var (
 	file_v1_config_proto_rawDescOnce sync.Once

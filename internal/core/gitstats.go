@@ -88,12 +88,7 @@ func FetchAndSaveGitStats(repoURL, repoPath string, opts FetchGitStatsOptions) e
 		logger = slog.Default()
 	}
 
-	logger.Info("gathering git statistics",
-		slog.String("path", repoPath),
-	)
-
-	// Sanitize the URL to remove any credentials
-	repoURL = common.SanitizeGitURL(repoURL)
+	logger.Info("gathering git statistics", slog.String("path", repoPath))
 
 	// Open the repository with git-nerds
 	gnOpts := gitnerds.DefaultOptions()
@@ -107,16 +102,13 @@ func FetchAndSaveGitStats(repoURL, repoPath string, opts FetchGitStatsOptions) e
 
 	repo, err := gitnerds.Open(repoPath, gnOpts)
 	if err != nil {
-		logger.Warn("failed to open repository with git-nerds",
-			slog.String("path", repoPath),
-			slog.String("error", err.Error()),
-		)
+		logger.Warn("failed to open repository with git-nerds", slog.String("path", repoPath), slog.String("error", err.Error()))
 
 		return nil // Don't fail the mirror operation
 	}
 
 	stats := &GitStats{
-		Repository: repoURL,
+		Repository: common.SanitizeGitURL(repoURL),
 		Path:       repoPath,
 		FetchedAt:  time.Now(),
 	}
@@ -124,9 +116,7 @@ func FetchAndSaveGitStats(repoURL, repoPath string, opts FetchGitStatsOptions) e
 	// Get detailed stats
 	detailedStats, err := repo.DetailedStats()
 	if err != nil {
-		logger.Warn("failed to get detailed stats",
-			slog.String("error", err.Error()),
-		)
+		logger.Warn("failed to get detailed stats", slog.String("error", err.Error()))
 	} else {
 		stats.TotalCommits = detailedStats.TotalCommits
 		stats.TotalAuthors = detailedStats.TotalAuthors
@@ -171,9 +161,7 @@ func FetchAndSaveGitStats(repoURL, repoPath string, opts FetchGitStatsOptions) e
 	// Get contributors
 	contributors, err := repo.Contributors()
 	if err != nil {
-		logger.Debug("failed to get contributors",
-			slog.String("error", err.Error()),
-		)
+		logger.Debug("failed to get contributors", slog.String("error", err.Error()))
 	} else {
 		stats.Contributors = make([]ContributorStats, len(contributors))
 		for i, c := range contributors {
@@ -232,20 +220,14 @@ func FetchAndSaveGitStats(repoURL, repoPath string, opts FetchGitStatsOptions) e
 
 	// Save to file
 	if err := saveGitStats(repoPath, stats); err != nil {
-		logger.Warn("failed to save git stats",
-			slog.String("path", repoPath),
-			slog.String("error", err.Error()),
-		)
+		logger.Warn("failed to save git stats", slog.String("path", repoPath), slog.String("error", err.Error()))
 
 		return nil // Don't fail the mirror operation
 	}
 
 	logger.Info("saved git statistics",
-		slog.String("path", repoPath),
-		slog.Int("commits", stats.TotalCommits),
-		slog.Int("authors", stats.TotalAuthors),
-		slog.Int("contributors", len(stats.Contributors)),
-	)
+		slog.String("path", repoPath), slog.Int("commits", stats.TotalCommits),
+		slog.Int("authors", stats.TotalAuthors), slog.Int("contributors", len(stats.Contributors)))
 
 	return nil
 }
@@ -258,7 +240,7 @@ func saveGitStats(repoPath string, stats *GitStats) error {
 		return fmt.Errorf("failed to create .clonr directory: %w", err)
 	}
 
-	// Write stats to JSON file
+	// Write stats to the JSON file
 	statsPath := filepath.Join(clonrDir, "stats.json")
 
 	jsonData, err := json.MarshalIndent(stats, "", "  ")
@@ -310,10 +292,5 @@ func GetGitStatsSummary(repoPath string) (string, error) {
 		return "", err
 	}
 
-	return fmt.Sprintf("%d commits by %d authors | +%d -%d lines",
-		stats.TotalCommits,
-		stats.TotalAuthors,
-		stats.LinesAdded,
-		stats.LinesDeleted,
-	), nil
+	return fmt.Sprintf("%d commits by %d authors | +%d -%d lines", stats.TotalCommits, stats.TotalAuthors, stats.LinesAdded, stats.LinesDeleted), nil
 }

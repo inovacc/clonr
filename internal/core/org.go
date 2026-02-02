@@ -10,7 +10,6 @@ import (
 	"github.com/google/go-github/v67/github"
 	"github.com/inovacc/clonr/internal/application"
 	"github.com/inovacc/clonr/internal/client/grpc"
-	"golang.org/x/oauth2"
 )
 
 // Organization represents a GitHub organization with local mirror status
@@ -36,9 +35,7 @@ func ListOrganizations(token string, opts ListOrganizationsOptions) ([]Organizat
 	defer cancel()
 
 	// Create a GitHub client
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := NewGitHubClient(ctx, token)
 
 	// Get user's organizations
 	ghOrgs, _, err := client.Organizations.List(ctx, "", &github.ListOptions{PerPage: 100})

@@ -17,7 +17,6 @@ import (
 
 	"github.com/google/go-github/v67/github"
 	"github.com/inovacc/clonr/internal/client/grpc"
-	"golang.org/x/oauth2"
 )
 
 // RateLimitConfig contains settings for GitHub API rate limiting
@@ -97,12 +96,8 @@ type GitHubClientWrapper struct {
 
 // NewGitHubClientWrapper creates a rate-limit-aware GitHub client
 func NewGitHubClientWrapper(token string, cfg RateLimitConfig, logger *slog.Logger) *GitHubClientWrapper {
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
-
 	return &GitHubClientWrapper{
-		client:  github.NewClient(tc),
+		client:  NewGitHubClientWithContext(token),
 		rateCfg: cfg,
 		logger:  logger,
 	}

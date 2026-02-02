@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/inovacc/clonr/internal/application"
 	"github.com/kardianos/service"
 	"github.com/spf13/cobra"
 )
@@ -233,23 +234,26 @@ func statusService(s service.Service) error {
 
 // findClonrExecutable locates the clonr executable
 func findClonrExecutable() (string, error) {
+	exeName := application.AppExeName
+	exeNameWin := application.AppExeNameWindows
+
 	// Check common locations
 	locations := []string{
-		"clonr",           // In PATH
-		"clonr.exe",       // In PATH (Windows)
-		"./bin/clonr",     // Relative to current dir
-		"./bin/clonr.exe", // Relative to current dir (Windows)
+		exeName,               // In PATH
+		exeNameWin,            // In PATH (Windows)
+		"./bin/" + exeName,    // Relative to current dir
+		"./bin/" + exeNameWin, // Relative to current dir (Windows)
 	}
 
 	// Also check in the same directory as the current executable
 	if exePath, err := os.Executable(); err == nil {
 		exeDir := filepath.Dir(exePath)
 		locations = append(locations,
-			filepath.Join(exeDir, "clonr"),
-			filepath.Join(exeDir, "clonr.exe"),
+			filepath.Join(exeDir, exeName),
+			filepath.Join(exeDir, exeNameWin),
 		)
 		// If already running clonr, use it directly
-		if filepath.Base(exePath) == "clonr" || filepath.Base(exePath) == "clonr.exe" {
+		if filepath.Base(exePath) == exeName || filepath.Base(exePath) == exeNameWin {
 			absPath, _ := filepath.Abs(exePath)
 			return absPath, nil
 		}
@@ -264,5 +268,5 @@ func findClonrExecutable() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("clonr executable not found in PATH or common locations")
+	return "", fmt.Errorf("%s executable not found in PATH or common locations", application.AppName)
 }

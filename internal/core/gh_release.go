@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/google/go-github/v67/github"
-	"golang.org/x/oauth2"
 )
 
 // Release represents a GitHub release
@@ -105,9 +104,7 @@ func ListReleases(token, owner, repo string, opts ListReleasesOptions) (*Release
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := NewGitHubClient(ctx, token)
 
 	listOpts := &github.ListOptions{PerPage: 100}
 
@@ -164,9 +161,7 @@ func GetRelease(token, owner, repo, tag string) (*Release, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := NewGitHubClient(ctx, token)
 
 	var release *github.RepositoryRelease
 
@@ -199,9 +194,7 @@ func CreateRelease(token, owner, repo string, opts CreateReleaseOptions) (*Relea
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute) // Longer for asset uploads
 	defer cancel()
 
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := NewGitHubClient(ctx, token)
 
 	// Prepare a release request
 	releaseReq := &github.RepositoryRelease{
@@ -315,8 +308,7 @@ func DownloadRelease(token, owner, repo string, opts DownloadReleaseOptions) (*D
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
+	tc := NewOAuth2HTTPClient(ctx, token)
 
 	for _, asset := range release.Assets {
 		// Check if asset matches patterns (or download all if no patterns)

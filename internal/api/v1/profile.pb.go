@@ -790,8 +790,8 @@ const file_v1_profile_proto_rawDesc = "" +
 	"\x14ProfileExistsRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"/\n" +
 	"\x15ProfileExistsResponse\x12\x16\n" +
-	"\x06exists\x18\x01 \x01(\bR\x06existsB\x8a\x01\n" +
-	"\fcom.clonr.v1B\fProfileProtoP\x01Z+github.com/inovacc/clonr/pkg/api/v1;clonrv1\xa2\x02\x03CXX\xaa\x02\bClonr.V1\xca\x02\bClonr\\V1\xe2\x02\x14Clonr\\V1\\GPBMetadata\xea\x02\tClonr::V1b\x06proto3"
+	"\x06exists\x18\x01 \x01(\bR\x06existsB\x8f\x01\n" +
+	"\fcom.clonr.v1B\fProfileProtoP\x01Z0github.com/inovacc/clonr/internal/api/v1;clonrv1\xa2\x02\x03CXX\xaa\x02\bClonr.V1\xca\x02\bClonr\\V1\xe2\x02\x14Clonr\\V1\\GPBMetadata\xea\x02\tClonr::V1b\x06proto3"
 
 var (
 	file_v1_profile_proto_rawDescOnce sync.Once

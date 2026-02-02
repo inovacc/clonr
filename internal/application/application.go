@@ -8,7 +8,16 @@ import (
 	"sync"
 )
 
-const AppName = "clonr"
+const (
+	// AppName is the application name used for directories and identification
+	AppName = "clonr"
+
+	// AppExeName is the executable name (without extension)
+	AppExeName = "clonr"
+
+	// AppExeNameWindows is the executable name on Windows
+	AppExeNameWindows = "clonr.exe"
+)
 
 var (
 	once   sync.Once

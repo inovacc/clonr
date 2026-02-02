@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
+	v1 "github.com/inovacc/clonr/internal/api/v1"
 	"github.com/inovacc/clonr/internal/model"
-	v1 "github.com/inovacc/clonr/pkg/api/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

@@ -6,9 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/google/go-github/v67/github"
 	"github.com/inovacc/clonr/internal/core"
-	"golang.org/x/oauth2"
 )
 
 // ZenHubIssueData combines GitHub issue data with ZenHub-specific fields
@@ -264,9 +262,7 @@ func GetGitHubRepoID(token, owner, repo string, logger *slog.Logger) (int64, err
 	defer cancel()
 
 	// Use go-GitHub client
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := core.NewGitHubClient(ctx, token)
 
 	repository, _, err := client.Repositories.Get(ctx, owner, repo)
 	if err != nil {
@@ -583,9 +579,7 @@ func GetEpicWithChildren(
 	}
 
 	// 4. Fetch GitHub issue data for epic
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: ghToken})
-	tc := oauth2.NewClient(ctx, ts)
-	ghClient := github.NewClient(tc)
+	ghClient := core.NewGitHubClient(ctx, ghToken)
 
 	ghEpic, _, err := ghClient.Issues.Get(ctx, owner, repo, epicNumber)
 	if err != nil {

@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
+	v1 "github.com/inovacc/clonr/internal/api/v1"
+	"github.com/inovacc/clonr/internal/mapper"
 	"github.com/inovacc/clonr/internal/model"
-	v1 "github.com/inovacc/clonr/pkg/api/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -132,7 +133,7 @@ func TestProtoToModelRepository(t *testing.T) {
 		LastChecked: timestamppb.New(now.Add(2 * time.Hour)),
 	}
 
-	repo := protoToModelRepository(proto)
+	repo := mapper.ProtoToModelRepository(proto)
 
 	if repo.ID != 123 {
 		t.Errorf("ID = %d, want %d", repo.ID, 123)
@@ -176,7 +177,7 @@ func TestProtoToModelConfig(t *testing.T) {
 		ServerPort:      8080,
 	}
 
-	cfg := protoToModelConfig(proto)
+	cfg := mapper.ProtoToModelConfig(proto)
 
 	if cfg.DefaultCloneDir != "/custom/dir" {
 		t.Errorf("DefaultCloneDir = %q, want %q", cfg.DefaultCloneDir, "/custom/dir")
@@ -208,7 +209,7 @@ func TestModelToProtoConfig(t *testing.T) {
 		ServerPort:      50051,
 	}
 
-	proto := modelToProtoConfig(cfg)
+	proto := mapper.ModelToProtoConfig(cfg)
 
 	if proto.GetDefaultCloneDir() != "/test/path" {
 		t.Errorf("DefaultCloneDir = %q, want %q", proto.GetDefaultCloneDir(), "/test/path")
@@ -259,7 +260,7 @@ func TestProtoToModelRepository_NilTimestamps(t *testing.T) {
 		LastChecked: nil,
 	}
 
-	repo := protoToModelRepository(proto)
+	repo := mapper.ProtoToModelRepository(proto)
 
 	if repo.ID != 1 {
 		t.Errorf("ID = %d, want 1", repo.ID)
@@ -284,26 +285,10 @@ func TestProtoToModelRepository_NilTimestamps(t *testing.T) {
 
 func TestProtoToModelConfig_NilConfig(t *testing.T) {
 	// Test with nil proto config
-	cfg := protoToModelConfig(nil)
+	cfg := mapper.ProtoToModelConfig(nil)
 
-	// Should return a config with zero values
-	if cfg.DefaultCloneDir != "" {
-		t.Errorf("DefaultCloneDir = %q, want empty", cfg.DefaultCloneDir)
-	}
-
-	if cfg.Editor != "" {
-		t.Errorf("Editor = %q, want empty", cfg.Editor)
-	}
-
-	if cfg.Terminal != "" {
-		t.Errorf("Terminal = %q, want empty", cfg.Terminal)
-	}
-
-	if cfg.MonitorInterval != 0 {
-		t.Errorf("MonitorInterval = %d, want 0", cfg.MonitorInterval)
-	}
-
-	if cfg.ServerPort != 0 {
-		t.Errorf("ServerPort = %d, want 0", cfg.ServerPort)
+	// Should return nil for nil input
+	if cfg != nil {
+		t.Errorf("ProtoToModelConfig(nil) = %v, want nil", cfg)
 	}
 }

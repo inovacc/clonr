@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/google/go-github/v67/github"
-	"golang.org/x/oauth2"
 )
 
 // WorkflowRun represents a GitHub Actions workflow run
@@ -97,9 +96,7 @@ func ListWorkflowRuns(token, owner, repo string, opts ListWorkflowRunsOptions) (
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := NewGitHubClient(ctx, token)
 
 	listOpts := &github.ListWorkflowRunsOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
@@ -190,9 +187,7 @@ func GetWorkflowRunStatus(token, owner, repo string, runID int64, opts GetWorkfl
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := NewGitHubClient(ctx, token)
 
 	// Get the workflow run
 	run, _, err := client.Actions.GetWorkflowRunByID(ctx, owner, repo, runID)

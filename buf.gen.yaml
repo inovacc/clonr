@@ -3,13 +3,13 @@ managed:
   enabled: true
   override:
     - file_option: go_package_prefix
-      value: github.com/inovacc/clonr/pkg/api
+      value: github.com/inovacc/clonr/internal/api
 plugins:
   - remote: buf.build/protocolbuffers/go
-    out: pkg/api
+    out: internal/api
     opt:
       - paths=source_relative
   - remote: buf.build/grpc/go
-    out: pkg/api
+    out: internal/api
     opt:
       - paths=source_relative

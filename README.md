@@ -616,7 +616,7 @@ clonr/
 │   ├── repository.proto              # Repository messages
 │   ├── config.proto                  # Config messages
 │   └── clonr.proto                   # Service definition
-├── pkg/api/v1/                       # Generated protobuf code
+├── internal/api/v1/                       # Generated protobuf code
 ├── scripts/proto/                    # Proto generation scripts
 └── build scripts (Makefile, build.bat, build.ps1)
 ```

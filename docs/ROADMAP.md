@@ -585,4 +585,46 @@ internal/core/
 | v0.5.0  | 🚧 WIP | Team features, PM integrations (Jira, ZenHub) |
 | v0.6.0  | Planned | Sync & backup capabilities |
 | v0.7.0  | 🚧 WIP | Cross-platform TPM, sealbox integration (done), Windows support (pending) |
+| v0.7.1  | ✅ Done | Code refactoring: shared packages, reduced duplication |
 | v1.0.0  | Planned | Production ready with plugins and enterprise features |
+
+---
+
+## Code Quality Improvements
+
+### v0.7.1 – Code Refactoring ✅ (Completed)
+
+Consolidated duplicate code patterns and created shared utility packages:
+
+#### New Shared Packages
+
+| Package | Purpose | Lines Saved |
+|---------|---------|-------------|
+| `internal/mapper` | Proto ↔ Model conversions shared by server/client | ~150 lines |
+| `internal/auth` | Generic token resolver framework | Reduces future duplication |
+| `internal/encoding` | JSON/file utilities with generics | ~50+ lines |
+
+#### New Helper Files
+
+| File | Purpose |
+|------|---------|
+| `internal/core/gh_client.go` | GitHub OAuth client creation (consolidated 16+ patterns) |
+| `internal/core/context.go` | Context timeout helpers with predefined durations |
+| `internal/server/grpc/validation.go` | gRPC validation helpers (RequiredString, etc.) |
+
+#### Improvements
+
+- **Mapper Package**: Centralized proto-model conversions eliminate duplication between server and client
+- **GitHub Client Helper**: `NewGitHubClient(ctx, token)` replaces scattered OAuth2 boilerplate
+- **Context Check Interceptor**: Fast-fail for already-canceled gRPC requests
+- **AppName Constants**: Standardized `application.AppName`, `AppExeName`, `AppExeNameWindows`
+- **Validation Helpers**: Reusable gRPC validation with consistent error messages
+- **Token Resolver**: Builder pattern for flexible multi-source token resolution
+
+#### Files Updated
+
+- `cmd/root.go`, `cmd/service.go`, `cmd/aicontext.go` - Use `application.AppName` constant
+- `internal/core/*.go` - Use `NewGitHubClient` helper, removed oauth2 imports
+- `internal/client/grpc/client.go` - Use shared mapper package
+- `internal/server/grpc/server.go` - Added context check interceptor
+- `internal/zenhub/issues.go` - Use `core.NewGitHubClient`

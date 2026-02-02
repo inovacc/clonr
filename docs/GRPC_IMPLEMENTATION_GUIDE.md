@@ -92,7 +92,7 @@ syntax = "proto3";
 
 package wimguard.v1;
 
-option go_package = "github.com/dyammarcano/wimguard/pkg/api/v1;apiv1";
+option go_package = "github.com/dyammarcano/wimguard/internal/api/v1;apiv1";
 
 // BackupService handles backup operations
 service BackupService {
@@ -181,8 +181,8 @@ make proto
 ```
 
 **Generated Files:**
-- `pkg/api/v1/backup.pb.go` - Message types
-- `pkg/api/v1/backup_grpc.pb.go` - Service interfaces
+- `internal/api/v1/backup.pb.go` - Message types
+- `internal/api/v1/backup_grpc.pb.go` - Service interfaces
 
 ---
 
@@ -329,7 +329,7 @@ import (
     "google.golang.org/grpc"
 
     "github.com/dyammarcano/wimguard/internal/database"
-    pb "github.com/dyammarcano/wimguard/pkg/api/v1"
+    pb "github.com/dyammarcano/wimguard/internal/api/v1"
 )
 
 type Server struct {
@@ -380,7 +380,7 @@ import (
     "google.golang.org/grpc/status"
 
     "github.com/dyammarcano/wimguard/internal/backup"
-    pb "github.com/dyammarcano/wimguard/pkg/api/v1"
+    pb "github.com/dyammarcano/wimguard/internal/api/v1"
 )
 
 // CreateBackup implements streaming backup with progress updates
@@ -544,7 +544,7 @@ import (
     "google.golang.org/grpc/credentials/insecure"
     healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
-    pb "github.com/dyammarcano/wimguard/pkg/api/v1"
+    pb "github.com/dyammarcano/wimguard/internal/api/v1"
 )
 
 // Client wraps the gRPC connection and service clients
@@ -632,7 +632,7 @@ import (
 
     "github.com/dyammarcano/wimguard/internal/config"
     "github.com/dyammarcano/wimguard/internal/grpcclient"
-    pb "github.com/dyammarcano/wimguard/pkg/api/v1"
+    pb "github.com/dyammarcano/wimguard/internal/api/v1"
 )
 
 var backupCmd = &cobra.Command{

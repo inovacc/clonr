@@ -3,8 +3,8 @@ package grpc
 import (
 	"time"
 
+	v1 "github.com/inovacc/clonr/internal/api/v1"
 	"github.com/inovacc/clonr/internal/store"
-	v1 "github.com/inovacc/clonr/pkg/api/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -25,13 +25,15 @@ func NewServer(db store.Store, idleTimeout time.Duration) *ServerWithHealth {
 	idleTracker := NewIdleTracker(idleTimeout)
 
 	// Build interceptor chain
+	// Order: context check -> recovery -> logging -> timeout
 	interceptors := []grpc.UnaryServerInterceptor{
+		contextCheckInterceptor(), // Fast-fail for already-canceled requests
 		recoveryInterceptor(),
 		loggingInterceptor(),
 		timeoutInterceptor(30 * time.Second),
 	}
 
-	// Add activity interceptor if idle timeout is enabled
+	// Add an activity interceptor if idle timeout is enabled
 	if idleTracker.IsEnabled() {
 		interceptors = append([]grpc.UnaryServerInterceptor{activityInterceptor(idleTracker)}, interceptors...)
 	}

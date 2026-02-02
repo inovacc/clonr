@@ -950,8 +950,8 @@ const file_v1_workspace_proto_rawDesc = "" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\x1c\n" +
 	"\tworkspace\x18\x02 \x01(\tR\tworkspace\"7\n" +
 	"\x1bUpdateRepoWorkspaceResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccessB\x8c\x01\n" +
-	"\fcom.clonr.v1B\x0eWorkspaceProtoP\x01Z+github.com/inovacc/clonr/pkg/api/v1;clonrv1\xa2\x02\x03CXX\xaa\x02\bClonr.V1\xca\x02\bClonr\\V1\xe2\x02\x14Clonr\\V1\\GPBMetadata\xea\x02\tClonr::V1b\x06proto3"
+	"\asuccess\x18\x01 \x01(\bR\asuccessB\x91\x01\n" +
+	"\fcom.clonr.v1B\x0eWorkspaceProtoP\x01Z0github.com/inovacc/clonr/internal/api/v1;clonrv1\xa2\x02\x03CXX\xaa\x02\bClonr.V1\xca\x02\bClonr\\V1\xe2\x02\x14Clonr\\V1\\GPBMetadata\xea\x02\tClonr::V1b\x06proto3"
 
 var (
 	file_v1_workspace_proto_rawDescOnce sync.Once

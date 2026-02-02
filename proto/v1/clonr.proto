@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package clonr.v1;
 
-option go_package = "github.com/inovacc/clonr/pkg/api/v1";
+option go_package = "github.com/inovacc/clonr/internal/api/v1";
 
 import "v1/common.proto";
 import "v1/repository.proto";

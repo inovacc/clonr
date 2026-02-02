@@ -55,9 +55,9 @@ const file_v1_clonr_proto_rawDesc = "" +
 	"\x0fDeleteWorkspace\x12 .clonr.v1.DeleteWorkspaceRequest\x1a!.clonr.v1.DeleteWorkspaceResponse\x12V\n" +
 	"\x0fWorkspaceExists\x12 .clonr.v1.WorkspaceExistsRequest\x1a!.clonr.v1.WorkspaceExistsResponse\x12b\n" +
 	"\x13GetReposByWorkspace\x12$.clonr.v1.GetReposByWorkspaceRequest\x1a%.clonr.v1.GetReposByWorkspaceResponse\x12b\n" +
-	"\x13UpdateRepoWorkspace\x12$.clonr.v1.UpdateRepoWorkspaceRequest\x1a%.clonr.v1.UpdateRepoWorkspaceResponseB\x88\x01\n" +
+	"\x13UpdateRepoWorkspace\x12$.clonr.v1.UpdateRepoWorkspaceRequest\x1a%.clonr.v1.UpdateRepoWorkspaceResponseB\x8d\x01\n" +
 	"\fcom.clonr.v1B\n" +
-	"ClonrProtoP\x01Z+github.com/inovacc/clonr/pkg/api/v1;clonrv1\xa2\x02\x03CXX\xaa\x02\bClonr.V1\xca\x02\bClonr\\V1\xe2\x02\x14Clonr\\V1\\GPBMetadata\xea\x02\tClonr::V1b\x06proto3"
+	"ClonrProtoP\x01Z0github.com/inovacc/clonr/internal/api/v1;clonrv1\xa2\x02\x03CXX\xaa\x02\bClonr.V1\xca\x02\bClonr\\V1\xe2\x02\x14Clonr\\V1\\GPBMetadata\xea\x02\tClonr::V1b\x06proto3"
 
 var file_v1_clonr_proto_goTypes = []any{
 	(*Empty)(nil),                         // 0: clonr.v1.Empty
