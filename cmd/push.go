@@ -158,7 +158,9 @@ func runPush(_ *cobra.Command, args []string) error {
 		_, _ = fmt.Fprintln(os.Stdout, dimStyle.Render("───────────────────────"))
 
 		m := newScanModel()
-		p := tea.NewProgram(m)
+		// Use WithInput(nil) to prevent Bubbletea from taking over stdin,
+		// which would interfere with git push credential helper afterwards
+		p := tea.NewProgram(m, tea.WithInput(nil))
 
 		finalModel, err := p.Run()
 		if err != nil {
@@ -280,7 +282,7 @@ func enqueueForActionsMonitoring(ctx context.Context, remote string) error {
 		return err
 	}
 
-	_, _ = fmt.Fprintf(os.Stdout, dimStyle.Render("  📊 Enqueued for GitHub Actions monitoring\n"))
+	_, _ = fmt.Fprintln(os.Stdout, dimStyle.Render("  📊 Enqueued for GitHub Actions monitoring"))
 	return nil
 }
 

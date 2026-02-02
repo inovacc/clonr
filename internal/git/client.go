@@ -157,6 +157,7 @@ func (c *Client) Pull(ctx context.Context, remote, branch string) error {
 	}
 
 	cmd := c.AuthenticatedCommand(ctx, AllMatchingCredentialsPattern, args...)
+	cmd.Stdin = c.Stdin
 	cmd.Stdout = c.Stdout
 	cmd.Stderr = c.Stderr
 
@@ -191,6 +192,7 @@ func (c *Client) Push(ctx context.Context, remote, branch string, opts PushOptio
 	}
 
 	cmd := c.AuthenticatedCommand(ctx, AllMatchingCredentialsPattern, args...)
+	cmd.Stdin = c.Stdin
 	cmd.Stdout = c.Stdout
 	cmd.Stderr = c.Stderr
 
