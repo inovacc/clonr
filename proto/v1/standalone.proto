@@ -1,0 +1,172 @@
+syntax = "proto3";
+
+package clonr.v1;
+
+option go_package = "github.com/inovacc/clonr/internal/api/v1";
+
+import "v1/common.proto";
+import "v1/profile.proto";
+import "v1/workspace.proto";
+import "v1/config.proto";
+
+// StandaloneService provides instance synchronization capabilities.
+// This service is exposed on a separate port (default 50052) when
+// standalone mode is enabled.
+service StandaloneService {
+  // Authentication
+  rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+
+  // Status
+  rpc Ping(Empty) returns (PingResponse);
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
+
+  // Sync operations - streaming for large datasets
+  rpc SyncProfiles(SyncRequest) returns (stream EncryptedData);
+  rpc SyncWorkspaces(SyncRequest) returns (stream EncryptedData);
+  rpc SyncRepos(SyncRequest) returns (stream EncryptedData);
+  rpc SyncConfig(SyncRequest) returns (EncryptedData);
+
+  // Full sync - all data in one stream
+  rpc FullSync(SyncRequest) returns (stream SyncChunk);
+}
+
+// AuthenticateRequest is sent by the destination to authenticate with the source.
+message AuthenticateRequest {
+  string api_key = 1;        // Base58-encoded API key from standalone key
+  string client_id = 2;      // Unique ID of the destination instance
+  string client_name = 3;    // Human-readable name of the destination
+}
+
+// AuthenticateResponse contains the session token for subsequent requests.
+message AuthenticateResponse {
+  bool success = 1;
+  string session_token = 2;  // JWT or similar session token
+  int64 expires_at = 3;      // Unix timestamp when token expires
+  string error = 4;          // Error message if success is false
+}
+
+// RefreshTokenRequest is used to refresh an expiring session.
+message RefreshTokenRequest {
+  string refresh_token = 1;  // The refresh token from standalone key
+  string session_token = 2;  // Current session token
+}
+
+// RefreshTokenResponse contains the new session token.
+message RefreshTokenResponse {
+  bool success = 1;
+  string session_token = 2;
+  int64 expires_at = 3;
+  string error = 4;
+}
+
+// PingResponse provides basic connectivity info.
+message PingResponse {
+  string instance_id = 1;
+  int64 server_time = 2;       // Unix timestamp
+  string version = 3;          // Server version
+  repeated string capabilities = 4;  // Supported capabilities
+}
+
+// GetStatusRequest retrieves sync status.
+message GetStatusRequest {
+  string session_token = 1;
+}
+
+// GetStatusResponse provides current sync status.
+message GetStatusResponse {
+  string instance_id = 1;
+  bool standalone_enabled = 2;
+  int64 last_sync = 3;         // Unix timestamp of last sync
+  SyncStats stats = 4;
+  repeated ConnectedClient clients = 5;
+}
+
+// SyncStats tracks sync statistics.
+message SyncStats {
+  int32 profiles = 1;
+  int32 workspaces = 2;
+  int32 repos = 3;
+  bool config = 4;
+}
+
+// ConnectedClient represents a connected destination instance.
+message ConnectedClient {
+  string id = 1;
+  string name = 2;
+  string ip_address = 3;
+  int64 connected_at = 4;
+  int64 last_seen = 5;
+  int32 sync_count = 6;
+}
+
+// SyncRequest is the base request for sync operations.
+message SyncRequest {
+  string session_token = 1;
+  int64 since_timestamp = 2;    // For incremental sync (0 = full sync)
+  repeated string item_types = 3;  // Filter: ["profiles", "workspaces", "repos", "config"]
+}
+
+// EncryptedData represents a single encrypted item.
+message EncryptedData {
+  string id = 1;              // Item identifier
+  string type = 2;            // "profile", "workspace", "repo", "config"
+  bytes encrypted_data = 3;   // AES-256-GCM encrypted JSON
+  bytes nonce = 4;            // GCM nonce
+  int64 updated_at = 5;       // Unix timestamp of last update
+}
+
+// SyncChunk is used for streaming full sync data.
+message SyncChunk {
+  string type = 1;            // "profile", "workspace", "repo", "config"
+  bytes encrypted_data = 2;
+  bytes nonce = 3;
+  int32 sequence = 4;         // Chunk sequence number
+  int32 total = 5;            // Total chunks expected
+  string id = 6;              // Item identifier
+}
+
+// StandaloneKey represents the key shared between instances.
+// This is not transmitted over gRPC but used for initial setup.
+message StandaloneKey {
+  int32 version = 1;
+  string instance_id = 2;
+  string host = 3;
+  int32 port = 4;
+  string api_key = 5;              // Base58-encoded
+  string refresh_token = 6;        // Base58-encoded
+  string encryption_key_hint = 7;  // For verification
+  int64 expires_at = 8;            // Unix timestamp
+  int64 created_at = 9;            // Unix timestamp
+  repeated string capabilities = 10;
+}
+
+// StandaloneConfig represents the source instance configuration.
+message StandaloneConfig {
+  bool enabled = 1;
+  string instance_id = 2;
+  int32 port = 3;
+  bytes api_key_hash = 4;
+  bytes refresh_token = 5;
+  bytes salt = 6;
+  int64 created_at = 7;
+  int64 expires_at = 8;
+  repeated string capabilities = 9;
+}
+
+// StandaloneConnection represents a connection at the destination.
+message StandaloneConnection {
+  string name = 1;
+  string instance_id = 2;
+  string host = 3;
+  int32 port = 4;
+  bytes api_key_encrypted = 5;
+  bytes refresh_token_encrypted = 6;
+  bytes local_password_hash = 7;
+  bytes local_salt = 8;
+  int64 last_sync = 9;
+  string sync_status = 10;
+  SyncStats synced_items = 11;
+  int64 created_at = 12;
+  int64 updated_at = 13;
+}

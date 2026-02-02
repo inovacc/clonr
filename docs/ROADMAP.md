@@ -417,17 +417,425 @@ CLI: `clonr nerds [repo-name]`
 - Multi-source authentication (flags, env vars, config files)
 - JSON output support for all commands
 
-### v0.6.0 – Sync & Backup
+### v0.6.0 – Instance Synchronization & Backup
 
-#### Sync Command
-- [ ] `clonr sync` - Two-way sync with remote
+This version introduces **standalone mode** for secure synchronization between clonr instances across machines.
+
+#### Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        CLONR INSTANCE SYNC FLOW                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  SOURCE INSTANCE                         DESTINATION INSTANCE               │
+│  ─────────────────                       ─────────────────────              │
+│                                                                             │
+│  ┌─────────────────┐                     ┌─────────────────────┐            │
+│  │ clonr standalone│                     │ clonr standalone    │            │
+│  │ init            │──── Standalone ────▶│ connect <key>       │            │
+│  └────────┬────────┘     Key (JSON)      └──────────┬──────────┘            │
+│           │                                         │                       │
+│           ▼                                         ▼                       │
+│  ┌─────────────────┐                     ┌─────────────────────┐            │
+│  │ Generates:      │                     │ Prompts for:        │            │
+│  │ • API Key       │                     │ • Decryption Key    │            │
+│  │ • Refresh Token │                     │ (local password)    │            │
+│  │ • Host/IP Info  │                     └──────────┬──────────┘            │
+│  └────────┬────────┘                                │                       │
+│           │                                         │                       │
+│           ▼                                         ▼                       │
+│  ┌─────────────────┐                     ┌─────────────────────┐            │
+│  │ Exposes gRPC    │◀═══ Encrypted ═════▶│ Syncs data:         │            │
+│  │ Sync Endpoint   │     Channel         │ • Profiles          │            │
+│  │ (port 50052)    │                     │ • Workspaces        │            │
+│  └─────────────────┘                     │ • Repos (metadata)  │            │
+│                                          │ • Config            │            │
+│                                          └─────────────────────┘            │
+│                                                                             │
+│  Data encrypted with standalone key, decrypted locally with user password  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Standalone Mode Commands
+
+##### Source Instance (Server)
+
+```bash
+# Initialize standalone mode - generates sync key
+clonr standalone init
+# Output: JSON with { ip, port, api_key, refresh_token, host?, expires_at }
+
+# Show current standalone status
+clonr standalone status
+
+# Regenerate API key (invalidates old connections)
+clonr standalone rotate
+
+# List connected clients
+clonr standalone clients
+
+# Revoke a specific client
+clonr standalone revoke <client_id>
+
+# Disable standalone mode
+clonr standalone disable
+```
+
+##### Destination Instance (Client)
+
+```bash
+# Connect to a standalone instance
+clonr standalone connect <standalone_key_json>
+# Prompts for: decryption password (stored locally, never transmitted)
+
+# Or connect with key file
+clonr standalone connect --file standalone-key.json
+
+# List standalone connections
+clonr standalone list
+
+# Check connection status
+clonr standalone status <connection_name>
+
+# Sync data from standalone instance
+clonr standalone sync <connection_name>
+# Options: --profiles, --workspaces, --repos, --config, --all
+
+# Disconnect from standalone instance
+clonr standalone disconnect <connection_name>
+```
+
+##### Standalone Profiles Management
+
+```bash
+# List profiles from standalone instances
+clonr profile standalone list
+clonr profile standalone list --connection <name>
+
+# Show standalone profile details
+clonr profile standalone status <profile_name>
+
+# Import a standalone profile locally (decrypts with local password)
+clonr profile standalone import <profile_name>
+
+# Delete synced standalone profile
+clonr profile standalone delete <profile_name>
+
+# Update decryption password for standalone data
+clonr profile standalone update-password
+```
+
+#### Data Structures
+
+##### Standalone Key (Generated by Source)
+
+```json
+{
+  "version": 1,
+  "instance_id": "uuid-of-source-instance",
+  "host": "192.168.1.100",
+  "port": 50052,
+  "api_key": "base58-encoded-api-key",
+  "refresh_token": "base58-encoded-refresh-token",
+  "encryption_key_hint": "first-4-chars-of-key-hash",
+  "expires_at": "2024-12-31T23:59:59Z",
+  "created_at": "2024-01-01T00:00:00Z",
+  "capabilities": ["profiles", "workspaces", "repos", "config"]
+}
+```
+
+##### Standalone Connection (Stored at Destination)
+
+```json
+{
+  "name": "home-server",
+  "instance_id": "uuid-of-source-instance",
+  "host": "192.168.1.100",
+  "port": 50052,
+  "api_key_encrypted": "locally-encrypted-api-key",
+  "refresh_token_encrypted": "locally-encrypted-refresh-token",
+  "local_password_hash": "argon2-hash-for-verification",
+  "last_sync": "2024-06-15T10:30:00Z",
+  "sync_status": "connected",
+  "synced_items": {
+    "profiles": 3,
+    "workspaces": 2,
+    "repos": 45,
+    "config": true
+  }
+}
+```
+
+##### Synced Profile (Encrypted at Rest)
+
+```json
+{
+  "source_instance": "uuid-of-source-instance",
+  "source_profile_name": "github-work",
+  "encrypted_data": "base64-encrypted-profile-blob",
+  "encryption_method": "AES-256-GCM",
+  "synced_at": "2024-06-15T10:30:00Z",
+  "decrypted": false
+}
+```
+
+#### Security Architecture
+
+##### Encryption Layers
+
+1. **Transport Layer**: gRPC with TLS (mTLS optional)
+2. **API Authentication**: API key + refresh token (JWT-like rotation)
+3. **Data Encryption**: AES-256-GCM with key derived from standalone key
+4. **Local Decryption**: User password + Argon2 key derivation
+
+##### Key Derivation
+
+```
+Source Instance:
+  standalone_key = random(32 bytes)
+  api_key = HKDF(standalone_key, "api-auth", instance_id)
+  encryption_key = HKDF(standalone_key, "data-encryption", instance_id)
+
+Destination Instance:
+  local_key = Argon2id(user_password, salt, params)
+  storage_key = HKDF(local_key, "local-storage", connection_id)
+
+Data Flow:
+  source_data → encrypt(encryption_key) → transmit → store_encrypted
+  retrieve → decrypt(local_key + encryption_key) → use
+```
+
+##### Security Properties
+
+- **Zero-knowledge source**: Source doesn't know destination's local password
+- **Forward secrecy**: Key rotation doesn't expose historical data
+- **Offline capable**: Synced data usable without network (if decrypted)
+- **Revocable access**: Source can revoke any client instantly
+- **Audit trail**: All sync operations logged on both sides
+
+#### Implementation Files
+
+```
+internal/
+├── standalone/
+│   ├── server.go          # Standalone mode server (source instance)
+│   ├── client.go          # Standalone mode client (destination)
+│   ├── key.go             # Key generation and management
+│   ├── crypto.go          # Encryption/decryption utilities
+│   ├── sync.go            # Data synchronization logic
+│   ├── connection.go      # Connection management
+│   └── types.go           # Data structures
+├── server/grpc/
+│   ├── standalone_service.go  # gRPC service for sync
+│   └── standalone.proto       # Protocol definitions
+cmd/
+├── standalone.go          # Parent command
+├── standalone_init.go     # Initialize standalone mode
+├── standalone_connect.go  # Connect to standalone instance
+├── standalone_sync.go     # Sync data
+├── standalone_list.go     # List connections
+└── profile_standalone.go  # Standalone profile management
+api/proto/v1/
+└── standalone.proto       # Sync protocol definitions
+```
+
+#### Protocol Buffer Definitions
+
+```protobuf
+// api/proto/v1/standalone.proto
+
+service StandaloneService {
+  // Authentication
+  rpc Authenticate(AuthRequest) returns (AuthResponse);
+  rpc RefreshToken(RefreshRequest) returns (RefreshResponse);
+
+  // Sync operations
+  rpc SyncProfiles(SyncRequest) returns (stream EncryptedProfile);
+  rpc SyncWorkspaces(SyncRequest) returns (stream EncryptedWorkspace);
+  rpc SyncRepos(SyncRequest) returns (stream EncryptedRepo);
+  rpc SyncConfig(SyncRequest) returns (EncryptedConfig);
+
+  // Full sync
+  rpc FullSync(SyncRequest) returns (stream SyncChunk);
+
+  // Status
+  rpc GetSyncStatus(StatusRequest) returns (SyncStatus);
+  rpc Ping(Empty) returns (PingResponse);
+}
+
+message AuthRequest {
+  string api_key = 1;
+  string client_id = 2;
+  string client_name = 3;
+}
+
+message SyncRequest {
+  string auth_token = 1;
+  int64 since_timestamp = 2;  // Incremental sync
+  repeated string item_types = 3;  // ["profiles", "workspaces", ...]
+}
+
+message EncryptedProfile {
+  string id = 1;
+  bytes encrypted_data = 2;
+  bytes nonce = 3;
+  int64 updated_at = 4;
+}
+
+message SyncChunk {
+  string type = 1;  // "profile", "workspace", "repo", "config"
+  bytes encrypted_data = 2;
+  bytes nonce = 3;
+  int32 sequence = 4;
+  int32 total = 5;
+}
+```
+
+#### Phase 1: Core Infrastructure (v0.6.0-alpha) ✅ Completed
+
+- [x] `internal/standalone/types.go` - Data structures for keys, connections, sync
+- [x] `internal/standalone/key.go` - Key generation and serialization
+- [x] `internal/standalone/crypto.go` - AES-256-GCM encryption with PBKDF2/Argon2
+- [x] `internal/standalone/archive.go` - Encrypted repository archiving (zip + AES-256-GCM)
+- [x] `internal/standalone/sync.go` - Sync logic with encrypted storage states
+- [x] `internal/standalone/handshake.go` - Client-server handshake with per-client encryption
+- [x] `proto/v1/standalone.proto` - Protocol definitions for StandaloneService
+- [x] `cmd/standalone.go` - Parent command with help text
+- [x] `cmd/standalone_init.go` - Generate standalone key (`clonr standalone init`)
+- [x] `cmd/standalone_status.go` - Show standalone status (`clonr standalone status`)
+- [x] `cmd/standalone_archive.go` - Create encrypted repo archive (`clonr standalone archive`)
+- [x] `cmd/standalone_extract.go` - Extract encrypted archive (`clonr standalone extract`)
+- [x] `cmd/standalone_encrypt.go` - Setup server encryption (`clonr standalone encrypt setup`)
+- [x] `cmd/standalone_decrypt.go` - Decrypt synced data (`clonr standalone decrypt`)
+- [x] `internal/store/bolt.go` - BoltDB storage for standalone config and connections
+- [x] `internal/standalone/*_test.go` - Unit tests for crypto, key generation, archiving, and handshake
+- [ ] Basic gRPC sync endpoint (StandaloneService implementation)
+
+#### Phase 2: Connection Management (v0.6.0-beta) 🚧 In Progress
+
+- [x] `clonr standalone connect` - Connect to standalone instance with key display
+- [x] `clonr standalone accept` - Accept pending client connections (server-side)
+- [x] `clonr standalone clients` - List registered clients (server-side)
+- [x] `internal/standalone/handshake.go` - Per-client encryption key management
+- [x] Local password encryption for stored credentials
+- [x] Client registration persistence in BoltDB
+- [ ] `clonr standalone list` - List connections (client-side view)
+- [ ] `clonr standalone disconnect` - Remove connection
+- [ ] Connection health checking
+
+##### Client-Server Handshake Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     CLIENT-SERVER HANDSHAKE PROTOCOL                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  CLIENT                                SERVER                               │
+│  ──────                               ──────                                │
+│                                                                             │
+│  clonr standalone connect <key>       clonr standalone init                 │
+│       │                                    │                                │
+│       │  1. Parse & validate key           │                                │
+│       │  2. Generate encryption key        │                                │
+│       │  3. Display key to user            │                                │
+│       │                                    │                                │
+│       ▼                                    ▼                                │
+│  ┌─────────────────────────────┐    ┌─────────────────────────────┐         │
+│  │   ENCRYPTION KEY            │    │   clonr standalone accept   │         │
+│  │   xxxx-xxxx-xxxx-xxxx       │───▶│   (enter displayed key)     │         │
+│  │   xxxx-xxxx-xxxx-xxxx       │    │                             │         │
+│  └─────────────────────────────┘    └──────────────┬──────────────┘         │
+│                                                    │                        │
+│       │                                            ▼                        │
+│       │                               ┌─────────────────────────────┐       │
+│       │                               │   RegisteredClient stored   │       │
+│       │                               │   - Key hash (Argon2)       │       │
+│       │                               │   - Key hint                │       │
+│       │                               │   - Machine info            │       │
+│       ▼                               └─────────────────────────────┘       │
+│  ┌─────────────────────────────┐                                            │
+│  │   Connection stored locally │                                            │
+│  │   - Encrypted with local pw │                                            │
+│  │   - Client key preserved    │                                            │
+│  └─────────────────────────────┘                                            │
+│                                                                             │
+│  Data Classification:                                                       │
+│  • Sensitive (tokens, credentials) → Encrypted with per-client key          │
+│  • Public (repos, workspaces) → Stored normally                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Phase 3: Data Synchronization (v0.6.0-rc)
+
+- [ ] `clonr standalone sync` - Sync profiles, workspaces, config
+- [ ] Incremental sync (only changed items)
 - [ ] Conflict detection and resolution
-- [ ] Scheduled sync jobs
+- [ ] `clonr profile standalone list/import/delete`
 
-#### Backup & Restore
-- [ ] `clonr backup` - Archive managed repositories
-- [ ] `clonr restore` - Restore from backup
-- [ ] Incremental backups
+#### Phase 4: Production Ready (v0.6.0)
+
+- [ ] Key rotation (`clonr standalone rotate`)
+- [ ] Client revocation (`clonr standalone revoke`)
+- [ ] Audit logging
+- [ ] Rate limiting
+- [ ] Documentation and examples
+
+#### Repository Archive Feature ✅ (Completed)
+
+Encrypted repository archiving allows secure backup and transfer of repositories.
+
+**Commands:**
+```bash
+# Create encrypted archive from specific paths
+clonr standalone archive /path/to/repo1 /path/to/repo2 -o backup.clonr
+
+# Archive all managed repositories
+clonr standalone archive --all -o all-repos.clonr
+
+# Archive only favorites
+clonr standalone archive --favorites -o favorites.clonr
+
+# Archive by workspace
+clonr standalone archive --workspace work -o work-repos.clonr
+
+# Archive without .git (smaller, no history)
+clonr standalone archive /path/to/repo --no-git -o backup.clonr
+
+# Extract archive
+clonr standalone extract backup.clonr -o /path/to/output
+
+# List archive contents without extracting
+clonr standalone extract backup.clonr --list
+```
+
+**Features:**
+- AES-256-GCM encryption with PBKDF2 key derivation
+- DEFLATE compression (configurable level 0-9)
+- Manifest with repository metadata (URL, last commit, file count)
+- Exclusion patterns (node_modules, vendor, __pycache__, etc.)
+- Optional .git directory exclusion
+- Integrity protection via GCM authentication tag
+
+**Archive Format (.clonr):**
+- Magic header: `CLONR-REPO`
+- Version byte
+- Encrypted payload (salt + nonce + ciphertext)
+- Contains: ZIP archive with manifest.json + repository files
+
+#### Future: Repository Sync (v0.6.1+)
+
+- [ ] Sync repository metadata via gRPC
+- [ ] Sync encrypted archives between instances
+- [ ] Bandwidth-aware sync scheduling
+- [ ] Selective sync filters
+
+#### Backup & Restore (Parallel Track)
+
+- [x] `clonr standalone archive` - Create encrypted repository archives
+- [x] `clonr standalone extract` - Extract from encrypted archive
+- [ ] Incremental backups (delta archives)
 - [ ] Cloud storage integration (S3, GCS)
 
 ### v0.7.0 – Cross-Platform TPM & Security Hardening
@@ -511,6 +919,161 @@ internal/core/
 
 ---
 
+### v0.8.0 – Multi-Database Support
+
+Add support for multiple database backends with runtime selection.
+
+#### Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      DATABASE BACKEND SELECTION                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  clonr init                          clonr init --db sqlite              │
+│  (default: BoltDB)                   (explicit: SQLite)                  │
+│       │                                    │                             │
+│       ▼                                    ▼                             │
+│  ┌──────────┐                       ┌──────────────┐                     │
+│  │  BoltDB  │                       │    SQLite    │                     │
+│  │ (embed)  │                       │   (file)     │                     │
+│  └──────────┘                       └──────────────┘                     │
+│                                                                          │
+│  clonr init --db postgres --db-url "postgres://..."                     │
+│       │                                                                  │
+│       ▼                                                                  │
+│  ┌──────────────┐                                                        │
+│  │  PostgreSQL  │  ← For multi-user / server deployments                │
+│  │   (remote)   │                                                        │
+│  └──────────────┘                                                        │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Commands
+
+```bash
+# Initialize with default BoltDB (embedded, single-user)
+clonr init
+
+# Initialize with SQLite (file-based, portable)
+clonr init --db sqlite
+clonr init --db sqlite --db-path /path/to/clonr.db
+
+# Initialize with PostgreSQL (multi-user, server)
+clonr init --db postgres --db-url "postgres://user:pass@host:5432/clonr"
+
+# Check current database backend
+clonr config db
+
+# Migrate data between backends
+clonr data migrate --from bolt --to sqlite
+clonr data migrate --from sqlite --to postgres --db-url "..."
+```
+
+#### Database Comparison
+
+| Feature | BoltDB | SQLite | PostgreSQL |
+|---------|--------|--------|------------|
+| Default | ✅ Yes | No | No |
+| Single file | ✅ | ✅ | ❌ |
+| Embedded | ✅ | ✅ | ❌ |
+| Multi-user | ❌ | ⚠️ Limited | ✅ |
+| Remote access | ❌ | ❌ | ✅ |
+| Transactions | ✅ | ✅ | ✅ |
+| Full-text search | ❌ | ✅ | ✅ |
+| Backup | File copy | File copy | pg_dump |
+| Use case | CLI tool | Portable | Server/Team |
+
+#### Implementation Files
+
+```
+internal/store/
+├── store.go           # Store interface (existing)
+├── bolt.go            # BoltDB implementation (existing, default)
+├── sqlite.go          # SQLite implementation (new)
+├── postgres.go        # PostgreSQL implementation (new)
+├── factory.go         # Database factory with backend selection
+├── migrate.go         # Cross-backend migration utilities
+└── config.go          # Database configuration management
+```
+
+#### Configuration
+
+Database selection stored in `~/.config/clonr/db.json`:
+
+```json
+{
+  "backend": "bolt",
+  "bolt": {
+    "path": "~/.local/share/clonr/clonr.bolt"
+  },
+  "sqlite": {
+    "path": "~/.local/share/clonr/clonr.db",
+    "journal_mode": "WAL"
+  },
+  "postgres": {
+    "url": "postgres://localhost:5432/clonr",
+    "max_connections": 10,
+    "ssl_mode": "prefer"
+  }
+}
+```
+
+#### Phase 1: SQLite Support
+
+- [ ] `internal/store/sqlite.go` - SQLite Store implementation
+- [ ] Schema migration system (golang-migrate or custom)
+- [ ] `clonr init --db sqlite` flag
+- [ ] Database configuration file
+- [ ] Unit tests with in-memory SQLite
+
+#### Phase 2: PostgreSQL Support
+
+- [ ] `internal/store/postgres.go` - PostgreSQL Store implementation
+- [ ] Connection pooling (pgxpool)
+- [ ] `clonr init --db postgres` flag
+- [ ] SSL/TLS connection support
+- [ ] Environment variable support for credentials
+
+#### Phase 3: Migration & Management
+
+- [ ] `internal/store/migrate.go` - Cross-backend migration
+- [ ] `clonr data migrate` command
+- [ ] Backup/restore per backend
+- [ ] `clonr config db` status command
+
+#### Build Tags
+
+```go
+// internal/store/bolt.go
+//go:build !sqlite && !postgres
+
+// internal/store/sqlite.go
+//go:build sqlite || all
+
+// internal/store/postgres.go
+//go:build postgres || all
+```
+
+Default build includes only BoltDB. Use build tags to include other backends:
+
+```bash
+# Build with all backends
+go build -tags "sqlite,postgres" ./...
+
+# Build with only SQLite
+go build -tags sqlite ./...
+```
+
+#### Dependencies
+
+| Backend | Package | Notes |
+|---------|---------|-------|
+| BoltDB | `go.etcd.io/bbolt` | Already included |
+| SQLite | `modernc.org/sqlite` | Pure Go, no CGO |
+| PostgreSQL | `github.com/jackc/pgx/v5` | Modern PostgreSQL driver |
+
 ### v1.0.0 – Production Ready
 
 #### Plugin System
@@ -538,6 +1101,52 @@ internal/core/
 - [ ] Bitbucket support
 - [ ] Azure DevOps support
 - [ ] Gitea/Forgejo support
+
+### Cloud Storage Integrations (PM Context)
+
+Fetch complementary documentation from cloud drives when working with project management tools (Jira, ZenHub). Enables linking PRDs, design docs, meeting notes, and specifications to issues/epics.
+
+**Planned Providers:**
+- [ ] Google Drive - OAuth2 + Drive API v3
+- [ ] OneDrive / SharePoint - Microsoft Graph API
+- [ ] Dropbox - Dropbox API v2
+- [ ] Box - Box API
+- [ ] Notion - Notion API (pages as documents)
+- [ ] Confluence - Atlassian API (pairs with Jira)
+
+**Commands:**
+```bash
+# Configure cloud storage connection
+clonr pm drive add google --name "work-drive"
+clonr pm drive add onedrive --name "team-docs"
+clonr pm drive list
+
+# Link documents to Jira/ZenHub issues
+clonr pm jira issues view PROJ-123 --with-docs
+clonr pm zenhub issue 456 --with-docs
+
+# Search for related documents
+clonr pm docs search "authentication redesign"
+clonr pm docs search --issue PROJ-123
+
+# Fetch document content for context
+clonr pm docs fetch <doc-id>
+clonr pm docs fetch --linked PROJ-123
+```
+
+**Features:**
+- Auto-detect linked documents from issue descriptions (Drive/OneDrive URLs)
+- Full-text search across connected drives
+- Cache frequently accessed documents locally
+- Offline mode with cached content
+- JSON output for AI/automation context
+- Document summarization for issue context
+
+**Use Cases:**
+- Pull PRD context when viewing Jira epics
+- Find design docs related to ZenHub issues
+- Aggregate meeting notes for sprint planning
+- Build AI context from linked documentation
 
 ### Project Management
 - [x] Jira Cloud integration (v0.5.0)
@@ -583,9 +1192,10 @@ internal/core/
 | v0.3.0  | 🚧 WIP | Status, Nerds, Reauthor, Organization support |
 | v0.4.0  | Planned | Branch management, enhanced statistics |
 | v0.5.0  | 🚧 WIP | Team features, PM integrations (Jira, ZenHub) |
-| v0.6.0  | Planned | Sync & backup capabilities |
+| v0.6.0  | 🚧 WIP | Instance synchronization (standalone mode), encrypted sync, repo archives |
 | v0.7.0  | 🚧 WIP | Cross-platform TPM, sealbox integration (done), Windows support (pending) |
 | v0.7.1  | ✅ Done | Code refactoring: shared packages, reduced duplication |
+| v0.8.0  | Planned | Multi-database support (BoltDB default, SQLite, PostgreSQL) |
 | v1.0.0  | Planned | Production ready with plugins and enterprise features |
 
 ---

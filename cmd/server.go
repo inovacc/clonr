@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"net"
 	"os"
 	"os/exec"
@@ -11,11 +13,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/inovacc/clonr/internal/actionsdb"
+	"github.com/inovacc/clonr/internal/core"
 	"github.com/inovacc/clonr/internal/process"
 	"github.com/inovacc/clonr/internal/server/grpc"
 	"github.com/inovacc/clonr/internal/store"
 	"github.com/spf13/cobra"
 )
+
+var actionsWorker *actionsdb.Worker
 
 var (
 	serverPort        int
@@ -130,6 +136,11 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 		}
 	}()
 
+	// Start GitHub Actions monitoring worker
+	if err := startActionsWorker(); err != nil {
+		log.Printf("Warning: failed to start actions worker: %v", err)
+	}
+
 	// Wait for a shutdown signal (OS signal or idle timeout)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
@@ -143,6 +154,9 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 
 	// Stop idle tracker
 	srvWithHealth.IdleTracker.Stop()
+
+	// Stop actions worker
+	stopActionsWorker()
 
 	log.Println("Shutting down server...")
 
@@ -274,4 +288,57 @@ func waitForProcessExit(pid int, timeout time.Duration) error {
 	}
 
 	return fmt.Errorf("process %d still running after %v", pid, timeout)
+}
+
+// startActionsWorker initializes and starts the GitHub Actions monitoring worker
+func startActionsWorker() error {
+	// Open actions database
+	dbPath, err := actionsdb.DefaultDBPath()
+	if err != nil {
+		return fmt.Errorf("failed to get actions db path: %w", err)
+	}
+
+	actionsDB, err := actionsdb.Open(dbPath)
+	if err != nil {
+		return fmt.Errorf("failed to open actions database: %w", err)
+	}
+
+	// Token function that gets the active profile token
+	tokenFunc := func() string {
+		pm, err := core.NewProfileManager()
+		if err != nil {
+			slog.Debug("actions worker: failed to create profile manager", "error", err)
+			return ""
+		}
+
+		token, err := pm.GetActiveProfileToken()
+		if err != nil {
+			slog.Debug("actions worker: failed to get active profile token", "error", err)
+			return ""
+		}
+
+		return token
+	}
+
+	// Create worker with default config
+	config := actionsdb.DefaultWorkerConfig()
+	actionsWorker = actionsdb.NewWorker(actionsDB, tokenFunc, config)
+	actionsWorker.WithLogger(slog.Default())
+
+	// Start the worker
+	ctx := context.Background()
+	if err := actionsWorker.Start(ctx); err != nil {
+		return fmt.Errorf("failed to start actions worker: %w", err)
+	}
+
+	log.Println("GitHub Actions monitoring worker started")
+	return nil
+}
+
+// stopActionsWorker stops the GitHub Actions monitoring worker
+func stopActionsWorker() {
+	if actionsWorker != nil && actionsWorker.IsRunning() {
+		actionsWorker.Stop()
+		log.Println("GitHub Actions monitoring worker stopped")
+	}
 }

@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/inovacc/clonr/internal/actionsdb"
 	"github.com/inovacc/clonr/internal/git"
 	"github.com/inovacc/clonr/internal/security"
 	"github.com/spf13/cobra"
@@ -196,5 +199,146 @@ func runPush(_ *cobra.Command, args []string) error {
 
 	_, _ = fmt.Fprintln(os.Stdout, okStyle.Render("Push completed successfully!"))
 
+	// Enqueue for GitHub Actions monitoring
+	if err := enqueueForActionsMonitoring(ctx, remote); err != nil {
+		// Non-fatal error - just log it
+		_, _ = fmt.Fprintf(os.Stderr, dimStyle.Render("  Note: Could not enqueue for actions monitoring: %v\n"), err)
+	}
+
 	return nil
+}
+
+// enqueueForActionsMonitoring adds the push to the GitHub Actions monitoring queue
+func enqueueForActionsMonitoring(ctx context.Context, remote string) error {
+	// Get current repo info
+	repoPath, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	// Get the remote URL
+	remoteURL, err := getRemoteURL(repoPath, remote)
+	if err != nil {
+		return err
+	}
+
+	// Parse owner and repo from URL
+	owner, repo, err := parseGitHubURL(remoteURL)
+	if err != nil {
+		return err // Not a GitHub repo, skip monitoring
+	}
+
+	// Get current branch
+	branch, err := getCurrentBranch(repoPath)
+	if err != nil {
+		return err
+	}
+
+	// Get HEAD commit SHA
+	commitSHA, err := getHeadCommitSHA(repoPath)
+	if err != nil {
+		return err
+	}
+
+	// Open actions database
+	dbPath, err := actionsdb.DefaultDBPath()
+	if err != nil {
+		return err
+	}
+
+	db, err := actionsdb.Open(dbPath)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = db.Close() }()
+
+	// Create push record and enqueue
+	record := &actionsdb.PushRecord{
+		RepoOwner: owner,
+		RepoName:  repo,
+		Branch:    branch,
+		CommitSHA: commitSHA,
+		Remote:    remoteURL,
+		PushedAt:  time.Now(),
+	}
+
+	if err := db.SavePushRecord(record); err != nil {
+		return err
+	}
+
+	// Enqueue for monitoring
+	item := &actionsdb.QueueItem{
+		PushID:    record.ID,
+		RepoOwner: owner,
+		RepoName:  repo,
+		CommitSHA: commitSHA,
+		Status:    "pending",
+		NextCheck: time.Now().Add(10 * time.Second), // Wait a bit before first check
+	}
+
+	if err := db.EnqueueItem(item); err != nil {
+		return err
+	}
+
+	_, _ = fmt.Fprintf(os.Stdout, dimStyle.Render("  📊 Enqueued for GitHub Actions monitoring\n"))
+	return nil
+}
+
+// getRemoteURL gets the URL for a remote
+func getRemoteURL(repoPath, remote string) (string, error) {
+	if remote == "" {
+		remote = "origin"
+	}
+	cmd := exec.Command("git", "-C", repoPath, "remote", "get-url", remote)
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
+// parseGitHubURL parses owner and repo from a GitHub URL
+func parseGitHubURL(url string) (owner, repo string, err error) {
+	// Handle SSH URLs: git@github.com:owner/repo.git
+	if strings.HasPrefix(url, "git@github.com:") {
+		path := strings.TrimPrefix(url, "git@github.com:")
+		path = strings.TrimSuffix(path, ".git")
+		parts := strings.Split(path, "/")
+		if len(parts) >= 2 {
+			return parts[0], parts[1], nil
+		}
+	}
+
+	// Handle HTTPS URLs: https://github.com/owner/repo.git
+	if strings.Contains(url, "github.com/") {
+		idx := strings.Index(url, "github.com/")
+		path := url[idx+len("github.com/"):]
+		path = strings.TrimSuffix(path, ".git")
+		parts := strings.Split(path, "/")
+		if len(parts) >= 2 {
+			return parts[0], parts[1], nil
+		}
+	}
+
+	return "", "", fmt.Errorf("not a GitHub URL: %s", url)
+}
+
+// getCurrentBranch gets the current branch name
+func getCurrentBranch(repoPath string) (string, error) {
+	cmd := exec.Command("git", "-C", repoPath, "rev-parse", "--abbrev-ref", "HEAD")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
+// getHeadCommitSHA gets the HEAD commit SHA
+func getHeadCommitSHA(repoPath string) (string, error) {
+	cmd := exec.Command("git", "-C", repoPath, "rev-parse", "HEAD")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
 }
