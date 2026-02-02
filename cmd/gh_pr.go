@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -60,11 +59,8 @@ func init() {
 }
 
 func runPRStatus(cmd *cobra.Command, args []string) error {
-	// Get flags
-	tokenFlag, _ := cmd.Flags().GetString("token")
-	profileFlag, _ := cmd.Flags().GetString("profile")
-	repoFlag, _ := cmd.Flags().GetString("repo")
-	jsonOutput, _ := cmd.Flags().GetBool("json")
+	// Get common and command-specific flags
+	flags := extractGHFlags(cmd)
 	state, _ := cmd.Flags().GetString("state")
 	base, _ := cmd.Flags().GetString("base")
 	head, _ := cmd.Flags().GetString("head")
@@ -73,7 +69,7 @@ func runPRStatus(cmd *cobra.Command, args []string) error {
 	limit, _ := cmd.Flags().GetInt("limit")
 
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
+	token, _, err := core.ResolveGitHubToken(flags.Token, flags.Profile)
 	if err != nil {
 		return err
 	}
@@ -85,28 +81,26 @@ func runPRStatus(cmd *cobra.Command, args []string) error {
 	)
 
 	for _, arg := range args {
-		// Check if it's a number (PR number)
 		if n, err := strconv.Atoi(arg); err == nil {
 			prNumber = n
 		} else {
-			// Assume it's a repo reference
 			repoArg = arg
 		}
 	}
 
 	// Detect repository
-	owner, repo, err := core.DetectRepository(repoArg, repoFlag)
+	owner, repo, err := detectRepo([]string{repoArg}, flags.Repo, "Specify a repository with: clonr gh pr status owner/repo")
 	if err != nil {
-		return fmt.Errorf("could not determine repository: %w\n\nSpecify a repository with: clonr gh pr status owner/repo", err)
+		return err
 	}
 
 	// If specific PR number, show detailed status
 	if prNumber > 0 {
-		return showPRDetail(token, owner, repo, prNumber, jsonOutput)
+		return showPRDetail(token, owner, repo, prNumber, flags.JSON)
 	}
 
 	// Otherwise, list PRs
-	return listPRs(token, owner, repo, jsonOutput, state, base, head, sortBy, order, limit)
+	return listPRs(token, owner, repo, flags.JSON, state, base, head, sortBy, order, limit)
 }
 
 func showPRDetail(token, owner, repo string, prNumber int, jsonOutput bool) error {
@@ -120,10 +114,7 @@ func showPRDetail(token, owner, repo string, prNumber int, jsonOutput bool) erro
 	}
 
 	if jsonOutput {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-
-		return enc.Encode(status)
+		return outputJSON(status)
 	}
 
 	// Text output
@@ -152,10 +143,7 @@ func listPRs(token, owner, repo string, jsonOutput bool, state, base, head, sort
 	}
 
 	if jsonOutput {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-
-		return enc.Encode(data)
+		return outputJSON(data)
 	}
 
 	// Text output

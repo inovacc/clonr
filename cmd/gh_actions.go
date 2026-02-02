@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -59,11 +58,8 @@ func init() {
 }
 
 func runActionsStatus(cmd *cobra.Command, args []string) error {
-	// Get flags
-	tokenFlag, _ := cmd.Flags().GetString("token")
-	profileFlag, _ := cmd.Flags().GetString("profile")
-	repoFlag, _ := cmd.Flags().GetString("repo")
-	jsonOutput, _ := cmd.Flags().GetBool("json")
+	// Get common and command-specific flags
+	flags := extractGHFlags(cmd)
 	branch, _ := cmd.Flags().GetString("branch")
 	event, _ := cmd.Flags().GetString("event")
 	status, _ := cmd.Flags().GetString("status")
@@ -72,7 +68,7 @@ func runActionsStatus(cmd *cobra.Command, args []string) error {
 	includeJobs, _ := cmd.Flags().GetBool("jobs")
 
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
+	token, _, err := core.ResolveGitHubToken(flags.Token, flags.Profile)
 	if err != nil {
 		return err
 	}
@@ -84,28 +80,26 @@ func runActionsStatus(cmd *cobra.Command, args []string) error {
 	)
 
 	for _, arg := range args {
-		// Check if it's a number (run ID)
 		if n, err := strconv.ParseInt(arg, 10, 64); err == nil {
 			runID = n
 		} else {
-			// Assume it's a repo reference
 			repoArg = arg
 		}
 	}
 
 	// Detect repository
-	owner, repo, err := core.DetectRepository(repoArg, repoFlag)
+	owner, repo, err := detectRepo([]string{repoArg}, flags.Repo, "Specify a repository with: clonr gh actions status owner/repo")
 	if err != nil {
-		return fmt.Errorf("could not determine repository: %w\n\nSpecify a repository with: clonr gh actions status owner/repo", err)
+		return err
 	}
 
 	// If specific run ID, show detailed status
 	if runID > 0 {
-		return showRunDetail(token, owner, repo, runID, includeJobs, jsonOutput)
+		return showRunDetail(token, owner, repo, runID, includeJobs, flags.JSON)
 	}
 
 	// Otherwise, list runs
-	return listRuns(token, owner, repo, jsonOutput, branch, event, status, actor, limit)
+	return listRuns(token, owner, repo, flags.JSON, branch, event, status, actor, limit)
 }
 
 func showRunDetail(token, owner, repo string, runID int64, includeJobs, jsonOutput bool) error {
@@ -121,10 +115,7 @@ func showRunDetail(token, owner, repo string, runID int64, includeJobs, jsonOutp
 	}
 
 	if jsonOutput {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-
-		return enc.Encode(detail)
+		return outputJSON(detail)
 	}
 
 	// Text output
@@ -152,10 +143,7 @@ func listRuns(token, owner, repo string, jsonOutput bool, branch, event, status,
 	}
 
 	if jsonOutput {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-
-		return enc.Encode(data)
+		return outputJSON(data)
 	}
 
 	// Text output

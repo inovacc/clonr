@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -105,11 +103,8 @@ func init() {
 }
 
 func runIssuesList(cmd *cobra.Command, args []string) error {
-	// Get flags
-	tokenFlag, _ := cmd.Flags().GetString("token")
-	profileFlag, _ := cmd.Flags().GetString("profile")
-	repoFlag, _ := cmd.Flags().GetString("repo")
-	outputJson, _ := cmd.Flags().GetBool("json")
+	// Get common and command-specific flags
+	flags := extractGHFlags(cmd)
 	state, _ := cmd.Flags().GetString("state")
 	labels, _ := cmd.Flags().GetStringSlice("labels")
 	assignee, _ := cmd.Flags().GetString("assignee")
@@ -118,30 +113,16 @@ func runIssuesList(cmd *cobra.Command, args []string) error {
 	order, _ := cmd.Flags().GetString("order")
 	limit, _ := cmd.Flags().GetInt("limit")
 
-	// Get repo argument if provided
-	var repoArg string
-	if len(args) > 0 {
-		repoArg = args[0]
-	}
-
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
+	token, _, err := core.ResolveGitHubToken(flags.Token, flags.Profile)
 	if err != nil {
 		return err
 	}
 
 	// Detect repository
-	owner, repo, err := core.DetectRepository(repoArg, repoFlag)
+	owner, repo, err := detectRepo(args, flags.Repo, "Specify a repository with: clonr gh issues list owner/repo")
 	if err != nil {
-		return fmt.Errorf("could not determine repository: %w\n\nSpecify a repository with: clonr gh issues list owner/repo", err)
-	}
-
-	// Setup logger
-	var logger *slog.Logger
-	if outputJson {
-		logger = slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
-	} else {
-		logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
+		return err
 	}
 
 	// Fetch issues
@@ -153,10 +134,10 @@ func runIssuesList(cmd *cobra.Command, args []string) error {
 		Sort:     sortBy,
 		Order:    order,
 		Limit:    limit,
-		Logger:   logger,
+		Logger:   newGHLogger(flags.JSON),
 	}
 
-	if !outputJson {
+	if !flags.JSON {
 		_, _ = fmt.Fprintf(os.Stderr, "Fetching issues for %s/%s...\n", owner, repo)
 	}
 
@@ -166,11 +147,8 @@ func runIssuesList(cmd *cobra.Command, args []string) error {
 	}
 
 	// Output results
-	if outputJson {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-
-		return enc.Encode(issues)
+	if flags.JSON {
+		return outputJSON(issues)
 	}
 
 	// Text output
@@ -211,21 +189,12 @@ func runIssuesList(cmd *cobra.Command, args []string) error {
 }
 
 func runIssuesCreate(cmd *cobra.Command, args []string) error {
-	// Get flags
-	tokenFlag, _ := cmd.Flags().GetString("token")
-	profileFlag, _ := cmd.Flags().GetString("profile")
-	repoFlag, _ := cmd.Flags().GetString("repo")
-	outputJson, _ := cmd.Flags().GetBool("json")
+	// Get common and command-specific flags
+	flags := extractGHFlags(cmd)
 	title, _ := cmd.Flags().GetString("title")
 	body, _ := cmd.Flags().GetString("body")
 	labels, _ := cmd.Flags().GetStringSlice("labels")
 	assignees, _ := cmd.Flags().GetStringSlice("assignees")
-
-	// Get repo argument if provided
-	var repoArg string
-	if len(args) > 0 {
-		repoArg = args[0]
-	}
 
 	// Validate title
 	if title == "" {
@@ -233,23 +202,15 @@ func runIssuesCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
+	token, _, err := core.ResolveGitHubToken(flags.Token, flags.Profile)
 	if err != nil {
 		return err
 	}
 
 	// Detect repository
-	owner, repo, err := core.DetectRepository(repoArg, repoFlag)
+	owner, repo, err := detectRepo(args, flags.Repo, "Specify a repository with: clonr gh issues create owner/repo --title \"title\"")
 	if err != nil {
-		return fmt.Errorf("could not determine repository: %w\n\nSpecify a repository with: clonr gh issues create owner/repo --title \"title\"", err)
-	}
-
-	// Setup logger
-	var logger *slog.Logger
-	if outputJson {
-		logger = slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
-	} else {
-		logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
+		return err
 	}
 
 	// Create issue
@@ -258,10 +219,10 @@ func runIssuesCreate(cmd *cobra.Command, args []string) error {
 		Body:      body,
 		Labels:    labels,
 		Assignees: assignees,
-		Logger:    logger,
+		Logger:    newGHLogger(flags.JSON),
 	}
 
-	if !outputJson {
+	if !flags.JSON {
 		_, _ = fmt.Fprintf(os.Stderr, "Creating issue in %s/%s...\n", owner, repo)
 	}
 
@@ -271,11 +232,8 @@ func runIssuesCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Output results
-	if outputJson {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-
-		return enc.Encode(created)
+	if flags.JSON {
+		return outputJSON(created)
 	}
 
 	_, _ = fmt.Fprintf(os.Stdout, "\n✓ Created issue #%d: %s\n", created.Number, created.Title)
@@ -285,11 +243,8 @@ func runIssuesCreate(cmd *cobra.Command, args []string) error {
 }
 
 func runIssuesClose(cmd *cobra.Command, args []string) error {
-	// Get flags
-	tokenFlag, _ := cmd.Flags().GetString("token")
-	profileFlag, _ := cmd.Flags().GetString("profile")
-	repoFlag, _ := cmd.Flags().GetString("repo")
-	outputJson, _ := cmd.Flags().GetBool("json")
+	// Get common and command-specific flags
+	flags := extractGHFlags(cmd)
 	comment, _ := cmd.Flags().GetString("comment")
 	reason, _ := cmd.Flags().GetString("reason")
 
@@ -303,39 +258,27 @@ func runIssuesClose(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid issue number: %s", args[0])
 	}
 
-	var repoArg string
-	if len(args) > 1 {
-		repoArg = args[1]
-	}
-
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
+	token, _, err := core.ResolveGitHubToken(flags.Token, flags.Profile)
 	if err != nil {
 		return err
 	}
 
-	// Detect repository
-	owner, repo, err := core.DetectRepository(repoArg, repoFlag)
+	// Detect repository (skip first arg which is issue number)
+	repoArgs := args[1:]
+	owner, repo, err := detectRepo(repoArgs, flags.Repo, "Specify a repository with: clonr gh issues close <number> owner/repo")
 	if err != nil {
-		return fmt.Errorf("could not determine repository: %w\n\nSpecify a repository with: clonr gh issues close <number> owner/repo", err)
-	}
-
-	// Setup logger
-	var logger *slog.Logger
-	if outputJson {
-		logger = slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
-	} else {
-		logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
+		return err
 	}
 
 	// Close issue
 	opts := core.CloseIssueOptions{
 		Comment: comment,
 		Reason:  reason,
-		Logger:  logger,
+		Logger:  newGHLogger(flags.JSON),
 	}
 
-	if !outputJson {
+	if !flags.JSON {
 		_, _ = fmt.Fprintf(os.Stderr, "Closing issue #%d in %s/%s...\n", issueNumber, owner, repo)
 	}
 
@@ -345,11 +288,8 @@ func runIssuesClose(cmd *cobra.Command, args []string) error {
 	}
 
 	// Output results
-	if outputJson {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-
-		return enc.Encode(closed)
+	if flags.JSON {
+		return outputJSON(closed)
 	}
 
 	_, _ = fmt.Fprintf(os.Stdout, "\n✓ Closed issue #%d: %s\n", closed.Number, closed.Title)

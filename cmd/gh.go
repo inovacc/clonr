@@ -1,6 +1,12 @@
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
+	"log/slog"
+	"os"
+
+	"github.com/inovacc/clonr/internal/core"
 	"github.com/spf13/cobra"
 )
 
@@ -40,4 +46,60 @@ func addGHCommonFlags(cmd *cobra.Command) {
 	cmd.Flags().String("profile", "", "Use token from specified profile")
 	cmd.Flags().String("repo", "", "Repository (owner/repo)")
 	cmd.Flags().Bool("json", false, "Output as JSON")
+}
+
+// GHFlags holds common flags for all gh subcommands
+type GHFlags struct {
+	Token   string
+	Profile string
+	Repo    string
+	JSON    bool
+}
+
+// extractGHFlags extracts common flags from a cobra command
+func extractGHFlags(cmd *cobra.Command) GHFlags {
+	token, _ := cmd.Flags().GetString("token")
+	profile, _ := cmd.Flags().GetString("profile")
+	repo, _ := cmd.Flags().GetString("repo")
+	jsonOut, _ := cmd.Flags().GetBool("json")
+
+	return GHFlags{
+		Token:   token,
+		Profile: profile,
+		Repo:    repo,
+		JSON:    jsonOut,
+	}
+}
+
+// outputJSON encodes data as indented JSON to stdout
+func outputJSON(data any) error {
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	return enc.Encode(data)
+}
+
+// newGHLogger creates a logger appropriate for gh commands
+// Uses JSON handler when JSON output is enabled, text otherwise
+func newGHLogger(jsonOutput bool) *slog.Logger {
+	opts := &slog.HandlerOptions{Level: slog.LevelWarn}
+	if jsonOutput {
+		return slog.New(slog.NewJSONHandler(os.Stderr, opts))
+	}
+	return slog.New(slog.NewTextHandler(os.Stderr, opts))
+}
+
+// detectRepo detects repository from args and flags
+// Returns owner, repo, or error with usage hint
+func detectRepo(args []string, repoFlag, usageHint string) (owner, repo string, err error) {
+	var repoArg string
+	if len(args) > 0 {
+		repoArg = args[0]
+	}
+
+	owner, repo, err = core.DetectRepository(repoArg, repoFlag)
+	if err != nil {
+		return "", "", fmt.Errorf("could not determine repository: %w\n\n%s", err, usageHint)
+	}
+
+	return owner, repo, nil
 }
