@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/cli/oauth"
-	"github.com/google/go-github/v67/github"
+	"github.com/google/go-github/v82/github"
 )
 
 // OAuthConfig holds OAuth configuration

@@ -850,3 +850,191 @@ All RPCs use unary (request-response) pattern with 30-second timeouts.
 - **TPM 2.0**: `github.com/inovacc/sealbox` (hardware-backed encryption, wraps go-tpm)
 - **KeePass**: `github.com/tobischo/gokeepasslib/v3` (secure token storage)
 - **Process Management**: `github.com/shirou/gopsutil/v4/process`
+- **Encryption**: `golang.org/x/crypto/argon2` (password hashing), `crypto/aes` (AES-256-GCM)
+- **Encoding**: `github.com/btcsuite/btcutil/base58` (key encoding)
+
+## Standalone Mode (Instance Synchronization)
+
+### Overview
+
+Standalone mode enables secure synchronization between clonr instances across machines. A server instance can accept connections from client instances, allowing data synchronization with per-client encryption for sensitive data.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     STANDALONE MODE ARCHITECTURE                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  SERVER INSTANCE                      CLIENT INSTANCES                      │
+│  ───────────────                      ────────────────                      │
+│                                                                             │
+│  ┌─────────────────┐                  ┌─────────────────┐                   │
+│  │ clonr standalone│                  │ clonr standalone│                   │
+│  │ init            │                  │ connect <key>   │                   │
+│  └────────┬────────┘                  └────────┬────────┘                   │
+│           │                                    │                            │
+│           ▼                                    ▼                            │
+│  ┌─────────────────┐                  ┌─────────────────┐                   │
+│  │ Generates Key   │                  │ Generates       │                   │
+│  │ • InstanceID    │◀── Shared ──────▶│ Encryption Key  │                   │
+│  │ • API Key       │    via file/     │ (displayed to   │                   │
+│  │ • Refresh Token │    clipboard     │  user)          │                   │
+│  └────────┬────────┘                  └────────┬────────┘                   │
+│           │                                    │                            │
+│           ▼                                    ▼                            │
+│  ┌─────────────────┐                  ┌─────────────────┐                   │
+│  │ clonr standalone│◀── Key Entry ───│ User enters key │                   │
+│  │ accept          │    (manual)      │ on server       │                   │
+│  └────────┬────────┘                  └─────────────────┘                   │
+│           │                                                                 │
+│           ▼                                                                 │
+│  ┌─────────────────────────────────────────────────────┐                    │
+│  │              DATA CLASSIFICATION                     │                    │
+│  │  Sensitive (tokens) → Encrypted with client key      │                    │
+│  │  Public (repos)     → Stored normally                │                    │
+│  └─────────────────────────────────────────────────────┘                    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Standalone Commands
+
+**Server-side (source instance):**
+```bash
+clonr standalone init            # Initialize standalone mode, generate key
+clonr standalone status          # Show standalone status
+clonr standalone accept          # Accept pending client connections
+clonr standalone clients         # List registered clients
+clonr standalone encrypt setup   # Setup server encryption
+```
+
+**Client-side (destination instance):**
+```bash
+clonr standalone connect <key>   # Connect to a server instance
+clonr standalone decrypt --list  # List encrypted synced data
+clonr standalone decrypt         # Decrypt synced data
+```
+
+**Archive operations:**
+```bash
+clonr standalone archive <paths> # Create encrypted repo archive
+clonr standalone extract <file>  # Extract encrypted archive
+```
+
+### Implementation Files
+
+```
+internal/standalone/
+├── types.go           # StandaloneKey, StandaloneConfig, StandaloneConnection
+├── key.go             # Key generation, encoding (Base58), validation
+├── crypto.go          # AES-256-GCM encryption, PBKDF2, Argon2 key derivation
+├── sync.go            # Sync logic, SyncedData, EncryptionKeyManager
+├── handshake.go       # Client-server handshake, per-client encryption
+├── archive.go         # Encrypted ZIP archives for repos
+└── *_test.go          # Comprehensive test coverage
+
+cmd/
+├── standalone.go          # Parent command
+├── standalone_init.go     # Initialize standalone mode
+├── standalone_status.go   # Show status
+├── standalone_connect.go  # Client connection with key display
+├── standalone_accept.go   # Accept pending clients (server)
+├── standalone_clients.go  # List registered clients
+├── standalone_encrypt.go  # Server encryption setup
+├── standalone_decrypt.go  # Decrypt synced data
+├── standalone_archive.go  # Create encrypted archives
+└── standalone_extract.go  # Extract archives
+```
+
+### Key Types
+
+```go
+// StandaloneKey - shared with clients to establish connections
+type StandaloneKey struct {
+    Version           int       `json:"version"`
+    InstanceID        string    `json:"instance_id"`
+    Host              string    `json:"host"`
+    Port              int       `json:"port"`
+    APIKey            string    `json:"api_key"`       // Base58-encoded
+    RefreshToken      string    `json:"refresh_token"` // Base58-encoded
+    EncryptionKeyHint string    `json:"encryption_key_hint"`
+    ExpiresAt         time.Time `json:"expires_at"`
+    Capabilities      []string  `json:"capabilities"`
+}
+
+// StandaloneConfig - stored on server instance
+type StandaloneConfig struct {
+    Enabled      bool      `json:"enabled"`
+    IsServer     bool      `json:"is_server"`     // Server accepts connections
+    InstanceID   string    `json:"instance_id"`
+    Port         int       `json:"port"`
+    APIKeyHash   []byte    `json:"api_key_hash"`  // Argon2 hash
+    // ...
+}
+
+// RegisteredClient - client registered on server
+type RegisteredClient struct {
+    ClientID          string      `json:"client_id"`
+    ClientName        string      `json:"client_name"`
+    MachineInfo       MachineInfo `json:"machine_info"`
+    EncryptionKeyHash []byte      `json:"encryption_key_hash"` // Argon2
+    EncryptionSalt    []byte      `json:"encryption_salt"`
+    KeyHint           string      `json:"key_hint"`
+    Status            string      `json:"status"` // "active", "suspended"
+    // ...
+}
+```
+
+### Encryption Architecture
+
+**Key Derivation:**
+```
+Master Key (32 bytes) ─┬─ HKDF("api-auth") ──────▶ API Key
+                       └─ HKDF("data-encryption") ▶ Encryption Key
+
+Client Key (32 bytes) ◀── Argon2(display_key, salt)
+                          (derived from 32-char hex display key)
+
+Local Storage Key ◀────── Argon2(user_password, local_salt)
+```
+
+**Data Classification:**
+- **Sensitive** (tokens, credentials): Encrypted with per-client key
+- **Public** (repos, workspaces, config): Stored normally
+
+### Handshake Flow
+
+1. **Server** runs `clonr standalone init` → generates standalone key
+2. **Client** runs `clonr standalone connect <key>`
+   - Parses and validates server key
+   - Generates 32-byte encryption key
+   - Displays formatted key to user (e.g., `xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx`)
+   - Prompts for local password to store connection
+3. **User** enters displayed key on server
+4. **Server** runs `clonr standalone accept`
+   - Lists pending registrations
+   - Accepts by entering the displayed key
+   - Stores client with hashed encryption key
+5. **Sync** can now occur with per-client encryption for sensitive data
+
+### Store Interface Methods
+
+```go
+// Pending registrations (server-side)
+SavePendingRegistration(reg *standalone.ClientRegistration) error
+GetPendingRegistration(clientID string) (*standalone.ClientRegistration, error)
+ListPendingRegistrations() ([]*standalone.ClientRegistration, error)
+RemovePendingRegistration(clientID string) error
+
+// Registered clients (server-side)
+SaveRegisteredClient(client *standalone.RegisteredClient) error
+GetRegisteredClient(clientID string) (*standalone.RegisteredClient, error)
+ListRegisteredClients() ([]*standalone.RegisteredClient, error)
+DeleteRegisteredClient(clientID string) error
+
+// Synced data (encrypted storage)
+GetSyncedData(connectionName, dataType, name string) (*standalone.SyncedData, error)
+ListSyncedDataByState(state standalone.SyncState) ([]standalone.SyncedData, error)
+SaveSyncedData(data *standalone.SyncedData) error
+```

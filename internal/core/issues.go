@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v67/github"
+	"github.com/google/go-github/v82/github"
 )
 
 // Issue represents a GitHub issue with essential fields
@@ -200,7 +200,7 @@ func fetchAllIssues(ctx context.Context, client *github.Client, owner, repo stri
 			break
 		}
 
-		opt.Page = resp.NextPage
+		opt.ListOptions.Page = resp.NextPage
 	}
 
 	return allIssues, nil
@@ -452,7 +452,7 @@ func ListIssuesFromAPI(token, owner, repo string, opts ListIssuesOptions) (*Issu
 			break
 		}
 
-		opt.Page = resp.NextPage
+		opt.ListOptions.Page = resp.NextPage
 	}
 
 	return convertIssues(fmt.Sprintf("%s/%s", owner, repo), allIssues), nil

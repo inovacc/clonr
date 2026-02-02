@@ -269,44 +269,63 @@ func (a *ICEAgent) Accept(ctx context.Context, remote *ICECredentials) (net.Conn
 
 // iceCandidateToCandidate converts our ICECandidate to pion ice.Candidate
 func (a *ICEAgent) iceCandidateToCandidate(c ICECandidate) (ice.Candidate, error) {
-	candidateType := ice.CandidateTypeHost
+	network := "udp"
+	if c.Protocol == "tcp" {
+		network = "tcp"
+	}
+
 	switch c.Type {
 	case "host":
-		candidateType = ice.CandidateTypeHost
+		return ice.NewCandidateHost(&ice.CandidateHostConfig{
+			Network:    network,
+			Address:    c.IP,
+			Port:       c.Port,
+			Component:  uint16(c.Component),
+			Priority:   c.Priority,
+			Foundation: c.Foundation,
+		})
 	case "srflx":
-		candidateType = ice.CandidateTypeServerReflexive
-	case "prflx":
-		candidateType = ice.CandidateTypePeerReflexive
-	case "relay":
-		candidateType = ice.CandidateTypeRelay
-	}
-
-	config := ice.CandidateConfig{
-		CandidateID: "",
-		NetworkType: ice.NetworkTypeUDP4,
-		Address:     c.IP,
-		Port:        c.Port,
-		Component:   uint16(c.Component),
-		Priority:    c.Priority,
-		Foundation:  c.Foundation,
-	}
-
-	if c.RelatedIP != "" {
-		config.RelatedAddress = &ice.CandidateRelatedAddress{
-			Address: c.RelatedIP,
-			Port:    c.RelatedPort,
+		config := &ice.CandidateServerReflexiveConfig{
+			Network:    network,
+			Address:    c.IP,
+			Port:       c.Port,
+			Component:  uint16(c.Component),
+			Priority:   c.Priority,
+			Foundation: c.Foundation,
 		}
-	}
-
-	switch candidateType {
-	case ice.CandidateTypeHost:
-		return ice.NewCandidateHost(&config)
-	case ice.CandidateTypeServerReflexive:
-		return ice.NewCandidateServerReflexive(&config)
-	case ice.CandidateTypePeerReflexive:
-		return ice.NewCandidatePeerReflexive(&config)
-	case ice.CandidateTypeRelay:
-		return ice.NewCandidateRelay(&config)
+		if c.RelatedIP != "" {
+			config.RelAddr = c.RelatedIP
+			config.RelPort = c.RelatedPort
+		}
+		return ice.NewCandidateServerReflexive(config)
+	case "prflx":
+		config := &ice.CandidatePeerReflexiveConfig{
+			Network:    network,
+			Address:    c.IP,
+			Port:       c.Port,
+			Component:  uint16(c.Component),
+			Priority:   c.Priority,
+			Foundation: c.Foundation,
+		}
+		if c.RelatedIP != "" {
+			config.RelAddr = c.RelatedIP
+			config.RelPort = c.RelatedPort
+		}
+		return ice.NewCandidatePeerReflexive(config)
+	case "relay":
+		config := &ice.CandidateRelayConfig{
+			Network:    network,
+			Address:    c.IP,
+			Port:       c.Port,
+			Component:  uint16(c.Component),
+			Priority:   c.Priority,
+			Foundation: c.Foundation,
+		}
+		if c.RelatedIP != "" {
+			config.RelAddr = c.RelatedIP
+			config.RelPort = c.RelatedPort
+		}
+		return ice.NewCandidateRelay(config)
 	default:
 		return nil, fmt.Errorf("unknown candidate type: %s", c.Type)
 	}

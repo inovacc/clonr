@@ -12,12 +12,12 @@ import (
 )
 
 var (
-	actionsLimit int
-	actionsRepo  string
+	monitorLimit int
+	monitorRepo  string
 )
 
-var actionsCmd = &cobra.Command{
-	Use:   "actions",
+var monitorCmd = &cobra.Command{
+	Use:   "monitor",
 	Short: "View GitHub Actions status for pushed commits",
 	Long: `View GitHub Actions workflow status for commits pushed via clonr.
 
@@ -25,19 +25,19 @@ When you push using 'clonr push', the commit is automatically queued for
 GitHub Actions monitoring. This command shows the status of those workflows.
 
 Examples:
-  clonr actions                    # Show recent push statuses
-  clonr actions --limit 20         # Show last 20 pushes
-  clonr actions --repo owner/repo  # Filter by repository`,
-	RunE: runActions,
+  clonr monitor                    # Show recent push statuses
+  clonr monitor --limit 20         # Show last 20 pushes
+  clonr monitor --repo owner/repo  # Filter by repository`,
+	RunE: runMonitor,
 }
 
 func init() {
-	rootCmd.AddCommand(actionsCmd)
-	actionsCmd.Flags().IntVarP(&actionsLimit, "limit", "n", 10, "Number of pushes to show")
-	actionsCmd.Flags().StringVarP(&actionsRepo, "repo", "r", "", "Filter by repository (owner/repo)")
+	rootCmd.AddCommand(monitorCmd)
+	monitorCmd.Flags().IntVarP(&monitorLimit, "limit", "n", 10, "Number of pushes to show")
+	monitorCmd.Flags().StringVarP(&monitorRepo, "repo", "r", "", "Filter by repository (owner/repo)")
 }
 
-func runActions(_ *cobra.Command, _ []string) error {
+func runMonitor(_ *cobra.Command, _ []string) error {
 	dbPath, err := actionsdb.DefaultDBPath()
 	if err != nil {
 		return fmt.Errorf("failed to get database path: %w", err)
@@ -51,17 +51,17 @@ func runActions(_ *cobra.Command, _ []string) error {
 
 	// Parse repo filter
 	var owner, repo string
-	if actionsRepo != "" {
-		parts := strings.Split(actionsRepo, "/")
+	if monitorRepo != "" {
+		parts := strings.Split(monitorRepo, "/")
 		if len(parts) == 2 {
 			owner, repo = parts[0], parts[1]
 		} else {
-			owner = actionsRepo
+			owner = monitorRepo
 		}
 	}
 
 	// Get push records
-	records, err := db.ListPushRecords(owner, repo, actionsLimit)
+	records, err := db.ListPushRecords(owner, repo, monitorLimit)
 	if err != nil {
 		return fmt.Errorf("failed to list push records: %w", err)
 	}
@@ -173,7 +173,7 @@ func displayPushRecord(db *actionsdb.DB, record *actionsdb.PushRecord) {
 			duration := ""
 			if !run.StartedAt.IsZero() && !run.CompletedAt.IsZero() {
 				d := run.CompletedAt.Sub(run.StartedAt)
-				duration = fmt.Sprintf(" (%s)", formatDuration(d))
+				duration = fmt.Sprintf(" (%s)", formatWorkflowDuration(d))
 			}
 
 			_, _ = fmt.Fprintf(os.Stdout, "    %s %s%s\n",
@@ -217,7 +217,7 @@ func formatTimeAgo(t time.Time) string {
 	return fmt.Sprintf("%d days ago", days)
 }
 
-func formatDuration(d time.Duration) string {
+func formatWorkflowDuration(d time.Duration) string {
 	if d < time.Minute {
 		return fmt.Sprintf("%ds", int(d.Seconds()))
 	}

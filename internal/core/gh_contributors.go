@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/google/go-github/v67/github"
+	"github.com/google/go-github/v82/github"
 )
 
 // Contributor represents a repository contributor

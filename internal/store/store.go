@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/inovacc/clonr/internal/model"
+	"github.com/inovacc/clonr/internal/standalone"
 )
 
 // Store defines the database operations used by the app.
@@ -44,6 +45,43 @@ type Store interface {
 	WorkspaceExists(name string) (bool, error)
 	GetReposByWorkspace(workspace string) ([]string, error)
 	UpdateRepoWorkspace(urlStr string, workspace string) error
+
+	// Standalone operations
+	GetStandaloneConfig() (*standalone.StandaloneConfig, error)
+	SaveStandaloneConfig(config *standalone.StandaloneConfig) error
+	DeleteStandaloneConfig() error
+	GetStandaloneClients() ([]standalone.Client, error)
+	SaveStandaloneClient(client *standalone.Client) error
+	DeleteStandaloneClient(id string) error
+
+	// Standalone connections (destination side)
+	GetStandaloneConnection(name string) (*standalone.StandaloneConnection, error)
+	ListStandaloneConnections() ([]standalone.StandaloneConnection, error)
+	SaveStandaloneConnection(conn *standalone.StandaloneConnection) error
+	DeleteStandaloneConnection(name string) error
+
+	// Server encryption config
+	GetServerEncryptionConfig() (*standalone.ServerEncryptionConfig, error)
+	SaveServerEncryptionConfig(config *standalone.ServerEncryptionConfig) error
+
+	// Synced data (encrypted storage)
+	GetSyncedData(connectionName, dataType, name string) (*standalone.SyncedData, error)
+	ListSyncedData(connectionName string) ([]standalone.SyncedData, error)
+	ListSyncedDataByState(state standalone.SyncState) ([]standalone.SyncedData, error)
+	SaveSyncedData(data *standalone.SyncedData) error
+	DeleteSyncedData(connectionName, dataType, name string) error
+
+	// Client registration (server side)
+	SavePendingRegistration(reg *standalone.ClientRegistration) error
+	GetPendingRegistration(clientID string) (*standalone.ClientRegistration, error)
+	ListPendingRegistrations() ([]*standalone.ClientRegistration, error)
+	RemovePendingRegistration(clientID string) error
+
+	// Registered clients (server side)
+	SaveRegisteredClient(client *standalone.RegisteredClient) error
+	GetRegisteredClient(clientID string) (*standalone.RegisteredClient, error)
+	ListRegisteredClients() ([]*standalone.RegisteredClient, error)
+	DeleteRegisteredClient(clientID string) error
 }
 
 var (

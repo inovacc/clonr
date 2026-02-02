@@ -7,20 +7,25 @@ import (
 	"errors"
 	"net/url"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/inovacc/clonr/internal/model"
 	"github.com/inovacc/clonr/internal/params"
+	"github.com/inovacc/clonr/internal/standalone"
 	"go.etcd.io/bbolt"
 )
 
 const (
-	boltBucketRepos      = "repos"      // key: URL -> Repository JSON
-	boltBucketPaths      = "paths"      // key: Path -> URL string
-	boltBucketConfig     = "config"     // key: "config" -> Config JSON
-	boltBucketProfiles   = "profiles"   // key: name -> Profile JSON
-	boltBucketWorkspaces = "workspaces" // key: name -> Workspace JSON
+	boltBucketRepos         = "repos"         // key: URL -> Repository JSON
+	boltBucketPaths         = "paths"         // key: Path -> URL string
+	boltBucketConfig        = "config"        // key: "config" -> Config JSON
+	boltBucketProfiles      = "profiles"      // key: name -> Profile JSON
+	boltBucketWorkspaces    = "workspaces"    // key: name -> Workspace JSON
+	boltBucketStandalone    = "standalone"    // key: "config" -> StandaloneConfig, "client:<id>" -> Client, "encryption" -> ServerEncryptionConfig
+	boltBucketConnections   = "connections"   // key: name -> StandaloneConnection (destination side)
+	boltBucketSyncedData    = "synced_data"   // key: "connection:type:name" -> SyncedData (encrypted until decrypted)
 )
 
 type Bolt struct {
@@ -53,6 +58,18 @@ func NewBolt(path string) (*Bolt, error) {
 		}
 
 		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketWorkspaces)); err != nil {
+			return err
+		}
+
+		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketStandalone)); err != nil {
+			return err
+		}
+
+		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketConnections)); err != nil {
+			return err
+		}
+
+		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketSyncedData)); err != nil {
 			return err
 		}
 
@@ -97,6 +114,18 @@ func initDB() (Store, error) {
 		}
 
 		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketWorkspaces)); err != nil {
+			return err
+		}
+
+		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketStandalone)); err != nil {
+			return err
+		}
+
+		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketConnections)); err != nil {
+			return err
+		}
+
+		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketSyncedData)); err != nil {
 			return err
 		}
 
@@ -758,5 +787,504 @@ func (b *Bolt) UpdateRepoWorkspace(urlStr string, workspace string) error {
 		}
 
 		return repos.Put([]byte(urlStr), data)
+	})
+}
+
+// Standalone operations
+
+// GetStandaloneConfig retrieves the standalone configuration
+func (b *Bolt) GetStandaloneConfig() (*standalone.StandaloneConfig, error) {
+	var config *standalone.StandaloneConfig
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketStandalone))
+		v := bucket.Get([]byte("config"))
+
+		if v == nil {
+			return nil
+		}
+
+		var c standalone.StandaloneConfig
+		if err := json.Unmarshal(v, &c); err != nil {
+			return err
+		}
+
+		config = &c
+		return nil
+	})
+
+	return config, err
+}
+
+// SaveStandaloneConfig saves the standalone configuration
+func (b *Bolt) SaveStandaloneConfig(config *standalone.StandaloneConfig) error {
+	if config == nil {
+		return errors.New("config is required")
+	}
+
+	data, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketStandalone))
+		return bucket.Put([]byte("config"), data)
+	})
+}
+
+// DeleteStandaloneConfig removes the standalone configuration
+func (b *Bolt) DeleteStandaloneConfig() error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketStandalone))
+		return bucket.Delete([]byte("config"))
+	})
+}
+
+// GetStandaloneClients retrieves all connected clients
+func (b *Bolt) GetStandaloneClients() ([]standalone.Client, error) {
+	var clients []standalone.Client
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketStandalone))
+
+		return bucket.ForEach(func(k, v []byte) error {
+			key := string(k)
+			if !strings.HasPrefix(key, "client:") {
+				return nil
+			}
+
+			var c standalone.Client
+			if err := json.Unmarshal(v, &c); err != nil {
+				return err
+			}
+
+			clients = append(clients, c)
+			return nil
+		})
+	})
+
+	return clients, err
+}
+
+// SaveStandaloneClient saves or updates a connected client
+func (b *Bolt) SaveStandaloneClient(client *standalone.Client) error {
+	if client == nil {
+		return errors.New("client is required")
+	}
+
+	if client.ID == "" {
+		return errors.New("client ID is required")
+	}
+
+	data, err := json.Marshal(client)
+	if err != nil {
+		return err
+	}
+
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketStandalone))
+		return bucket.Put([]byte("client:"+client.ID), data)
+	})
+}
+
+// DeleteStandaloneClient removes a connected client
+func (b *Bolt) DeleteStandaloneClient(id string) error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketStandalone))
+		return bucket.Delete([]byte("client:" + id))
+	})
+}
+
+// Standalone connection operations (destination side)
+
+// GetStandaloneConnection retrieves a connection by name
+func (b *Bolt) GetStandaloneConnection(name string) (*standalone.StandaloneConnection, error) {
+	var conn *standalone.StandaloneConnection
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketConnections))
+		v := bucket.Get([]byte(name))
+
+		if v == nil {
+			return nil
+		}
+
+		var c standalone.StandaloneConnection
+		if err := json.Unmarshal(v, &c); err != nil {
+			return err
+		}
+
+		conn = &c
+		return nil
+	})
+
+	return conn, err
+}
+
+// ListStandaloneConnections retrieves all connections
+func (b *Bolt) ListStandaloneConnections() ([]standalone.StandaloneConnection, error) {
+	var connections []standalone.StandaloneConnection
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketConnections))
+
+		return bucket.ForEach(func(k, v []byte) error {
+			var c standalone.StandaloneConnection
+			if err := json.Unmarshal(v, &c); err != nil {
+				return err
+			}
+
+			connections = append(connections, c)
+			return nil
+		})
+	})
+
+	return connections, err
+}
+
+// SaveStandaloneConnection saves or updates a connection
+func (b *Bolt) SaveStandaloneConnection(conn *standalone.StandaloneConnection) error {
+	if conn == nil {
+		return errors.New("connection is required")
+	}
+
+	if conn.Name == "" {
+		return errors.New("connection name is required")
+	}
+
+	data, err := json.Marshal(conn)
+	if err != nil {
+		return err
+	}
+
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketConnections))
+		return bucket.Put([]byte(conn.Name), data)
+	})
+}
+
+// DeleteStandaloneConnection removes a connection by name
+func (b *Bolt) DeleteStandaloneConnection(name string) error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketConnections))
+		return bucket.Delete([]byte(name))
+	})
+}
+
+// Server encryption config
+
+// GetServerEncryptionConfig retrieves the server encryption configuration
+func (b *Bolt) GetServerEncryptionConfig() (*standalone.ServerEncryptionConfig, error) {
+	var config *standalone.ServerEncryptionConfig
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketStandalone))
+		v := bucket.Get([]byte("encryption"))
+
+		if v == nil {
+			return nil
+		}
+
+		var c standalone.ServerEncryptionConfig
+		if err := json.Unmarshal(v, &c); err != nil {
+			return err
+		}
+
+		config = &c
+		return nil
+	})
+
+	return config, err
+}
+
+// SaveServerEncryptionConfig saves the server encryption configuration
+func (b *Bolt) SaveServerEncryptionConfig(config *standalone.ServerEncryptionConfig) error {
+	if config == nil {
+		return errors.New("config is required")
+	}
+
+	data, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketStandalone))
+		return bucket.Put([]byte("encryption"), data)
+	})
+}
+
+// Synced data operations
+
+// syncedDataKey generates the key for synced data storage
+func syncedDataKey(connectionName, dataType, name string) string {
+	return connectionName + ":" + dataType + ":" + name
+}
+
+// GetSyncedData retrieves synced data by connection, type, and name
+func (b *Bolt) GetSyncedData(connectionName, dataType, name string) (*standalone.SyncedData, error) {
+	var data *standalone.SyncedData
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketSyncedData))
+		key := syncedDataKey(connectionName, dataType, name)
+		v := bucket.Get([]byte(key))
+
+		if v == nil {
+			return nil
+		}
+
+		var d standalone.SyncedData
+		if err := json.Unmarshal(v, &d); err != nil {
+			return err
+		}
+
+		data = &d
+		return nil
+	})
+
+	return data, err
+}
+
+// ListSyncedData retrieves all synced data for a connection
+func (b *Bolt) ListSyncedData(connectionName string) ([]standalone.SyncedData, error) {
+	var result []standalone.SyncedData
+	prefix := connectionName + ":"
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketSyncedData))
+
+		return bucket.ForEach(func(k, v []byte) error {
+			if !strings.HasPrefix(string(k), prefix) {
+				return nil
+			}
+
+			var d standalone.SyncedData
+			if err := json.Unmarshal(v, &d); err != nil {
+				return err
+			}
+
+			result = append(result, d)
+			return nil
+		})
+	})
+
+	return result, err
+}
+
+// ListSyncedDataByState retrieves all synced data with a specific state
+func (b *Bolt) ListSyncedDataByState(state standalone.SyncState) ([]standalone.SyncedData, error) {
+	var result []standalone.SyncedData
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketSyncedData))
+
+		return bucket.ForEach(func(k, v []byte) error {
+			var d standalone.SyncedData
+			if err := json.Unmarshal(v, &d); err != nil {
+				return err
+			}
+
+			if d.State == state {
+				result = append(result, d)
+			}
+			return nil
+		})
+	})
+
+	return result, err
+}
+
+// SaveSyncedData saves synced data
+func (b *Bolt) SaveSyncedData(data *standalone.SyncedData) error {
+	if data == nil {
+		return errors.New("data is required")
+	}
+
+	if data.ConnectionName == "" || data.DataType == "" || data.Name == "" {
+		return errors.New("connection name, data type, and name are required")
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketSyncedData))
+		key := syncedDataKey(data.ConnectionName, data.DataType, data.Name)
+		return bucket.Put([]byte(key), jsonData)
+	})
+}
+
+// DeleteSyncedData removes synced data
+func (b *Bolt) DeleteSyncedData(connectionName, dataType, name string) error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketSyncedData))
+		key := syncedDataKey(connectionName, dataType, name)
+		return bucket.Delete([]byte(key))
+	})
+}
+
+// Client registration operations (server side)
+
+// SavePendingRegistration saves a pending client registration
+func (b *Bolt) SavePendingRegistration(reg *standalone.ClientRegistration) error {
+	if reg == nil {
+		return errors.New("registration is required")
+	}
+
+	if reg.ClientID == "" {
+		return errors.New("client ID is required")
+	}
+
+	data, err := json.Marshal(reg)
+	if err != nil {
+		return err
+	}
+
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketStandalone))
+		return bucket.Put([]byte("pending:"+reg.ClientID), data)
+	})
+}
+
+// GetPendingRegistration retrieves a pending registration by client ID
+func (b *Bolt) GetPendingRegistration(clientID string) (*standalone.ClientRegistration, error) {
+	var reg *standalone.ClientRegistration
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketStandalone))
+		v := bucket.Get([]byte("pending:" + clientID))
+
+		if v == nil {
+			return nil
+		}
+
+		var r standalone.ClientRegistration
+		if err := json.Unmarshal(v, &r); err != nil {
+			return err
+		}
+
+		reg = &r
+		return nil
+	})
+
+	return reg, err
+}
+
+// ListPendingRegistrations retrieves all pending client registrations
+func (b *Bolt) ListPendingRegistrations() ([]*standalone.ClientRegistration, error) {
+	var registrations []*standalone.ClientRegistration
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketStandalone))
+
+		return bucket.ForEach(func(k, v []byte) error {
+			key := string(k)
+			if !strings.HasPrefix(key, "pending:") {
+				return nil
+			}
+
+			var r standalone.ClientRegistration
+			if err := json.Unmarshal(v, &r); err != nil {
+				return err
+			}
+
+			registrations = append(registrations, &r)
+			return nil
+		})
+	})
+
+	return registrations, err
+}
+
+// RemovePendingRegistration removes a pending registration
+func (b *Bolt) RemovePendingRegistration(clientID string) error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketStandalone))
+		return bucket.Delete([]byte("pending:" + clientID))
+	})
+}
+
+// Registered client operations (server side)
+
+// SaveRegisteredClient saves a registered client
+func (b *Bolt) SaveRegisteredClient(client *standalone.RegisteredClient) error {
+	if client == nil {
+		return errors.New("client is required")
+	}
+
+	if client.ClientID == "" {
+		return errors.New("client ID is required")
+	}
+
+	data, err := json.Marshal(client)
+	if err != nil {
+		return err
+	}
+
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketStandalone))
+		return bucket.Put([]byte("registered:"+client.ClientID), data)
+	})
+}
+
+// GetRegisteredClient retrieves a registered client by ID
+func (b *Bolt) GetRegisteredClient(clientID string) (*standalone.RegisteredClient, error) {
+	var client *standalone.RegisteredClient
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketStandalone))
+		v := bucket.Get([]byte("registered:" + clientID))
+
+		if v == nil {
+			return nil
+		}
+
+		var c standalone.RegisteredClient
+		if err := json.Unmarshal(v, &c); err != nil {
+			return err
+		}
+
+		client = &c
+		return nil
+	})
+
+	return client, err
+}
+
+// ListRegisteredClients retrieves all registered clients
+func (b *Bolt) ListRegisteredClients() ([]*standalone.RegisteredClient, error) {
+	var clients []*standalone.RegisteredClient
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketStandalone))
+
+		return bucket.ForEach(func(k, v []byte) error {
+			key := string(k)
+			if !strings.HasPrefix(key, "registered:") {
+				return nil
+			}
+
+			var c standalone.RegisteredClient
+			if err := json.Unmarshal(v, &c); err != nil {
+				return err
+			}
+
+			clients = append(clients, &c)
+			return nil
+		})
+	})
+
+	return clients, err
+}
+
+// DeleteRegisteredClient removes a registered client
+func (b *Bolt) DeleteRegisteredClient(clientID string) error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketStandalone))
+		return bucket.Delete([]byte("registered:" + clientID))
 	})
 }

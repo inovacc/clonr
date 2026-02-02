@@ -8,6 +8,7 @@ import (
 
 	v1 "github.com/inovacc/clonr/internal/api/v1"
 	"github.com/inovacc/clonr/internal/model"
+	"github.com/inovacc/clonr/internal/standalone"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -181,6 +182,108 @@ func (m *mockStore) GetReposByWorkspace(_ string) ([]string, error) {
 
 func (m *mockStore) UpdateRepoWorkspace(_ string, _ string) error {
 	return m.updateRepoWorkspaceErr
+}
+
+// Standalone operations
+func (m *mockStore) GetStandaloneConfig() (*standalone.StandaloneConfig, error) {
+	return nil, nil
+}
+
+func (m *mockStore) SaveStandaloneConfig(_ *standalone.StandaloneConfig) error {
+	return nil
+}
+
+func (m *mockStore) DeleteStandaloneConfig() error {
+	return nil
+}
+
+func (m *mockStore) GetStandaloneClients() ([]standalone.Client, error) {
+	return nil, nil
+}
+
+func (m *mockStore) SaveStandaloneClient(_ *standalone.Client) error {
+	return nil
+}
+
+func (m *mockStore) DeleteStandaloneClient(_ string) error {
+	return nil
+}
+
+func (m *mockStore) GetStandaloneConnection(_ string) (*standalone.StandaloneConnection, error) {
+	return nil, nil
+}
+
+func (m *mockStore) ListStandaloneConnections() ([]standalone.StandaloneConnection, error) {
+	return nil, nil
+}
+
+func (m *mockStore) SaveStandaloneConnection(_ *standalone.StandaloneConnection) error {
+	return nil
+}
+
+func (m *mockStore) DeleteStandaloneConnection(_ string) error {
+	return nil
+}
+
+func (m *mockStore) GetServerEncryptionConfig() (*standalone.ServerEncryptionConfig, error) {
+	return nil, nil
+}
+
+func (m *mockStore) SaveServerEncryptionConfig(_ *standalone.ServerEncryptionConfig) error {
+	return nil
+}
+
+func (m *mockStore) GetSyncedData(_, _, _ string) (*standalone.SyncedData, error) {
+	return nil, nil
+}
+
+func (m *mockStore) ListSyncedData(_ string) ([]standalone.SyncedData, error) {
+	return nil, nil
+}
+
+func (m *mockStore) ListSyncedDataByState(_ standalone.SyncState) ([]standalone.SyncedData, error) {
+	return nil, nil
+}
+
+func (m *mockStore) SaveSyncedData(_ *standalone.SyncedData) error {
+	return nil
+}
+
+func (m *mockStore) DeleteSyncedData(_, _, _ string) error {
+	return nil
+}
+
+// Client registration operations (server side)
+func (m *mockStore) SavePendingRegistration(_ *standalone.ClientRegistration) error {
+	return nil
+}
+
+func (m *mockStore) GetPendingRegistration(_ string) (*standalone.ClientRegistration, error) {
+	return nil, nil
+}
+
+func (m *mockStore) ListPendingRegistrations() ([]*standalone.ClientRegistration, error) {
+	return nil, nil
+}
+
+func (m *mockStore) RemovePendingRegistration(_ string) error {
+	return nil
+}
+
+func (m *mockStore) SaveRegisteredClient(_ *standalone.RegisteredClient) error {
+	return nil
+}
+
+func (m *mockStore) GetRegisteredClient(_ string) (*standalone.RegisteredClient, error) {
+	return nil, nil
+}
+
+func (m *mockStore) ListRegisteredClients() ([]*standalone.RegisteredClient, error) {
+	return nil, nil
+}
+
+func (m *mockStore) DeleteRegisteredClient(_ string) error {
+	return nil
 }
 
 func TestNewService(t *testing.T) {

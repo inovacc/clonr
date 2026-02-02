@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/google/go-github/v67/github"
+	"github.com/google/go-github/v82/github"
 )
 
 // PRStatus represents the status of a pull request
