@@ -32,12 +32,7 @@ func (s *Service) Ping(ctx context.Context, req *v1.Empty) (*v1.Empty, error) {
 }
 
 // SaveRepo saves a repository to the database
-func (s *Service) SaveRepo(ctx context.Context, req *v1.SaveRepoRequest) (*v1.SaveRepoResponse, error) {
-	// Check for context cancellation (per guide)
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) SaveRepo(_ context.Context, req *v1.SaveRepoRequest) (*v1.SaveRepoResponse, error) {
 	if req.GetUrl() == "" {
 		return nil, status.Error(codes.InvalidArgument, "url is required")
 	}
@@ -59,12 +54,7 @@ func (s *Service) SaveRepo(ctx context.Context, req *v1.SaveRepoRequest) (*v1.Sa
 }
 
 // RepoExistsByURL checks if a repository exists by URL
-func (s *Service) RepoExistsByURL(ctx context.Context, req *v1.RepoExistsByURLRequest) (*v1.RepoExistsByURLResponse, error) {
-	// Check for context cancellation (per guide)
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) RepoExistsByURL(_ context.Context, req *v1.RepoExistsByURLRequest) (*v1.RepoExistsByURLResponse, error) {
 	if req.GetUrl() == "" {
 		return nil, status.Error(codes.InvalidArgument, "url is required")
 	}
@@ -83,12 +73,7 @@ func (s *Service) RepoExistsByURL(ctx context.Context, req *v1.RepoExistsByURLRe
 }
 
 // RepoExistsByPath checks if a repository exists by path
-func (s *Service) RepoExistsByPath(ctx context.Context, req *v1.RepoExistsByPathRequest) (*v1.RepoExistsByPathResponse, error) {
-	// Check for context cancellation (per guide)
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) RepoExistsByPath(_ context.Context, req *v1.RepoExistsByPathRequest) (*v1.RepoExistsByPathResponse, error) {
 	if req.GetPath() == "" {
 		return nil, status.Error(codes.InvalidArgument, "path is required")
 	}
@@ -102,12 +87,7 @@ func (s *Service) RepoExistsByPath(ctx context.Context, req *v1.RepoExistsByPath
 }
 
 // InsertRepoIfNotExists inserts a repository if it doesn't already exist
-func (s *Service) InsertRepoIfNotExists(ctx context.Context, req *v1.InsertRepoIfNotExistsRequest) (*v1.InsertRepoIfNotExistsResponse, error) {
-	// Check for context cancellation (per guide)
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) InsertRepoIfNotExists(_ context.Context, req *v1.InsertRepoIfNotExistsRequest) (*v1.InsertRepoIfNotExistsResponse, error) {
 	if req.GetUrl() == "" && req.GetPath() == "" {
 		return nil, status.Error(codes.InvalidArgument, "url or path is required")
 	}
@@ -132,12 +112,7 @@ func (s *Service) InsertRepoIfNotExists(ctx context.Context, req *v1.InsertRepoI
 }
 
 // GetAllRepos retrieves all repositories
-func (s *Service) GetAllRepos(ctx context.Context, req *v1.GetAllReposRequest) (*v1.GetAllReposResponse, error) {
-	// Check for context cancellation (per guide)
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) GetAllRepos(_ context.Context, _ *v1.GetAllReposRequest) (*v1.GetAllReposResponse, error) {
 	repos, err := s.db.GetAllRepos()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get repositories: %v", err)
@@ -152,12 +127,7 @@ func (s *Service) GetAllRepos(ctx context.Context, req *v1.GetAllReposRequest) (
 }
 
 // GetRepos retrieves repositories with optional filtering
-func (s *Service) GetRepos(ctx context.Context, req *v1.GetReposRequest) (*v1.GetReposResponse, error) {
-	// Check for context cancellation (per guide)
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) GetRepos(_ context.Context, req *v1.GetReposRequest) (*v1.GetReposResponse, error) {
 	repos, err := s.db.GetRepos(req.GetWorkspace(), req.GetFavoritesOnly())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get repositories: %v", err)
@@ -172,12 +142,7 @@ func (s *Service) GetRepos(ctx context.Context, req *v1.GetReposRequest) (*v1.Ge
 }
 
 // SetFavoriteByURL marks or unmarks a repository as favorite
-func (s *Service) SetFavoriteByURL(ctx context.Context, req *v1.SetFavoriteRequest) (*v1.SetFavoriteResponse, error) {
-	// Check for context cancellation (per guide)
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.InvalidArgument, "request canceled")
-	}
-
+func (s *Service) SetFavoriteByURL(_ context.Context, req *v1.SetFavoriteRequest) (*v1.SetFavoriteResponse, error) {
 	if req.GetUrl() == "" {
 		return nil, status.Error(codes.InvalidArgument, "url is required")
 	}
@@ -195,12 +160,7 @@ func (s *Service) SetFavoriteByURL(ctx context.Context, req *v1.SetFavoriteReque
 }
 
 // UpdateRepoTimestamp updates the timestamp for a repository
-func (s *Service) UpdateRepoTimestamp(ctx context.Context, req *v1.UpdateRepoTimestampRequest) (*v1.UpdateRepoTimestampResponse, error) {
-	// Check for context cancellation (per guide)
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) UpdateRepoTimestamp(_ context.Context, req *v1.UpdateRepoTimestampRequest) (*v1.UpdateRepoTimestampResponse, error) {
 	if req.GetUrl() == "" {
 		return nil, status.Error(codes.InvalidArgument, "url is required")
 	}
@@ -213,12 +173,7 @@ func (s *Service) UpdateRepoTimestamp(ctx context.Context, req *v1.UpdateRepoTim
 }
 
 // RemoveRepoByURL removes a repository by URL
-func (s *Service) RemoveRepoByURL(ctx context.Context, req *v1.RemoveRepoByURLRequest) (*v1.RemoveRepoByURLResponse, error) {
-	// Check for context cancellation (per guide)
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) RemoveRepoByURL(_ context.Context, req *v1.RemoveRepoByURLRequest) (*v1.RemoveRepoByURLResponse, error) {
 	if req.GetUrl() == "" {
 		return nil, status.Error(codes.InvalidArgument, "url is required")
 	}
@@ -236,12 +191,7 @@ func (s *Service) RemoveRepoByURL(ctx context.Context, req *v1.RemoveRepoByURLRe
 }
 
 // GetConfig retrieves the application configuration
-func (s *Service) GetConfig(ctx context.Context, req *v1.GetConfigRequest) (*v1.GetConfigResponse, error) {
-	// Check for context cancellation (per guide)
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) GetConfig(_ context.Context, _ *v1.GetConfigRequest) (*v1.GetConfigResponse, error) {
 	cfg, err := s.db.GetConfig()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get configuration: %v", err)
@@ -251,12 +201,7 @@ func (s *Service) GetConfig(ctx context.Context, req *v1.GetConfigRequest) (*v1.
 }
 
 // SaveConfig saves the application configuration
-func (s *Service) SaveConfig(ctx context.Context, req *v1.SaveConfigRequest) (*v1.SaveConfigResponse, error) {
-	// Check for context cancellation (per guide)
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) SaveConfig(_ context.Context, req *v1.SaveConfigRequest) (*v1.SaveConfigResponse, error) {
 	if req.GetConfig() == nil {
 		return nil, status.Error(codes.InvalidArgument, "config is required")
 	}
@@ -270,11 +215,7 @@ func (s *Service) SaveConfig(ctx context.Context, req *v1.SaveConfigRequest) (*v
 }
 
 // SaveProfile saves or updates a profile
-func (s *Service) SaveProfile(ctx context.Context, req *v1.SaveProfileRequest) (*v1.SaveProfileResponse, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) SaveProfile(_ context.Context, req *v1.SaveProfileRequest) (*v1.SaveProfileResponse, error) {
 	if req.GetProfile() == nil {
 		return nil, status.Error(codes.InvalidArgument, "profile is required")
 	}
@@ -292,11 +233,7 @@ func (s *Service) SaveProfile(ctx context.Context, req *v1.SaveProfileRequest) (
 }
 
 // GetProfile retrieves a profile by name
-func (s *Service) GetProfile(ctx context.Context, req *v1.GetProfileRequest) (*v1.GetProfileResponse, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) GetProfile(_ context.Context, req *v1.GetProfileRequest) (*v1.GetProfileResponse, error) {
 	if req.GetName() == "" {
 		return nil, status.Error(codes.InvalidArgument, "name is required")
 	}
@@ -314,11 +251,7 @@ func (s *Service) GetProfile(ctx context.Context, req *v1.GetProfileRequest) (*v
 }
 
 // GetActiveProfile retrieves the currently active profile
-func (s *Service) GetActiveProfile(ctx context.Context, _ *v1.GetActiveProfileRequest) (*v1.GetActiveProfileResponse, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) GetActiveProfile(_ context.Context, _ *v1.GetActiveProfileRequest) (*v1.GetActiveProfileResponse, error) {
 	profile, err := s.db.GetActiveProfile()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get active profile: %v", err)
@@ -328,11 +261,7 @@ func (s *Service) GetActiveProfile(ctx context.Context, _ *v1.GetActiveProfileRe
 }
 
 // SetActiveProfile sets the active profile by name
-func (s *Service) SetActiveProfile(ctx context.Context, req *v1.SetActiveProfileRequest) (*v1.SetActiveProfileResponse, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) SetActiveProfile(_ context.Context, req *v1.SetActiveProfileRequest) (*v1.SetActiveProfileResponse, error) {
 	if req.GetName() == "" {
 		return nil, status.Error(codes.InvalidArgument, "name is required")
 	}
@@ -349,11 +278,7 @@ func (s *Service) SetActiveProfile(ctx context.Context, req *v1.SetActiveProfile
 }
 
 // ListProfiles retrieves all profiles
-func (s *Service) ListProfiles(ctx context.Context, _ *v1.ListProfilesRequest) (*v1.ListProfilesResponse, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) ListProfiles(_ context.Context, _ *v1.ListProfilesRequest) (*v1.ListProfilesResponse, error) {
 	profiles, err := s.db.ListProfiles()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list profiles: %v", err)
@@ -368,11 +293,7 @@ func (s *Service) ListProfiles(ctx context.Context, _ *v1.ListProfilesRequest) (
 }
 
 // DeleteProfile removes a profile by name
-func (s *Service) DeleteProfile(ctx context.Context, req *v1.DeleteProfileRequest) (*v1.DeleteProfileResponse, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) DeleteProfile(_ context.Context, req *v1.DeleteProfileRequest) (*v1.DeleteProfileResponse, error) {
 	if req.GetName() == "" {
 		return nil, status.Error(codes.InvalidArgument, "name is required")
 	}
@@ -385,11 +306,7 @@ func (s *Service) DeleteProfile(ctx context.Context, req *v1.DeleteProfileReques
 }
 
 // ProfileExists checks if a profile exists by name
-func (s *Service) ProfileExists(ctx context.Context, req *v1.ProfileExistsRequest) (*v1.ProfileExistsResponse, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) ProfileExists(_ context.Context, req *v1.ProfileExistsRequest) (*v1.ProfileExistsResponse, error) {
 	if req.GetName() == "" {
 		return nil, status.Error(codes.InvalidArgument, "name is required")
 	}
@@ -403,11 +320,7 @@ func (s *Service) ProfileExists(ctx context.Context, req *v1.ProfileExistsReques
 }
 
 // SaveWorkspace saves or updates a workspace
-func (s *Service) SaveWorkspace(ctx context.Context, req *v1.SaveWorkspaceRequest) (*v1.SaveWorkspaceResponse, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) SaveWorkspace(_ context.Context, req *v1.SaveWorkspaceRequest) (*v1.SaveWorkspaceResponse, error) {
 	if req.GetWorkspace() == nil {
 		return nil, status.Error(codes.InvalidArgument, "workspace is required")
 	}
@@ -425,11 +338,7 @@ func (s *Service) SaveWorkspace(ctx context.Context, req *v1.SaveWorkspaceReques
 }
 
 // GetWorkspace retrieves a workspace by name
-func (s *Service) GetWorkspace(ctx context.Context, req *v1.GetWorkspaceRequest) (*v1.GetWorkspaceResponse, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) GetWorkspace(_ context.Context, req *v1.GetWorkspaceRequest) (*v1.GetWorkspaceResponse, error) {
 	if req.GetName() == "" {
 		return nil, status.Error(codes.InvalidArgument, "name is required")
 	}
@@ -447,11 +356,7 @@ func (s *Service) GetWorkspace(ctx context.Context, req *v1.GetWorkspaceRequest)
 }
 
 // GetActiveWorkspace retrieves the currently active workspace
-func (s *Service) GetActiveWorkspace(ctx context.Context, _ *v1.GetActiveWorkspaceRequest) (*v1.GetActiveWorkspaceResponse, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) GetActiveWorkspace(_ context.Context, _ *v1.GetActiveWorkspaceRequest) (*v1.GetActiveWorkspaceResponse, error) {
 	workspace, err := s.db.GetActiveWorkspace()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get active workspace: %v", err)
@@ -461,11 +366,7 @@ func (s *Service) GetActiveWorkspace(ctx context.Context, _ *v1.GetActiveWorkspa
 }
 
 // SetActiveWorkspace sets the active workspace by name
-func (s *Service) SetActiveWorkspace(ctx context.Context, req *v1.SetActiveWorkspaceRequest) (*v1.SetActiveWorkspaceResponse, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) SetActiveWorkspace(_ context.Context, req *v1.SetActiveWorkspaceRequest) (*v1.SetActiveWorkspaceResponse, error) {
 	if req.GetName() == "" {
 		return nil, status.Error(codes.InvalidArgument, "name is required")
 	}
@@ -482,11 +383,7 @@ func (s *Service) SetActiveWorkspace(ctx context.Context, req *v1.SetActiveWorks
 }
 
 // ListWorkspaces retrieves all workspaces
-func (s *Service) ListWorkspaces(ctx context.Context, _ *v1.ListWorkspacesRequest) (*v1.ListWorkspacesResponse, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) ListWorkspaces(_ context.Context, _ *v1.ListWorkspacesRequest) (*v1.ListWorkspacesResponse, error) {
 	workspaces, err := s.db.ListWorkspaces()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list workspaces: %v", err)
@@ -501,11 +398,7 @@ func (s *Service) ListWorkspaces(ctx context.Context, _ *v1.ListWorkspacesReques
 }
 
 // DeleteWorkspace removes a workspace by name
-func (s *Service) DeleteWorkspace(ctx context.Context, req *v1.DeleteWorkspaceRequest) (*v1.DeleteWorkspaceResponse, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) DeleteWorkspace(_ context.Context, req *v1.DeleteWorkspaceRequest) (*v1.DeleteWorkspaceResponse, error) {
 	if req.GetName() == "" {
 		return nil, status.Error(codes.InvalidArgument, "name is required")
 	}
@@ -528,11 +421,7 @@ func (s *Service) DeleteWorkspace(ctx context.Context, req *v1.DeleteWorkspaceRe
 }
 
 // WorkspaceExists checks if a workspace exists by name
-func (s *Service) WorkspaceExists(ctx context.Context, req *v1.WorkspaceExistsRequest) (*v1.WorkspaceExistsResponse, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) WorkspaceExists(_ context.Context, req *v1.WorkspaceExistsRequest) (*v1.WorkspaceExistsResponse, error) {
 	if req.GetName() == "" {
 		return nil, status.Error(codes.InvalidArgument, "name is required")
 	}
@@ -546,11 +435,7 @@ func (s *Service) WorkspaceExists(ctx context.Context, req *v1.WorkspaceExistsRe
 }
 
 // GetReposByWorkspace retrieves all repository URLs in a workspace
-func (s *Service) GetReposByWorkspace(ctx context.Context, req *v1.GetReposByWorkspaceRequest) (*v1.GetReposByWorkspaceResponse, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) GetReposByWorkspace(_ context.Context, req *v1.GetReposByWorkspaceRequest) (*v1.GetReposByWorkspaceResponse, error) {
 	if req.GetWorkspace() == "" {
 		return nil, status.Error(codes.InvalidArgument, "workspace is required")
 	}
@@ -564,11 +449,7 @@ func (s *Service) GetReposByWorkspace(ctx context.Context, req *v1.GetReposByWor
 }
 
 // UpdateRepoWorkspace updates the workspace for a repository
-func (s *Service) UpdateRepoWorkspace(ctx context.Context, req *v1.UpdateRepoWorkspaceRequest) (*v1.UpdateRepoWorkspaceResponse, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, status.Error(codes.Canceled, "request canceled")
-	}
-
+func (s *Service) UpdateRepoWorkspace(_ context.Context, req *v1.UpdateRepoWorkspaceRequest) (*v1.UpdateRepoWorkspaceResponse, error) {
 	if req.GetUrl() == "" {
 		return nil, status.Error(codes.InvalidArgument, "url is required")
 	}

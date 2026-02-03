@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/inovacc/clonr/internal/core"
 	"github.com/spf13/cobra"
@@ -186,7 +184,7 @@ func printRunSummary(run *core.WorkflowRun) {
 
 	_, _ = fmt.Fprintf(os.Stdout, "%s %-40s %s%s\n",
 		statusIcon,
-		truncate(name, 40),
+		truncateStr(name, 40),
 		run.Branch,
 		durationStr)
 
@@ -250,7 +248,7 @@ func printJobDetail(job *core.WorkflowJob) {
 	// Calculate duration
 	if job.StartedAt != nil && job.CompletedAt != nil {
 		d := job.CompletedAt.Sub(*job.StartedAt)
-		durationStr = fmt.Sprintf(" (%s)", formatJobDuration(d))
+		durationStr = fmt.Sprintf(" (%s)", formatShortDuration(d))
 	} else if job.Status == "in_progress" {
 		durationStr = " (running)"
 	}
@@ -296,23 +294,4 @@ func getStatusIcon(status, conclusion string) string {
 	default:
 		return "❓"
 	}
-}
-
-func formatJobDuration(d time.Duration) string {
-	if d < time.Minute {
-		return fmt.Sprintf("%ds", int(d.Seconds()))
-	}
-
-	mins := int(d.Minutes())
-	secs := int(d.Seconds()) % 60
-
-	return fmt.Sprintf("%dm %ds", mins, secs)
-}
-
-func truncate(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s + strings.Repeat(" ", maxLen-len(s))
-	}
-
-	return s[:maxLen-3] + "..."
 }

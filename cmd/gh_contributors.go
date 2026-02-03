@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -76,31 +75,22 @@ func init() {
 }
 
 func runContributorsList(cmd *cobra.Command, args []string) error {
-	tokenFlag, _ := cmd.Flags().GetString("token")
-	profileFlag, _ := cmd.Flags().GetString("profile")
-	repoFlag, _ := cmd.Flags().GetString("repo")
-	jsonOutput, _ := cmd.Flags().GetBool("json")
+	flags := extractGHFlags(cmd)
 	limit, _ := cmd.Flags().GetInt("limit")
 
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
+	token, _, err := core.ResolveGitHubToken(flags.Token, flags.Profile)
 	if err != nil {
 		return err
 	}
 
-	// Parse repo argument
-	var repoArg string
-	if len(args) > 0 {
-		repoArg = args[0]
-	}
-
 	// Detect repository
-	owner, repo, err := core.DetectRepository(repoArg, repoFlag)
+	owner, repo, err := detectRepo(args, flags.Repo, "Specify a repository with: clonr gh contributors list owner/repo")
 	if err != nil {
-		return fmt.Errorf("could not determine repository: %w\n\nSpecify a repository with: clonr gh contributors list owner/repo", err)
+		return err
 	}
 
-	if !jsonOutput {
+	if !flags.JSON {
 		_, _ = fmt.Fprintf(os.Stderr, "Fetching contributors for %s/%s...\n", owner, repo)
 	}
 
@@ -113,11 +103,8 @@ func runContributorsList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to list contributors: %w", err)
 	}
 
-	if jsonOutput {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-
-		return enc.Encode(result)
+	if flags.JSON {
+		return outputJSON(result)
 	}
 
 	// Text output
@@ -138,10 +125,7 @@ func runContributorsList(cmd *cobra.Command, args []string) error {
 }
 
 func runContributorsJourney(cmd *cobra.Command, args []string) error {
-	tokenFlag, _ := cmd.Flags().GetString("token")
-	profileFlag, _ := cmd.Flags().GetString("profile")
-	repoFlag, _ := cmd.Flags().GetString("repo")
-	jsonOutput, _ := cmd.Flags().GetBool("json")
+	flags := extractGHFlags(cmd)
 	includeCommits, _ := cmd.Flags().GetBool("commits")
 	includePRs, _ := cmd.Flags().GetBool("prs")
 	includeIssues, _ := cmd.Flags().GetBool("issues")
@@ -149,7 +133,7 @@ func runContributorsJourney(cmd *cobra.Command, args []string) error {
 	limit, _ := cmd.Flags().GetInt("limit")
 
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
+	token, _, err := core.ResolveGitHubToken(flags.Token, flags.Profile)
 	if err != nil {
 		return err
 	}
@@ -163,12 +147,12 @@ func runContributorsJourney(cmd *cobra.Command, args []string) error {
 	}
 
 	// Detect repository
-	owner, repo, err := core.DetectRepository(repoArg, repoFlag)
+	owner, repo, err := detectRepo([]string{repoArg}, flags.Repo, "Specify a repository with: clonr gh contributors journey <username> owner/repo")
 	if err != nil {
-		return fmt.Errorf("could not determine repository: %w\n\nSpecify a repository with: clonr gh contributors journey <username> owner/repo", err)
+		return err
 	}
 
-	if !jsonOutput {
+	if !flags.JSON {
 		_, _ = fmt.Fprintf(os.Stderr, "Fetching journey for @%s in %s/%s...\n", username, owner, repo)
 	}
 
@@ -195,11 +179,8 @@ func runContributorsJourney(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get contributor journey: %w", err)
 	}
 
-	if jsonOutput {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-
-		return enc.Encode(journey)
+	if flags.JSON {
+		return outputJSON(journey)
 	}
 
 	// Text output

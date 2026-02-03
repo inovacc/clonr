@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/inovacc/clonr/internal/core"
 	"github.com/spf13/cobra"
@@ -296,49 +295,4 @@ func runIssuesClose(cmd *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintf(os.Stdout, "  %s\n", closed.URL)
 
 	return nil
-}
-
-// formatAge formats a time as a human-readable age string
-func formatAge(t time.Time) string {
-	d := time.Since(t)
-
-	switch {
-	case d < time.Minute:
-		return "just now"
-	case d < time.Hour:
-		mins := int(d.Minutes())
-		if mins == 1 {
-			return "1 minute ago"
-		}
-
-		return fmt.Sprintf("%d minutes ago", mins)
-	case d < 24*time.Hour:
-		hours := int(d.Hours())
-		if hours == 1 {
-			return "1 hour ago"
-		}
-
-		return fmt.Sprintf("%d hours ago", hours)
-	case d < 30*24*time.Hour:
-		days := int(d.Hours() / 24)
-		if days == 1 {
-			return "1 day ago"
-		}
-
-		return fmt.Sprintf("%d days ago", days)
-	case d < 365*24*time.Hour:
-		months := int(d.Hours() / 24 / 30)
-		if months == 1 {
-			return "1 month ago"
-		}
-
-		return fmt.Sprintf("%d months ago", months)
-	default:
-		years := int(d.Hours() / 24 / 365)
-		if years == 1 {
-			return "1 year ago"
-		}
-
-		return fmt.Sprintf("%d years ago", years)
-	}
 }

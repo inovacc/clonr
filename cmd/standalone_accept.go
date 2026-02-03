@@ -123,16 +123,13 @@ func runStandaloneAccept(_ *cobra.Command, args []string) error {
 
 	// Display client info
 	_, _ = fmt.Fprintln(os.Stdout)
-	_, _ = fmt.Fprintln(os.Stdout, "╔══════════════════════════════════════════════════════════════╗")
-	_, _ = fmt.Fprintln(os.Stdout, "║                    CLIENT REGISTRATION                       ║")
-	_, _ = fmt.Fprintln(os.Stdout, "╠══════════════════════════════════════════════════════════════╣")
-	_, _ = fmt.Fprintf(os.Stdout, "║  Client ID: %-48s ║\n", target.ClientID[:8])
-	_, _ = fmt.Fprintf(os.Stdout, "║  Name:      %-48s ║\n", truncateString(target.ClientName, 48))
-	_, _ = fmt.Fprintf(os.Stdout, "║  Hostname:  %-48s ║\n", truncateString(target.MachineInfo.Hostname, 48))
-	_, _ = fmt.Fprintf(os.Stdout, "║  Platform:  %-48s ║\n",
-		fmt.Sprintf("%s/%s", target.MachineInfo.OS, target.MachineInfo.Arch))
-	_, _ = fmt.Fprintf(os.Stdout, "║  Version:   %-48s ║\n", target.MachineInfo.ClonrVersion)
-	_, _ = fmt.Fprintln(os.Stdout, "╚══════════════════════════════════════════════════════════════╝")
+	printBoxHeader("CLIENT REGISTRATION")
+	printBoxLine("Client ID", target.ClientID[:8])
+	printBoxLine("Name", truncateString(target.ClientName, 48))
+	printBoxLine("Hostname", truncateString(target.MachineInfo.Hostname, 48))
+	printBoxLine("Platform", fmt.Sprintf("%s/%s", target.MachineInfo.OS, target.MachineInfo.Arch))
+	printBoxLine("Version", target.MachineInfo.ClonrVersion)
+	printBoxFooter()
 	_, _ = fmt.Fprintln(os.Stdout)
 
 	// Get the encryption key from user
@@ -177,13 +174,11 @@ func runStandaloneAccept(_ *cobra.Command, args []string) error {
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout)
-	_, _ = fmt.Fprintln(os.Stdout, "╔══════════════════════════════════════════════════════════════╗")
-	_, _ = fmt.Fprintln(os.Stdout, "║                  CLIENT REGISTERED                           ║")
-	_, _ = fmt.Fprintln(os.Stdout, "╠══════════════════════════════════════════════════════════════╣")
-	_, _ = fmt.Fprintf(os.Stdout, "║  Client: %-51s ║\n", registeredClient.ClientName)
-	_, _ = fmt.Fprintf(os.Stdout, "║  Key Hint: %-49s ║\n", registeredClient.KeyHint)
-	_, _ = fmt.Fprintf(os.Stdout, "║  Status: %-51s ║\n", registeredClient.Status)
-	_, _ = fmt.Fprintln(os.Stdout, "╚══════════════════════════════════════════════════════════════╝")
+	printBoxHeader("CLIENT REGISTERED")
+	printBoxLine("Client", registeredClient.ClientName)
+	printBoxLine("Key Hint", registeredClient.KeyHint)
+	printBoxLine("Status", registeredClient.Status)
+	printBoxFooter()
 	_, _ = fmt.Fprintln(os.Stdout)
 
 	_, _ = fmt.Fprintln(os.Stdout, "The client can now sync data with this instance.")
@@ -191,15 +186,4 @@ func runStandaloneAccept(_ *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintln(os.Stdout, "Repository data will be stored normally for easy access.")
 
 	return nil
-}
-
-// truncateString truncates a string to the specified length
-func truncateString(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	if maxLen <= 3 {
-		return s[:maxLen]
-	}
-	return s[:maxLen-3] + "..."
 }

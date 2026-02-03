@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/inovacc/clonr/internal/actionsdb"
@@ -130,7 +129,7 @@ func displayPushRecord(db *actionsdb.DB, record *actionsdb.PushRecord) {
 	repoName := fmt.Sprintf("%s/%s", record.RepoOwner, record.RepoName)
 
 	// Time ago
-	timeAgo := formatTimeAgo(record.PushedAt)
+	timeAgo := formatAge(record.PushedAt)
 
 	_, _ = fmt.Fprintf(os.Stdout, "%s %s %s %s\n",
 		statusStyle.Render(statusIcon),
@@ -173,7 +172,7 @@ func displayPushRecord(db *actionsdb.DB, record *actionsdb.PushRecord) {
 			duration := ""
 			if !run.StartedAt.IsZero() && !run.CompletedAt.IsZero() {
 				d := run.CompletedAt.Sub(run.StartedAt)
-				duration = fmt.Sprintf(" (%s)", formatWorkflowDuration(d))
+				duration = fmt.Sprintf(" (%s)", formatShortDuration(d))
 			}
 
 			_, _ = fmt.Fprintf(os.Stdout, "    %s %s%s\n",
@@ -188,41 +187,4 @@ func displayPushRecord(db *actionsdb.DB, record *actionsdb.PushRecord) {
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout, "")
-}
-
-func formatTimeAgo(t time.Time) string {
-	d := time.Since(t)
-
-	if d < time.Minute {
-		return "just now"
-	}
-	if d < time.Hour {
-		mins := int(d.Minutes())
-		if mins == 1 {
-			return "1 minute ago"
-		}
-		return fmt.Sprintf("%d minutes ago", mins)
-	}
-	if d < 24*time.Hour {
-		hours := int(d.Hours())
-		if hours == 1 {
-			return "1 hour ago"
-		}
-		return fmt.Sprintf("%d hours ago", hours)
-	}
-	days := int(d.Hours() / 24)
-	if days == 1 {
-		return "yesterday"
-	}
-	return fmt.Sprintf("%d days ago", days)
-}
-
-func formatWorkflowDuration(d time.Duration) string {
-	if d < time.Minute {
-		return fmt.Sprintf("%ds", int(d.Seconds()))
-	}
-	if d < time.Hour {
-		return fmt.Sprintf("%dm%ds", int(d.Minutes()), int(d.Seconds())%60)
-	}
-	return fmt.Sprintf("%dh%dm", int(d.Hours()), int(d.Minutes())%60)
 }

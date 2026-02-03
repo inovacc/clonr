@@ -709,20 +709,5 @@ func TestService_SaveConfig(t *testing.T) {
 	}
 }
 
-func TestService_ContextCancellation(t *testing.T) {
-	svc := NewService(&mockStore{})
-
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // Cancel immediately
-
-	// Test SaveRepo with canceled context
-	_, err := svc.SaveRepo(ctx, &v1.SaveRepoRequest{Url: "https://example.com", Path: "/tmp"})
-	if err == nil {
-		t.Error("SaveRepo with canceled context should return error")
-	}
-
-	st, _ := status.FromError(err)
-	if st.Code() != codes.Canceled {
-		t.Errorf("SaveRepo canceled context code = %v, want %v", st.Code(), codes.Canceled)
-	}
-}
+// Note: Context cancellation is now handled by contextCheckInterceptor (see interceptors_test.go)
+// This provides fast-fail behavior at the interceptor level before any service method is called.

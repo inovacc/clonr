@@ -219,25 +219,13 @@ func runWorkspaceAdd(_ *cobra.Command, args []string) error {
 	}
 
 	// Expand and validate path
-	path := workspaceAddPath
-	if path == "" {
+	if workspaceAddPath == "" {
 		return fmt.Errorf("--path is required")
 	}
 
-	// Expand ~ to home directory
-	if path[0] == '~' {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return fmt.Errorf("failed to get home directory: %w", err)
-		}
-
-		path = filepath.Join(home, path[1:])
-	}
-
-	// Make path absolute
-	absPath, err := filepath.Abs(path)
+	absPath, err := expandPath(workspaceAddPath)
 	if err != nil {
-		return fmt.Errorf("failed to resolve path: %w", err)
+		return err
 	}
 
 	// Create directory if it doesn't exist
@@ -295,8 +283,7 @@ func runWorkspaceList(_ *cobra.Command, _ []string) error {
 			return nil
 		}
 
-		_, _ = fmt.Fprintln(os.Stdout, "No workspaces configured.")
-		_, _ = fmt.Fprintln(os.Stdout, "Create one with: clonr workspace add <name> --path <directory>")
+		printEmptyResult("workspaces", "clonr workspace add <name> --path <directory>")
 
 		return nil
 	}

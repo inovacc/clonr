@@ -116,16 +116,14 @@ func runStandaloneConnect(_ *cobra.Command, args []string) error {
 
 	// Display the key prominently
 	_, _ = fmt.Fprintln(os.Stdout)
-	_, _ = fmt.Fprintln(os.Stdout, "╔══════════════════════════════════════════════════════════════╗")
-	_, _ = fmt.Fprintln(os.Stdout, "║                    ENCRYPTION KEY                            ║")
-	_, _ = fmt.Fprintln(os.Stdout, "╠══════════════════════════════════════════════════════════════╣")
-	_, _ = fmt.Fprintf(os.Stdout, "║                                                              ║\n")
-	_, _ = fmt.Fprintf(os.Stdout, "║     %s     ║\n", centerString(displayKey, 42))
-	_, _ = fmt.Fprintf(os.Stdout, "║                                                              ║\n")
+	printBoxHeader("ENCRYPTION KEY")
+	_, _ = fmt.Fprintf(os.Stdout, "║%s║\n", centerString("", boxWidth-2))
+	_, _ = fmt.Fprintf(os.Stdout, "║%s║\n", centerString(displayKey, boxWidth-2))
+	_, _ = fmt.Fprintf(os.Stdout, "║%s║\n", centerString("", boxWidth-2))
 	_, _ = fmt.Fprintln(os.Stdout, "╠══════════════════════════════════════════════════════════════╣")
 	_, _ = fmt.Fprintln(os.Stdout, "║  Enter this key on the server to complete registration.     ║")
 	_, _ = fmt.Fprintln(os.Stdout, "║  Run on server: clonr standalone accept                     ║")
-	_, _ = fmt.Fprintln(os.Stdout, "╚══════════════════════════════════════════════════════════════╝")
+	printBoxFooter()
 	_, _ = fmt.Fprintln(os.Stdout)
 
 	// Wait for user confirmation
@@ -192,13 +190,4 @@ func runStandaloneConnect(_ *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintln(os.Stdout, "  - List synced data: clonr standalone decrypt --list")
 
 	return nil
-}
-
-// centerString centers a string in a field of given width
-func centerString(s string, width int) string {
-	if len(s) >= width {
-		return s
-	}
-	padding := (width - len(s)) / 2
-	return strings.Repeat(" ", padding) + s + strings.Repeat(" ", width-len(s)-padding)
 }

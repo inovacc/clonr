@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -99,32 +98,22 @@ func init() {
 }
 
 func runReleaseList(cmd *cobra.Command, args []string) error {
-	// Get flags
-	tokenFlag, _ := cmd.Flags().GetString("token")
-	profileFlag, _ := cmd.Flags().GetString("profile")
-	repoFlag, _ := cmd.Flags().GetString("repo")
-	jsonOutput, _ := cmd.Flags().GetBool("json")
+	flags := extractGHFlags(cmd)
 	limit, _ := cmd.Flags().GetInt("limit")
 
-	// Get repo argument if provided
-	var repoArg string
-	if len(args) > 0 {
-		repoArg = args[0]
-	}
-
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
+	token, _, err := core.ResolveGitHubToken(flags.Token, flags.Profile)
 	if err != nil {
 		return err
 	}
 
 	// Detect repository
-	owner, repo, err := core.DetectRepository(repoArg, repoFlag)
+	owner, repo, err := detectRepo(args, flags.Repo, "Specify a repository with: clonr gh release list owner/repo")
 	if err != nil {
-		return fmt.Errorf("could not determine repository: %w\n\nSpecify a repository with: clonr gh release list owner/repo", err)
+		return err
 	}
 
-	if !jsonOutput {
+	if !flags.JSON {
 		_, _ = fmt.Fprintf(os.Stderr, "Fetching releases for %s/%s...\n", owner, repo)
 	}
 
@@ -137,11 +126,8 @@ func runReleaseList(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to list releases: %w", err)
 	}
 
-	if jsonOutput {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-
-		return enc.Encode(data)
+	if flags.JSON {
+		return outputJSON(data)
 	}
 
 	// Text output
@@ -160,11 +146,7 @@ func runReleaseList(cmd *cobra.Command, args []string) error {
 }
 
 func runReleaseCreate(cmd *cobra.Command, args []string) error {
-	// Get flags
-	tokenFlag, _ := cmd.Flags().GetString("token")
-	profileFlag, _ := cmd.Flags().GetString("profile")
-	repoFlag, _ := cmd.Flags().GetString("repo")
-	jsonOutput, _ := cmd.Flags().GetBool("json")
+	flags := extractGHFlags(cmd)
 	title, _ := cmd.Flags().GetString("title")
 	notes, _ := cmd.Flags().GetString("notes")
 	notesFile, _ := cmd.Flags().GetString("notes-file")
@@ -176,7 +158,6 @@ func runReleaseCreate(cmd *cobra.Command, args []string) error {
 
 	// Parse arguments - first is tag, second is optional repo
 	var tag, repoArg string
-
 	for i, arg := range args {
 		if i == 0 {
 			tag = arg
@@ -195,23 +176,22 @@ func runReleaseCreate(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to read notes file: %w", err)
 		}
-
 		notes = string(content)
 	}
 
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
+	token, _, err := core.ResolveGitHubToken(flags.Token, flags.Profile)
 	if err != nil {
 		return err
 	}
 
 	// Detect repository
-	owner, repo, err := core.DetectRepository(repoArg, repoFlag)
+	owner, repo, err := detectRepo([]string{repoArg}, flags.Repo, "Specify a repository with: clonr gh release create <tag> owner/repo")
 	if err != nil {
-		return fmt.Errorf("could not determine repository: %w\n\nSpecify a repository with: clonr gh release create <tag> owner/repo", err)
+		return err
 	}
 
-	if !jsonOutput {
+	if !flags.JSON {
 		_, _ = fmt.Fprintf(os.Stderr, "Creating release %s in %s/%s...\n", tag, owner, repo)
 	}
 
@@ -231,11 +211,8 @@ func runReleaseCreate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create release: %w", err)
 	}
 
-	if jsonOutput {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-
-		return enc.Encode(release)
+	if flags.JSON {
+		return outputJSON(release)
 	}
 
 	// Text output
@@ -258,31 +235,21 @@ func runReleaseCreate(cmd *cobra.Command, args []string) error {
 }
 
 func runReleaseDownload(cmd *cobra.Command, args []string) error {
-	// Get flags
-	tokenFlag, _ := cmd.Flags().GetString("token")
-	profileFlag, _ := cmd.Flags().GetString("profile")
-	repoFlag, _ := cmd.Flags().GetString("repo")
-	jsonOutput, _ := cmd.Flags().GetBool("json")
+	flags := extractGHFlags(cmd)
 	tag, _ := cmd.Flags().GetString("tag")
 	patterns, _ := cmd.Flags().GetStringSlice("pattern")
 	dir, _ := cmd.Flags().GetString("dir")
 
-	// Get repo argument if provided
-	var repoArg string
-	if len(args) > 0 {
-		repoArg = args[0]
-	}
-
 	// Resolve token
-	token, _, err := core.ResolveGitHubToken(tokenFlag, profileFlag)
+	token, _, err := core.ResolveGitHubToken(flags.Token, flags.Profile)
 	if err != nil {
 		return err
 	}
 
 	// Detect repository
-	owner, repo, err := core.DetectRepository(repoArg, repoFlag)
+	owner, repo, err := detectRepo(args, flags.Repo, "Specify a repository with: clonr gh release download owner/repo")
 	if err != nil {
-		return fmt.Errorf("could not determine repository: %w\n\nSpecify a repository with: clonr gh release download owner/repo", err)
+		return err
 	}
 
 	tagDisplay := tag
@@ -290,7 +257,7 @@ func runReleaseDownload(cmd *cobra.Command, args []string) error {
 		tagDisplay = "latest release"
 	}
 
-	if !jsonOutput {
+	if !flags.JSON {
 		_, _ = fmt.Fprintf(os.Stderr, "Downloading %s from %s/%s...\n", tagDisplay, owner, repo)
 	}
 
@@ -305,11 +272,8 @@ func runReleaseDownload(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to download release: %w", err)
 	}
 
-	if jsonOutput {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-
-		return enc.Encode(result)
+	if flags.JSON {
+		return outputJSON(result)
 	}
 
 	// Text output
@@ -376,23 +340,4 @@ func printReleaseSummary(release *core.Release) {
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout)
-}
-
-func formatFileSize(bytes int64) string {
-	const (
-		KB = 1024
-		MB = KB * 1024
-		GB = MB * 1024
-	)
-
-	switch {
-	case bytes >= GB:
-		return fmt.Sprintf("%.1f GB", float64(bytes)/GB)
-	case bytes >= MB:
-		return fmt.Sprintf("%.1f MB", float64(bytes)/MB)
-	case bytes >= KB:
-		return fmt.Sprintf("%.1f KB", float64(bytes)/KB)
-	default:
-		return fmt.Sprintf("%d B", bytes)
-	}
 }

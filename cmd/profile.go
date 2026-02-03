@@ -298,8 +298,7 @@ func runProfileList(_ *cobra.Command, _ []string) error {
 			return nil
 		}
 
-		_, _ = fmt.Fprintln(os.Stdout, "No profiles configured.")
-		_, _ = fmt.Fprintln(os.Stdout, "\nCreate a profile with: clonr profile add <name>")
+		printEmptyResult("profiles", "clonr profile add <name>")
 
 		return nil
 	}
@@ -309,19 +308,11 @@ func runProfileList(_ *cobra.Command, _ []string) error {
 		items := make([]ProfileListItem, 0, len(profiles))
 
 		for _, p := range profiles {
-			storage := string(p.TokenStorage)
-			switch p.TokenStorage {
-			case model.TokenStorageEncrypted:
-				storage = "encrypted (TPM)"
-			case model.TokenStorageOpen:
-				storage = "plain text"
-			}
-
 			items = append(items, ProfileListItem{
 				Name:       p.Name,
 				Host:       p.Host,
 				User:       p.User,
-				Storage:    storage,
+				Storage:    formatTokenStorage(p.TokenStorage),
 				Scopes:     p.Scopes,
 				Workspace:  p.Workspace,
 				Default:    p.Default,
@@ -348,19 +339,11 @@ func runProfileList(_ *cobra.Command, _ []string) error {
 			defaultMarker = "*"
 		}
 
-		storage := string(p.TokenStorage)
-		switch p.TokenStorage {
-		case model.TokenStorageEncrypted:
-			storage = "encrypted (TPM)"
-		case model.TokenStorageOpen:
-			storage = "plain text"
-		}
-
 		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
 			p.Name,
 			p.Host,
 			p.User,
-			storage,
+			formatTokenStorage(p.TokenStorage),
 			defaultMarker,
 		)
 	}
@@ -417,16 +400,8 @@ func runProfileRemove(_ *cobra.Command, args []string) error {
 	// Warn if deleting default profile
 	if profile.Default && !profileRemoveForce {
 		_, _ = fmt.Fprintf(os.Stdout, "Warning: '%s' is the default profile.\n", name)
-		_, _ = fmt.Fprint(os.Stdout, "Are you sure you want to delete it? (y/N): ")
-
-		var confirm string
-		if _, err := fmt.Scanln(&confirm); err != nil {
-			return fmt.Errorf("cancelled")
-		}
-
-		if confirm != "y" && confirm != "Y" {
+		if !promptConfirm("Are you sure you want to delete it? [y/N]: ") {
 			_, _ = fmt.Fprintln(os.Stdout, "Cancelled.")
-
 			return nil
 		}
 	}
@@ -502,16 +477,7 @@ func runProfileStatus(_ *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintf(os.Stdout, "Profile: %s\n", profile.Name)
 	_, _ = fmt.Fprintf(os.Stdout, "Host: %s\n", profile.Host)
 	_, _ = fmt.Fprintf(os.Stdout, "User: %s\n", profile.User)
-
-	storage := string(profile.TokenStorage)
-	switch profile.TokenStorage {
-	case model.TokenStorageEncrypted:
-		storage = "encrypted (TPM)"
-	case model.TokenStorageOpen:
-		storage = "plain text (no TPM)"
-	}
-
-	_, _ = fmt.Fprintf(os.Stdout, "Storage: %s\n", storage)
+	_, _ = fmt.Fprintf(os.Stdout, "Storage: %s\n", formatTokenStorage(profile.TokenStorage))
 	_, _ = fmt.Fprintf(os.Stdout, "Scopes: %s\n", strings.Join(profile.Scopes, ", "))
 	_, _ = fmt.Fprintf(os.Stdout, "Default: %t\n", profile.Default)
 	_, _ = fmt.Fprintf(os.Stdout, "Created: %s\n", profile.CreatedAt.Format(time.RFC3339))

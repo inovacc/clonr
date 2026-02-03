@@ -22,10 +22,7 @@ This allows you to track and manage repositories that were cloned outside of Clo
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path := args[0]
 		if !addYes {
-			_, _ = fmt.Fprintf(os.Stdout, "Add '%s' to repositories? [y/N]: ", path)
-			var response string
-			_, _ = fmt.Scanln(&response)
-			if response != "y" && response != "Y" {
+			if !promptConfirm(fmt.Sprintf("Add '%s' to repositories? [y/N]: ", path)) {
 				_, _ = fmt.Fprintln(os.Stdout, "Cancelled.")
 				return nil
 			}
