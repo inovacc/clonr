@@ -19,6 +19,7 @@ import (
 
 var (
 	profileStatusValidate bool
+	profileStatusJSON     bool
 	profileRemoveForce    bool
 	profileListJSON       bool
 )
@@ -32,6 +33,7 @@ func init() {
 	profileCmd.AddCommand(profileMigrateCmd)
 
 	profileStatusCmd.Flags().BoolVar(&profileStatusValidate, "validate", false, "Validate token with GitHub API")
+	profileStatusCmd.Flags().BoolVar(&profileStatusJSON, "json", false, "Output as JSON")
 	profileRemoveCmd.Flags().BoolVarP(&profileRemoveForce, "force", "f", false, "Skip confirmation")
 	profileListCmd.Flags().BoolVar(&profileListJSON, "json", false, "Output as JSON")
 	profileMigrateCmd.Flags().Bool("dry-run", false, "Show what would be migrated without making changes")
@@ -438,9 +440,31 @@ If no name is provided, shows the default profile.
 
 Examples:
   clonr profile status
-  clonr profile status work`,
+  clonr profile status work
+  clonr profile status work --json`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runProfileStatus,
+}
+
+// ProfileStatusOutput represents the JSON output for profile status
+type ProfileStatusOutput struct {
+	Name       string    `json:"name"`
+	Host       string    `json:"host"`
+	User       string    `json:"user"`
+	Storage    string    `json:"storage"`
+	Scopes     []string  `json:"scopes"`
+	Workspace  string    `json:"workspace,omitempty"`
+	Default    bool      `json:"default"`
+	CreatedAt  time.Time `json:"created_at"`
+	LastUsedAt time.Time `json:"last_used_at,omitempty"`
+	Encryption *ProfileEncryptionInfo `json:"encryption,omitempty"`
+}
+
+// ProfileEncryptionInfo contains keystore encryption metadata
+type ProfileEncryptionInfo struct {
+	Version   int        `json:"version"`
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+	RotatedAt *time.Time `json:"rotated_at,omitempty"`
 }
 
 func runProfileStatus(_ *cobra.Command, args []string) error {
@@ -464,6 +488,10 @@ func runProfileStatus(_ *cobra.Command, args []string) error {
 		profile, err = pm.GetActiveProfile()
 		if err != nil {
 			if errors.Is(err, core.ErrNoActiveProfile) {
+				if profileStatusJSON {
+					_, _ = fmt.Fprintln(os.Stdout, "null")
+					return nil
+				}
 				_, _ = fmt.Fprintln(os.Stdout, "No default profile.")
 				_, _ = fmt.Fprintln(os.Stdout, "\nCreate a profile with: clonr profile add <name>")
 
@@ -475,11 +503,48 @@ func runProfileStatus(_ *cobra.Command, args []string) error {
 	}
 
 	if profile == nil {
+		if profileStatusJSON {
+			_, _ = fmt.Fprintln(os.Stdout, "null")
+			return nil
+		}
 		_, _ = fmt.Fprintln(os.Stdout, "No profile found.")
 
 		return nil
 	}
 
+	// JSON output
+	if profileStatusJSON {
+		output := ProfileStatusOutput{
+			Name:       profile.Name,
+			Host:       profile.Host,
+			User:       profile.User,
+			Storage:    formatTokenStorage(profile.TokenStorage),
+			Scopes:     profile.Scopes,
+			Workspace:  profile.Workspace,
+			Default:    profile.Default,
+			CreatedAt:  profile.CreatedAt,
+			LastUsedAt: profile.LastUsedAt,
+		}
+
+		// Get encryption metadata from keystore if available
+		if meta, err := tpm.GetProfileMetadata(profile.Name); err == nil && meta != nil {
+			output.Encryption = &ProfileEncryptionInfo{
+				Version: meta.Version,
+			}
+			if !meta.CreatedAt.IsZero() {
+				output.Encryption.CreatedAt = &meta.CreatedAt
+			}
+			if !meta.RotatedAt.IsZero() {
+				output.Encryption.RotatedAt = &meta.RotatedAt
+			}
+		}
+
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		return enc.Encode(output)
+	}
+
+	// Text output
 	_, _ = fmt.Fprintf(os.Stdout, "Profile: %s\n", profile.Name)
 	_, _ = fmt.Fprintf(os.Stdout, "Host: %s\n", profile.Host)
 	_, _ = fmt.Fprintf(os.Stdout, "User: %s\n", profile.User)
@@ -490,6 +555,14 @@ func runProfileStatus(_ *cobra.Command, args []string) error {
 
 	if !profile.LastUsedAt.IsZero() {
 		_, _ = fmt.Fprintf(os.Stdout, "Last used: %s\n", profile.LastUsedAt.Format(time.RFC3339))
+	}
+
+	// Show encryption metadata if available
+	if meta, err := tpm.GetProfileMetadata(profile.Name); err == nil && meta != nil {
+		_, _ = fmt.Fprintf(os.Stdout, "Key version: %d\n", meta.Version)
+		if !meta.RotatedAt.IsZero() {
+			_, _ = fmt.Fprintf(os.Stdout, "Last rotated: %s\n", meta.RotatedAt.Format(time.RFC3339))
+		}
 	}
 
 	// Validate token if requested
