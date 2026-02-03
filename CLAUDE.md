@@ -299,6 +299,8 @@ clonr/
 ├── main.go                           # CLI entry point
 ├── cmd/                              # Commands (Cobra)
 │   ├── root.go                       # Root command
+│   ├── helpers.go                    # Shared CLI utilities (prompts, formatting, boxes)
+│   ├── gh.go                         # GitHub command helpers (time/size formatting)
 │   ├── clone.go, list.go, etc.      # Client commands
 │   ├── server.go                     # Server commands (clonr server start)
 │   ├── service.go                    # Service management (clonr service --install)
@@ -487,6 +489,55 @@ if err := RequiredOneOf(map[string]string{"url": url, "path": path}); err != nil
 // Error helpers
 return nil, NotFoundError("repository")
 return nil, InternalErrorf("failed to save: %v", err)
+```
+
+#### `cmd/helpers.go` - CLI Shared Utilities
+
+Centralized helper functions for CLI commands to avoid duplication:
+
+```go
+// Token storage formatting
+formatTokenStorage(ts model.TokenStorage) string  // Returns "encrypted (TPM)" or "plain text"
+
+// User interaction
+promptConfirm(prompt string) bool  // Y/N confirmation prompt
+
+// Path handling
+expandPath(path string) (string, error)  // Expands ~ and returns absolute path
+
+// Empty result messaging
+printEmptyResult(resourceType, createCmd string)  // "No X configured. Create one with: Y"
+
+// String utilities
+centerString(s string, width int) string      // Center text in field
+truncateString(s string, maxLen int) string   // Truncate with ellipsis
+
+// Box drawing for terminal UI
+const boxWidth = 64
+printBoxHeader(title string)                           // ╔═══ TITLE ═══╗
+printBoxLine(label, value string)                      // ║  Label: Value  ║
+printBoxFooter()                                       // ╚══════════════════╝
+printInfoBox(title string, items map[string]string, order []string)  // Complete box
+```
+
+#### `cmd/gh.go` - GitHub Command Helpers
+
+Shared helpers for GitHub CLI commands (issues, PRs, actions, releases):
+
+```go
+// Time formatting
+formatAge(t time.Time) string           // "2h ago", "3d ago", "2w ago"
+formatShortDuration(d time.Duration) string  // "1m 30s", "2h 15m"
+
+// Size formatting
+formatFileSize(bytes int64) string      // "1.5 MB", "256 KB"
+
+// String utilities
+truncateStr(s string, maxLen int) string  // Truncate for table display
+
+// Flag extraction and JSON output
+extractGHFlags(cmd *cobra.Command) (repo, token, profile string, jsonOutput bool, err error)
+outputJSON(v any) error  // Marshal and print JSON
 ```
 
 ### Repository Model

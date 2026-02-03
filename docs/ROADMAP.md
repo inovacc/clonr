@@ -1074,6 +1074,133 @@ go build -tags sqlite ./...
 | SQLite | `modernc.org/sqlite` | Pure Go, no CGO |
 | PostgreSQL | `github.com/jackc/pgx/v5` | Modern PostgreSQL driver |
 
+### v0.9.0 – Git/GitHub Subcommand Reorganization
+
+Consolidate all git and GitHub-related commands under a unified `gh` subcommand with pure Go implementation:
+
+#### Git Commands (Pure Go via go-git)
+
+| Current | New | Description |
+|---------|-----|-------------|
+| (new) | `clonr gh clone <url>` | Clone repository |
+| (new) | `clonr gh push` | Push changes |
+| (new) | `clonr gh pull` | Pull changes |
+| (new) | `clonr gh commit -m "msg"` | Create commit |
+| (new) | `clonr gh status` | Show working tree status |
+| (new) | `clonr gh diff` | Show changes |
+| (new) | `clonr gh log` | Show commit history |
+| (new) | `clonr gh branch` | List/create branches |
+| (new) | `clonr gh checkout` | Switch branches |
+| (new) | `clonr gh merge` | Merge branches |
+| (new) | `clonr gh stash` | Stash changes |
+| (new) | `clonr gh tag` | Manage tags |
+| (new) | `clonr gh remote` | Manage remotes |
+
+#### GitHub API Integration
+
+| Command | Description | Priority |
+|---------|-------------|----------|
+| `clonr gh issues` | List/manage issues | P1 (✅ exists) |
+| `clonr gh prs` | List/manage pull requests | P1 (✅ exists) |
+| `clonr gh actions` | View workflow runs | P2 (✅ exists) |
+| `clonr gh releases` | Manage releases | P2 (✅ exists) |
+| `clonr gh repo create` | Create new repository | P2 |
+| `clonr gh repo fork` | Fork repository | P2 |
+| `clonr gh gist` | Manage gists | P3 |
+
+#### Examples
+
+```bash
+# Git operations (pure Go, no exec to git binary)
+clonr gh clone https://github.com/user/repo
+clonr gh status
+clonr gh commit -m "feat: add new feature"
+clonr gh push
+
+# Branch management
+clonr gh branch feature/new-feature
+clonr gh checkout feature/new-feature
+clonr gh merge main
+
+# GitHub API (existing commands, enhanced)
+clonr gh issues list --state open
+clonr gh prs create --title "New feature" --body "Description"
+clonr gh actions list --status failure
+clonr gh releases create v1.0.0 --notes "Release notes"
+```
+
+#### Design Principles
+
+- **Pure Go implementation** (no exec to git binary)
+- Use `go-git` for git operations: https://github.com/go-git/go-git
+- Use GitHub API for GitHub-specific operations
+- Profile-based authentication (existing clonr profile system)
+- Pre-push secret scanning with gitleaks integration
+
+#### Implementation Files
+
+```
+internal/
+├── gogit/                    # Pure Go git operations
+│   ├── clone.go              # Clone with progress
+│   ├── push.go               # Push with auth
+│   ├── pull.go               # Pull with merge
+│   ├── commit.go             # Commit with signing
+│   ├── status.go             # Working tree status
+│   ├── diff.go               # Diff generation
+│   ├── log.go                # Commit history
+│   ├── branch.go             # Branch operations
+│   ├── stash.go              # Stash operations
+│   ├── tag.go                # Tag management
+│   └── remote.go             # Remote management
+cmd/
+├── gh_clone.go               # gh clone command
+├── gh_push.go                # gh push command
+├── gh_pull.go                # gh pull command
+├── gh_commit.go              # gh commit command
+├── gh_status.go              # gh status command
+├── gh_diff.go                # gh diff command
+├── gh_log.go                 # gh log command
+├── gh_branch.go              # gh branch command
+├── gh_stash.go               # gh stash command
+├── gh_tag.go                 # gh tag command
+├── gh_remote.go              # gh remote command
+├── gh_repo.go                # gh repo create/fork commands
+└── gh_gist.go                # gh gist commands
+```
+
+#### Phase 1: Core Git Operations
+
+- [ ] `internal/gogit/` package with go-git wrappers
+- [ ] `clonr gh clone` - Clone with progress and auth
+- [ ] `clonr gh status` - Working tree status
+- [ ] `clonr gh commit` - Commit changes
+- [ ] `clonr gh push` - Push with profile auth
+- [ ] `clonr gh pull` - Pull and merge
+
+#### Phase 2: Branch & History
+
+- [ ] `clonr gh branch` - List/create/delete branches
+- [ ] `clonr gh checkout` - Switch branches
+- [ ] `clonr gh merge` - Merge branches
+- [ ] `clonr gh log` - Commit history
+- [ ] `clonr gh diff` - Show changes
+
+#### Phase 3: Advanced Operations
+
+- [ ] `clonr gh stash` - Stash management
+- [ ] `clonr gh tag` - Tag operations
+- [ ] `clonr gh remote` - Remote management
+- [ ] `clonr gh repo create/fork` - Repository creation
+
+#### Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| `github.com/go-git/go-git/v5` | Pure Go git implementation |
+| `github.com/go-git/go-git/v5/plumbing/transport/http` | HTTP authentication |
+| `github.com/go-git/go-git/v5/plumbing/transport/ssh` | SSH authentication |
+
 ### v1.0.0 – Production Ready
 
 #### Plugin System
@@ -1196,6 +1323,7 @@ clonr pm docs fetch --linked PROJ-123
 | v0.7.0  | 🚧 WIP | Cross-platform TPM, sealbox integration (done), Windows support (pending) |
 | v0.7.1  | ✅ Done | Code refactoring: shared packages, reduced duplication |
 | v0.8.0  | Planned | Multi-database support (BoltDB default, SQLite, PostgreSQL) |
+| v0.9.0  | Planned | Git/GitHub subcommand reorganization with pure Go (go-git) |
 | v1.0.0  | Planned | Production ready with plugins and enterprise features |
 
 ---

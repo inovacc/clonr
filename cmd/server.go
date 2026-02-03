@@ -26,6 +26,7 @@ var actionsWorker *actionsdb.Worker
 var (
 	serverPort        int
 	serverIdleTimeout time.Duration
+	serverMaxRuntime  time.Duration
 	procs             = process.NewProcess()
 )
 
@@ -38,8 +39,15 @@ var serverCmd = &cobra.Command{
 var serverStartCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start the gRPC server",
-	Long:  `Start the Clonr gRPC server on the configured port. The server will continue running until interrupted with Ctrl+C.`,
-	RunE:  runServerStart,
+	Long: `Start the Clonr gRPC server on the configured port.
+
+The server will shutdown when any of these conditions are met:
+- Interrupted with Ctrl+C or SIGTERM
+- Idle timeout reached (default: 5 minutes of no requests)
+- Max runtime reached (default: 1 hour)
+
+Use --idle-timeout=0 and --max-runtime=0 to run indefinitely.`,
+	RunE: runServerStart,
 }
 
 var serverStopCmd = &cobra.Command{
@@ -77,11 +85,13 @@ func init() {
 
 	serverStartCmd.Flags().IntVarP(&serverPort, "port", "p", 50051, "Port to listen on")
 	serverStartCmd.Flags().DurationVar(&serverIdleTimeout, "idle-timeout", 5*time.Minute, "Shutdown after being idle for this duration (0 to disable)")
+	serverStartCmd.Flags().DurationVar(&serverMaxRuntime, "max-runtime", 1*time.Hour, "Maximum server runtime before auto-shutdown (0 to disable)")
 
 	serverStopCmd.Flags().DurationVar(&stopTimeout, "timeout", 30*time.Second, "Timeout waiting for server to stop")
 
 	serverRestartCmd.Flags().IntVarP(&serverPort, "port", "p", 50051, "Port to listen on")
 	serverRestartCmd.Flags().DurationVar(&serverIdleTimeout, "idle-timeout", 5*time.Minute, "Shutdown after being idle for this duration (0 to disable)")
+	serverRestartCmd.Flags().DurationVar(&serverMaxRuntime, "max-runtime", 1*time.Hour, "Maximum server runtime before auto-shutdown (0 to disable)")
 	serverRestartCmd.Flags().DurationVar(&restartTimeout, "timeout", 30*time.Second, "Timeout waiting for server to stop before restart")
 }
 
@@ -128,6 +138,16 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 		log.Printf("Idle timeout enabled: server will shutdown after %v of inactivity", serverIdleTimeout)
 	}
 
+	// Setup max runtime timer if enabled
+	var maxRuntimeTimer *time.Timer
+	maxRuntimeChan := make(chan struct{})
+	if serverMaxRuntime > 0 {
+		maxRuntimeTimer = time.AfterFunc(serverMaxRuntime, func() {
+			close(maxRuntimeChan)
+		})
+		log.Printf("Max runtime enabled: server will shutdown after %v", serverMaxRuntime)
+	}
+
 	go func() {
 		log.Printf("Starting Clonr gRPC server on %s", addr)
 
@@ -141,7 +161,7 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 		log.Printf("Warning: failed to start actions worker: %v", err)
 	}
 
-	// Wait for a shutdown signal (OS signal or idle timeout)
+	// Wait for a shutdown signal (OS signal, idle timeout, or max runtime)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
@@ -150,6 +170,13 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 		log.Println("Received shutdown signal...")
 	case <-srvWithHealth.IdleTracker.ShutdownChan():
 		log.Printf("Server idle for %v, shutting down...", serverIdleTimeout)
+	case <-maxRuntimeChan:
+		log.Printf("Server reached max runtime of %v, shutting down...", serverMaxRuntime)
+	}
+
+	// Stop max runtime timer if still running
+	if maxRuntimeTimer != nil {
+		maxRuntimeTimer.Stop()
 	}
 
 	// Stop idle tracker

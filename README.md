@@ -567,6 +567,7 @@ clonr/
 ├── main.go                           # CLI entry point
 ├── cmd/                              # Commands (Cobra)
 │   ├── root.go                       # Root command
+│   ├── helpers.go                    # Shared CLI utilities (prompts, formatting, boxes)
 │   ├── clone.go, list.go, reauthor.go, etc.  # Client commands
 │   ├── server.go                     # Server commands
 │   ├── service.go                    # Service management commands
@@ -576,7 +577,7 @@ clonr/
 │   ├── profile_use.go                # Set active profile
 │   ├── profile_remove.go             # Remove profile
 │   ├── profile_status.go             # Show profile info
-│   ├── gh.go                         # GitHub CLI parent command
+│   ├── gh.go                         # GitHub CLI parent + shared helpers
 │   ├── gh_issues.go                  # GitHub issues commands
 │   ├── gh_pr.go                      # GitHub PR status command
 │   ├── gh_actions.go                 # GitHub Actions commands
