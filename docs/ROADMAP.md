@@ -1074,132 +1074,133 @@ go build -tags sqlite ./...
 | SQLite | `modernc.org/sqlite` | Pure Go, no CGO |
 | PostgreSQL | `github.com/jackc/pgx/v5` | Modern PostgreSQL driver |
 
-### v0.9.0 – Git/GitHub Subcommand Reorganization
+### v0.9.0 – Git/GitHub Subcommand Reorganization ✅ (Completed)
 
-Consolidate all git and GitHub-related commands under a unified `gh` subcommand with pure Go implementation:
+Consolidated git operations under `clonr gh git` subcommand with enhanced error handling and gh CLI-inspired patterns.
 
-#### Git Commands (Pure Go via go-git)
+#### Design Decision
 
-| Current | New | Description |
-|---------|-----|-------------|
-| (new) | `clonr gh clone <url>` | Clone repository |
-| (new) | `clonr gh push` | Push changes |
-| (new) | `clonr gh pull` | Pull changes |
-| (new) | `clonr gh commit -m "msg"` | Create commit |
-| (new) | `clonr gh status` | Show working tree status |
-| (new) | `clonr gh diff` | Show changes |
-| (new) | `clonr gh log` | Show commit history |
-| (new) | `clonr gh branch` | List/create branches |
-| (new) | `clonr gh checkout` | Switch branches |
-| (new) | `clonr gh merge` | Merge branches |
-| (new) | `clonr gh stash` | Stash changes |
-| (new) | `clonr gh tag` | Manage tags |
-| (new) | `clonr gh remote` | Manage remotes |
+After analyzing the GitHub CLI (`github.com/cli/cli`), we discovered that gh uses `exec.Command` to invoke the system git binary, NOT go-git. This approach was adopted for clonr because:
 
-#### GitHub API Integration
+- **Compatibility**: System git handles edge cases, hooks, and configurations
+- **Credential helper pattern**: Secure token injection without exposing secrets in process args
+- **Maintenance**: Leverages battle-tested git implementation
 
-| Command | Description | Priority |
-|---------|-------------|----------|
-| `clonr gh issues` | List/manage issues | P1 (✅ exists) |
-| `clonr gh prs` | List/manage pull requests | P1 (✅ exists) |
-| `clonr gh actions` | View workflow runs | P2 (✅ exists) |
-| `clonr gh releases` | Manage releases | P2 (✅ exists) |
-| `clonr gh repo create` | Create new repository | P2 |
-| `clonr gh repo fork` | Fork repository | P2 |
-| `clonr gh gist` | Manage gists | P3 |
+#### Git Commands (exec.Command with Credential Helper)
+
+| Command | Description | Status |
+|---------|-------------|--------|
+| `clonr gh git clone <url>` | Clone with profile/workspace selection | ✅ |
+| `clonr gh git status` | Show working tree status (short/porcelain) | ✅ |
+| `clonr gh git commit -m "msg"` | Create commit with -a flag support | ✅ |
+| `clonr gh git push` | Push with pre-push security scan | ✅ |
+| `clonr gh git pull` | Pull with profile authentication | ✅ |
+| `clonr gh git log` | Show commit log with filtering | ✅ |
+| `clonr gh git diff` | Show changes (staged/stat/name-only) | ✅ |
+| `clonr gh git branch` | List/create/delete branches | ✅ |
+
+#### GitHub API Integration (Existing)
+
+| Command | Description | Status |
+|---------|-------------|--------|
+| `clonr gh issues` | List/manage issues | ✅ exists |
+| `clonr gh prs` | List/manage pull requests | ✅ exists |
+| `clonr gh actions` | View workflow runs | ✅ exists |
+| `clonr gh releases` | Manage releases | ✅ exists |
+| `clonr gh repo create` | Create new repository | Planned |
+| `clonr gh repo fork` | Fork repository | Planned |
 
 #### Examples
 
 ```bash
-# Git operations (pure Go, no exec to git binary)
-clonr gh clone https://github.com/user/repo
-clonr gh status
-clonr gh commit -m "feat: add new feature"
-clonr gh push
+# Git operations under gh git subcommand
+clonr gh git status
+clonr gh git status --porcelain
+clonr gh git log --limit 10
+clonr gh git log --oneline --author "John"
+clonr gh git log --json
+clonr gh git diff --staged
+clonr gh git diff --stat HEAD~1
+clonr gh git branch
+clonr gh git branch --json
+clonr gh git branch -d old-branch
+clonr gh git commit -a -m "feat: add feature"
+clonr gh git push -u origin main
+clonr gh git pull origin main
+clonr gh git clone owner/repo --profile work
 
-# Branch management
-clonr gh branch feature/new-feature
-clonr gh checkout feature/new-feature
-clonr gh merge main
-
-# GitHub API (existing commands, enhanced)
-clonr gh issues list --state open
-clonr gh prs create --title "New feature" --body "Description"
-clonr gh actions list --status failure
-clonr gh releases create v1.0.0 --notes "Release notes"
+# Existing top-level commands still work (backward compatible)
+clonr clone owner/repo
+clonr commit -m "message"
+clonr push
+clonr pull
 ```
 
-#### Design Principles
+#### Git Client Enhancements
 
-- **Pure Go implementation** (no exec to git binary)
-- Use `go-git` for git operations: https://github.com/go-git/go-git
-- Use GitHub API for GitHub-specific operations
-- Profile-based authentication (existing clonr profile system)
-- Pre-push secret scanning with gitleaks integration
+**CommandModifier Pattern** (inspired by gh CLI):
+```go
+gc := client.NewGitCommand(ctx, "log", "--oneline")
+gc.WithEnv("GIT_TERMINAL_PROMPT=0").WithDir("/path/to/repo")
+output, err := gc.Output()
+```
+
+**Error Helper Functions**:
+- `IsNotRepository(err)` - Check if not a git repo
+- `IsAuthRequired(err)` - Authentication needed
+- `IsNoUpstream(err)` - No upstream configured
+- `IsConflict(err)` - Merge conflict detected
+- `IsNothingToCommit(err)` - Working tree clean
+- `GetExitCode(err)` - Extract exit code from error
+
+**New Git Operations**:
+- `Log(ctx, LogOptions)` - Structured commit log
+- `LogOneline(ctx, limit)` - One-line log output
+- `Diff(ctx, DiffOptions)` - Diff with options
+- `ListBranchesDetailed(ctx, all)` - Branch info with upstream
+- `DeleteBranch(ctx, name, force)` - Delete branches
+- `ListRemotes(ctx)` - List configured remotes
+- `StatusPorcelain(ctx)` - Machine-readable status
+- `GetHead(ctx)` / `GetShortHead(ctx)` - Current HEAD ref
 
 #### Implementation Files
 
 ```
-internal/
-├── gogit/                    # Pure Go git operations
-│   ├── clone.go              # Clone with progress
-│   ├── push.go               # Push with auth
-│   ├── pull.go               # Pull with merge
-│   ├── commit.go             # Commit with signing
-│   ├── status.go             # Working tree status
-│   ├── diff.go               # Diff generation
-│   ├── log.go                # Commit history
-│   ├── branch.go             # Branch operations
-│   ├── stash.go              # Stash operations
-│   ├── tag.go                # Tag management
-│   └── remote.go             # Remote management
+internal/git/
+├── client.go             # Enhanced with CommandModifier, new operations
+├── errors.go             # Error helper functions (IsNotRepository, etc.)
+
 cmd/
-├── gh_clone.go               # gh clone command
-├── gh_push.go                # gh push command
-├── gh_pull.go                # gh pull command
-├── gh_commit.go              # gh commit command
-├── gh_status.go              # gh status command
-├── gh_diff.go                # gh diff command
-├── gh_log.go                 # gh log command
-├── gh_branch.go              # gh branch command
-├── gh_stash.go               # gh stash command
-├── gh_tag.go                 # gh tag command
-├── gh_remote.go              # gh remote command
-├── gh_repo.go                # gh repo create/fork commands
-└── gh_gist.go                # gh gist commands
+├── gh.go                 # Updated with ghGitCmd parent command
+├── gh_git_clone.go       # Clone with profile/workspace selection
+├── gh_git_status.go      # Status with short/porcelain modes
+├── gh_git_commit.go      # Commit with -a/-m flags
+├── gh_git_push.go        # Push with pre-push security scan
+├── gh_git_pull.go        # Pull with auth
+├── gh_git_log.go         # Log with filtering and JSON output
+├── gh_git_diff.go        # Diff with staged/stat options
+├── gh_git_branch.go      # Branch management with JSON output
 ```
 
-#### Phase 1: Core Git Operations
+#### Backward Compatibility
 
-- [ ] `internal/gogit/` package with go-git wrappers
-- [ ] `clonr gh clone` - Clone with progress and auth
-- [ ] `clonr gh status` - Working tree status
-- [ ] `clonr gh commit` - Commit changes
-- [ ] `clonr gh push` - Push with profile auth
-- [ ] `clonr gh pull` - Pull and merge
+All existing top-level commands continue to work:
+- `clonr clone` → unchanged
+- `clonr commit` → unchanged
+- `clonr push` → unchanged
+- `clonr pull` → unchanged
+- `clonr checkout` → unchanged
+- `clonr stash` → unchanged
+- `clonr merge` → unchanged
 
-#### Phase 2: Branch & History
+#### Future Enhancements (v0.9.1+)
 
-- [ ] `clonr gh branch` - List/create/delete branches
-- [ ] `clonr gh checkout` - Switch branches
-- [ ] `clonr gh merge` - Merge branches
-- [ ] `clonr gh log` - Commit history
-- [ ] `clonr gh diff` - Show changes
-
-#### Phase 3: Advanced Operations
-
-- [ ] `clonr gh stash` - Stash management
-- [ ] `clonr gh tag` - Tag operations
-- [ ] `clonr gh remote` - Remote management
-- [ ] `clonr gh repo create/fork` - Repository creation
-
-#### Dependencies
-
-| Package | Purpose |
-|---------|---------|
-| `github.com/go-git/go-git/v5` | Pure Go git implementation |
-| `github.com/go-git/go-git/v5/plumbing/transport/http` | HTTP authentication |
-| `github.com/go-git/go-git/v5/plumbing/transport/ssh` | SSH authentication |
+- [ ] `clonr gh git stash` - Stash under gh git
+- [ ] `clonr gh git checkout` - Checkout under gh git
+- [ ] `clonr gh git merge` - Merge under gh git
+- [ ] `clonr gh git tag` - Tag management
+- [ ] `clonr gh git remote` - Remote management
+- [ ] `clonr gh repo create/fork` - Repository creation via API
 
 ### v1.0.0 – Production Ready
 
@@ -1323,7 +1324,7 @@ clonr pm docs fetch --linked PROJ-123
 | v0.7.0  | 🚧 WIP | Cross-platform TPM, sealbox integration (done), Windows support (pending) |
 | v0.7.1  | ✅ Done | Code refactoring: shared packages, reduced duplication |
 | v0.8.0  | Planned | Multi-database support (BoltDB default, SQLite, PostgreSQL) |
-| v0.9.0  | Planned | Git/GitHub subcommand reorganization with pure Go (go-git) |
+| v0.9.0  | ✅ Done | Git subcommand reorganization (`gh git`), enhanced git client, error helpers |
 | v1.0.0  | Planned | Production ready with plugins and enterprise features |
 
 ---
