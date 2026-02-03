@@ -1230,6 +1230,65 @@ All existing top-level commands continue to work:
 - [ ] Azure DevOps support
 - [ ] Gitea/Forgejo support
 
+### Container Registry Profiles
+
+Store Docker/container registry credentials securely using the same encryption as GitHub profiles.
+
+#### Commands
+
+```bash
+# Add Docker Hub credentials
+clonr profile docker add dockerhub --username myuser
+# Prompts for password/token, encrypts with keystore
+
+# Add other registries
+clonr profile docker add ghcr --registry ghcr.io --username myuser
+clonr profile docker add ecr --registry 123456789.dkr.ecr.us-east-1.amazonaws.com
+clonr profile docker add gcr --registry gcr.io --service-account key.json
+
+# List docker profiles
+clonr profile docker list
+
+# Login to registry (uses stored credentials)
+clonr profile docker login dockerhub
+clonr profile docker login --all  # Login to all registries
+
+# Remove docker profile
+clonr profile docker remove dockerhub
+
+# Show docker profile status
+clonr profile docker status dockerhub --json
+```
+
+#### Features
+- [ ] Docker Hub authentication
+- [ ] GitHub Container Registry (ghcr.io)
+- [ ] AWS ECR authentication
+- [ ] Google Container Registry (gcr.io)
+- [ ] Azure Container Registry
+- [ ] Generic registry support (any Docker v2 registry)
+- [ ] Credential rotation with keystore
+- [ ] Auto-login on `docker pull/push` (via credential helper)
+
+#### Data Model
+
+```go
+type DockerProfile struct {
+    Name           string    `json:"name"`
+    Registry       string    `json:"registry"`       // e.g., "docker.io", "ghcr.io"
+    Username       string    `json:"username"`
+    EncryptedToken []byte    `json:"encrypted_token"` // Password/token encrypted with keystore
+    CreatedAt      time.Time `json:"created_at"`
+    LastUsedAt     time.Time `json:"last_used_at"`
+}
+```
+
+#### Security
+- Credentials encrypted with profile's keystore (same as GitHub tokens)
+- TPM-backed when available
+- Auto-rotation support
+- No plaintext credentials on disk
+
 ### Messaging & Notification Platforms
 
 Integration with team collaboration tools for notifications, alerts, and workflow automation. **Profile-aware** for proper separation of concerns.
