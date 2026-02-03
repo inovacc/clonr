@@ -44,6 +44,10 @@ type Profile struct {
 
 	// Workspace is the associated workspace for this profile
 	Workspace string `json:"workspace"`
+
+	// NotifyChannels contains notification channels for this profile.
+	// All channel credentials are encrypted with the profile's encryption key.
+	NotifyChannels []NotifyChannel `json:"notify_channels,omitempty"`
 }
 
 // DefaultHost returns the default GitHub host

@@ -17,6 +17,12 @@ const (
 
 	// EncPrefix marks encrypted data (TPM available)
 	EncPrefix = "ENC:"
+
+	// KSPrefix marks data encrypted with the new keystore API
+	KSPrefix = "KS:"
+
+	// DEKTypeToken is the DEK type for OAuth tokens
+	DEKTypeToken = "token"
 )
 
 var (
@@ -28,7 +34,16 @@ var (
 
 	// ErrNoEncryption indicates data is stored without encryption
 	ErrNoEncryption = errors.New("no encryption available (no TPM)")
+
+	// useNewKeystore controls whether to use the new keystore API
+	// Set to true to enable envelope encryption with per-profile DEKs
+	useNewKeystore = true
 )
+
+// UseNewKeystore enables or disables the new keystore API
+func UseNewKeystore(enable bool) {
+	useNewKeystore = enable
+}
 
 // getOrCreateKey retrieves the encryption key from TPM, creating it if necessary.
 // Returns nil if TPM is not available (data will be stored unencrypted with OPEN: tag).
@@ -61,12 +76,18 @@ func IsDataOpen(data []byte) bool {
 
 // IsDataEncrypted checks if the stored data is encrypted
 func IsDataEncrypted(data []byte) bool {
-	return strings.HasPrefix(string(data), EncPrefix)
+	s := string(data)
+	return strings.HasPrefix(s, EncPrefix) || strings.HasPrefix(s, KSPrefix)
+}
+
+// IsDataKeystore checks if the stored data uses the new keystore API
+func IsDataKeystore(data []byte) bool {
+	return strings.HasPrefix(string(data), KSPrefix)
 }
 
 // IsEncryptionAvailable checks if TPM encryption is available
 func IsEncryptionAvailable() bool {
-	return IsTPMAvailable()
+	return IsTPMAvailable() || IsKeystoreAvailable()
 }
 
 // deriveKey creates a profile-specific key from the master key
@@ -84,6 +105,20 @@ func deriveKey(masterKey []byte, profileName, host string) []byte {
 // EncryptToken encrypts a token using AES-256-GCM if TPM is available.
 // If TPM is not available, stores the token in plain text with OPEN: prefix.
 func EncryptToken(token, profileName, host string) ([]byte, error) {
+	// Try new keystore API first
+	if useNewKeystore {
+		ciphertext, err := EncryptWithKeystore(profileName, DEKTypeToken, []byte(token))
+		if err == nil {
+			// Prefix with KS: to indicate keystore encryption
+			result := make([]byte, len(KSPrefix)+len(ciphertext))
+			copy(result, KSPrefix)
+			copy(result[len(KSPrefix):], ciphertext)
+			return result, nil
+		}
+		// Fall through to legacy encryption if keystore fails
+	}
+
+	// Legacy encryption path
 	masterKey, err := getOrCreateKey()
 	if err != nil {
 		// No TPM available - store as plain text with OPEN: prefix
@@ -130,12 +165,21 @@ func DecryptToken(ciphertext []byte, profileName, host string) (string, error) {
 		return after, nil
 	}
 
-	// Check for ENC: prefix and strip it
+	// Check for KS: prefix (new keystore encryption)
+	if after, ok := strings.CutPrefix(data, KSPrefix); ok {
+		plaintext, err := DecryptWithKeystore(profileName, DEKTypeToken, []byte(after))
+		if err != nil {
+			return "", fmt.Errorf("%w: %w", ErrDecryptionFailed, err)
+		}
+		return string(plaintext), nil
+	}
+
+	// Check for ENC: prefix and strip it (legacy encryption)
 	if after, ok := strings.CutPrefix(data, EncPrefix); ok {
 		ciphertext = []byte(after)
 	}
 
-	// Need TPM to decrypt
+	// Need TPM to decrypt legacy data
 	masterKey, err := getOrCreateKey()
 	if err != nil {
 		// If no TPM and data is encrypted, we can't decrypt

@@ -28,10 +28,14 @@ func init() {
 	profileCmd.AddCommand(profileStatusCmd)
 	profileCmd.AddCommand(profileRemoveCmd)
 	profileCmd.AddCommand(profileListCmd)
+	profileCmd.AddCommand(profileRotateCmd)
+	profileCmd.AddCommand(profileMigrateCmd)
 
 	profileStatusCmd.Flags().BoolVar(&profileStatusValidate, "validate", false, "Validate token with GitHub API")
 	profileRemoveCmd.Flags().BoolVarP(&profileRemoveForce, "force", "f", false, "Skip confirmation")
 	profileListCmd.Flags().BoolVar(&profileListJSON, "json", false, "Output as JSON")
+	profileMigrateCmd.Flags().Bool("dry-run", false, "Show what would be migrated without making changes")
+	profileMigrateCmd.Flags().Bool("all", false, "Migrate all profiles")
 }
 
 var profileCmd = &cobra.Command{
@@ -48,6 +52,8 @@ Available Commands:
   use          Set the active profile
   remove       Delete a profile
   status       Show current profile information
+  rotate       Rotate encryption keys for a profile
+  migrate      Migrate profile tokens to new keystore encryption
 
 Examples:
   clonr profile add work
@@ -555,6 +561,226 @@ func runProfileUse(_ *cobra.Command, args []string) error {
 	if err == nil && profile != nil {
 		_, _ = fmt.Fprintf(os.Stdout, "User: %s\n", profile.User)
 		_, _ = fmt.Fprintf(os.Stdout, "Host: %s\n", profile.Host)
+	}
+
+	return nil
+}
+
+var profileRotateCmd = &cobra.Command{
+	Use:   "rotate <name>",
+	Short: "Rotate encryption keys for a profile",
+	Long: `Rotate the encryption keys for a profile.
+
+This generates new encryption keys while keeping the same credentials.
+Use this periodically for security hygiene or after a suspected compromise.
+
+The rotation process:
+1. Generates a new master key for the profile
+2. Re-encrypts all data encryption keys (DEKs)
+3. Existing encrypted data remains unchanged (same DEK values)
+
+Examples:
+  clonr profile rotate work
+  clonr profile rotate personal`,
+	Args: cobra.ExactArgs(1),
+	RunE: runProfileRotate,
+}
+
+func runProfileRotate(_ *cobra.Command, args []string) error {
+	name := args[0]
+
+	pm, err := core.NewProfileManager()
+	if err != nil {
+		return err
+	}
+
+	// Check if profile exists
+	profile, err := pm.GetProfile(name)
+	if err != nil {
+		if errors.Is(err, core.ErrProfileNotFound) {
+			return fmt.Errorf("profile '%s' not found", name)
+		}
+		return fmt.Errorf("failed to get profile: %w", err)
+	}
+
+	if profile == nil {
+		return fmt.Errorf("profile '%s' not found", name)
+	}
+
+	_, _ = fmt.Fprintf(os.Stdout, "Rotating encryption keys for profile: %s\n", name)
+
+	// Rotate keys using the keystore
+	if err := tpm.RotateProfileKey(name); err != nil {
+		return fmt.Errorf("failed to rotate keys: %w", err)
+	}
+
+	_, _ = fmt.Fprintln(os.Stdout, "Encryption keys rotated successfully.")
+	_, _ = fmt.Fprintln(os.Stdout, "\nNote: Existing encrypted data remains valid.")
+
+	return nil
+}
+
+var profileMigrateCmd = &cobra.Command{
+	Use:   "migrate [name]",
+	Short: "Migrate profile tokens to new keystore encryption",
+	Long: `Migrate profile tokens from legacy encryption (ENC:) to the new keystore
+encryption (KS:) format.
+
+The new keystore encryption provides:
+- Per-profile encryption keys (better isolation)
+- Key rotation support
+- TPM-backed root secret (when available)
+
+Use --all to migrate all profiles at once, or specify a profile name.
+Use --dry-run to preview changes without making them.
+
+Examples:
+  clonr profile migrate work
+  clonr profile migrate --all
+  clonr profile migrate --all --dry-run`,
+	RunE: runProfileMigrate,
+}
+
+func runProfileMigrate(cmd *cobra.Command, args []string) error {
+	dryRun, _ := cmd.Flags().GetBool("dry-run")
+	migrateAll, _ := cmd.Flags().GetBool("all")
+
+	if !migrateAll && len(args) == 0 {
+		return fmt.Errorf("specify a profile name or use --all to migrate all profiles")
+	}
+
+	pm, err := core.NewProfileManager()
+	if err != nil {
+		return err
+	}
+
+	var profiles []model.Profile
+	if migrateAll {
+		profiles, err = pm.ListProfiles()
+		if err != nil {
+			return fmt.Errorf("failed to list profiles: %w", err)
+		}
+	} else {
+		profile, err := pm.GetProfile(args[0])
+		if err != nil {
+			if errors.Is(err, core.ErrProfileNotFound) {
+				return fmt.Errorf("profile '%s' not found", args[0])
+			}
+			return fmt.Errorf("failed to get profile: %w", err)
+		}
+		if profile != nil {
+			profiles = []model.Profile{*profile}
+		}
+	}
+
+	if len(profiles) == 0 {
+		_, _ = fmt.Fprintln(os.Stdout, "No profiles found to migrate.")
+		return nil
+	}
+
+	// Check each profile's encryption status
+	migrated := 0
+	skipped := 0
+	failed := 0
+
+	for _, profile := range profiles {
+		// Check if token uses legacy encryption
+		if len(profile.EncryptedToken) == 0 {
+			_, _ = fmt.Fprintf(os.Stdout, "  %s: skipped (no token)\n", profile.Name)
+			skipped++
+			continue
+		}
+
+		if tpm.IsDataKeystore(profile.EncryptedToken) {
+			_, _ = fmt.Fprintf(os.Stdout, "  %s: skipped (already using keystore)\n", profile.Name)
+			skipped++
+			continue
+		}
+
+		if tpm.IsDataOpen(profile.EncryptedToken) {
+			// Token is stored in plain text - can migrate
+			if dryRun {
+				_, _ = fmt.Fprintf(os.Stdout, "  %s: would migrate (OPEN: -> KS:)\n", profile.Name)
+				migrated++
+				continue
+			}
+
+			// Decrypt the plain text token
+			token, err := tpm.DecryptToken(profile.EncryptedToken, profile.Name, profile.Host)
+			if err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "  %s: failed to read token: %v\n", profile.Name, err)
+				failed++
+				continue
+			}
+
+			// Re-encrypt with keystore
+			newEncrypted, err := tpm.EncryptToken(token, profile.Name, profile.Host)
+			if err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "  %s: failed to encrypt: %v\n", profile.Name, err)
+				failed++
+				continue
+			}
+
+			// Update profile
+			profile.EncryptedToken = newEncrypted
+			if err := pm.UpdateProfile(&profile); err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "  %s: failed to save: %v\n", profile.Name, err)
+				failed++
+				continue
+			}
+
+			_, _ = fmt.Fprintf(os.Stdout, "  %s: migrated (OPEN: -> KS:)\n", profile.Name)
+			migrated++
+			continue
+		}
+
+		if tpm.IsDataEncrypted(profile.EncryptedToken) {
+			// Token uses legacy ENC: encryption
+			if dryRun {
+				_, _ = fmt.Fprintf(os.Stdout, "  %s: would migrate (ENC: -> KS:)\n", profile.Name)
+				migrated++
+				continue
+			}
+
+			// Decrypt with legacy method
+			token, err := tpm.DecryptToken(profile.EncryptedToken, profile.Name, profile.Host)
+			if err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "  %s: failed to decrypt (TPM required): %v\n", profile.Name, err)
+				failed++
+				continue
+			}
+
+			// Re-encrypt with keystore
+			newEncrypted, err := tpm.EncryptToken(token, profile.Name, profile.Host)
+			if err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "  %s: failed to encrypt: %v\n", profile.Name, err)
+				failed++
+				continue
+			}
+
+			// Update profile
+			profile.EncryptedToken = newEncrypted
+			if err := pm.UpdateProfile(&profile); err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "  %s: failed to save: %v\n", profile.Name, err)
+				failed++
+				continue
+			}
+
+			_, _ = fmt.Fprintf(os.Stdout, "  %s: migrated (ENC: -> KS:)\n", profile.Name)
+			migrated++
+			continue
+		}
+
+		// Unknown format
+		_, _ = fmt.Fprintf(os.Stderr, "  %s: skipped (unknown encryption format)\n", profile.Name)
+		skipped++
+	}
+
+	_, _ = fmt.Fprintln(os.Stdout)
+	if dryRun {
+		_, _ = fmt.Fprintf(os.Stdout, "Dry run complete: %d would migrate, %d skipped\n", migrated, skipped)
+	} else {
+		_, _ = fmt.Fprintf(os.Stdout, "Migration complete: %d migrated, %d skipped, %d failed\n", migrated, skipped, failed)
 	}
 
 	return nil

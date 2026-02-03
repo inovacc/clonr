@@ -1230,6 +1230,345 @@ All existing top-level commands continue to work:
 - [ ] Azure DevOps support
 - [ ] Gitea/Forgejo support
 
+### Messaging & Notification Platforms
+
+Integration with team collaboration tools for notifications, alerts, and workflow automation. **Profile-aware** for proper separation of concerns.
+
+#### Architecture: Profile-Based Notifications
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    PROFILE-BASED NOTIFICATION ARCHITECTURE                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  PROFILES                     NOTIFICATION CHANNELS                         │
+│  ────────                     ──────────────────────                        │
+│                                                                             │
+│  ┌─────────────────┐          ┌─────────────────────────────────┐          │
+│  │  work           │─────────▶│  slack: company-workspace       │          │
+│  │  (github-work)  │          │  teams: devops-channel          │          │
+│  │                 │          │  email: team@company.com        │          │
+│  └─────────────────┘          │  webhook: ci.company.com        │          │
+│                               └─────────────────────────────────┘          │
+│                                                                             │
+│  ┌─────────────────┐          ┌─────────────────────────────────┐          │
+│  │  personal       │─────────▶│  discord: dev-server            │          │
+│  │  (github-user)  │          │  email: me@gmail.com            │          │
+│  └─────────────────┘          └─────────────────────────────────┘          │
+│                                                                             │
+│  ┌─────────────────┐          ┌─────────────────────────────────┐          │
+│  │  opensource     │─────────▶│  discord: oss-community         │          │
+│  │  (github-oss)   │          │  slack: oss-maintainers         │          │
+│  └─────────────────┘          └─────────────────────────────────┘          │
+│                                                                             │
+│  Events from profile repos → routed to profile's notification channels     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Profile Notification Management
+
+```bash
+# Add notification channel to a profile
+clonr profile notify add <profile> slack --webhook "https://hooks.slack.com/..."
+clonr profile notify add <profile> slack --token "xoxb-..." --channel "#dev-ops"
+clonr profile notify add <profile> teams --webhook "https://outlook.office.com/..."
+clonr profile notify add <profile> discord --webhook "https://discord.com/api/webhooks/..."
+clonr profile notify add <profile> email --smtp "smtp.gmail.com:587" --user "..." --password "..."
+clonr profile notify add <profile> webhook --url "https://ci.example.com/notify"
+
+# List notification channels for a profile
+clonr profile notify list <profile>
+clonr profile notify list  # uses default profile
+
+# Remove notification channel
+clonr profile notify remove <profile> slack
+clonr profile notify remove <profile> discord
+
+# Test notification channel
+clonr profile notify test <profile> slack "Test message from clonr"
+clonr profile notify test <profile> --all  # test all channels
+```
+
+#### Event Configuration Per Profile
+
+```bash
+# Configure which events trigger notifications (per profile)
+clonr profile notify config <profile> --on push --channel slack --target "#commits"
+clonr profile notify config <profile> --on pr-merge --channel teams
+clonr profile notify config <profile> --on ci-fail --channel slack --target "#alerts" --priority high
+clonr profile notify config <profile> --on release --channel discord,email
+
+# Filter events by branch/repo patterns
+clonr profile notify config <profile> --on push --channel slack --filter "branch:main"
+clonr profile notify config <profile> --on push --channel slack --filter "repo:critical-*"
+
+# Disable specific events
+clonr profile notify config <profile> --on clone --disable
+
+# List event configuration
+clonr profile notify config <profile> --list
+clonr profile notify config <profile> --list --event push
+```
+
+#### Global Notifications (Cross-Profile)
+
+```bash
+# Configure global notifications (all profiles)
+clonr notify global add slack --webhook "..." --name "admin-alerts"
+clonr notify global config --on error --channel admin-alerts
+clonr notify global config --on sync --channel admin-alerts
+
+# Global notifications for specific events across all profiles
+clonr notify global list
+```
+
+#### Notification Channel Types
+
+**Slack:**
+```bash
+clonr profile notify add work slack \
+  --webhook "https://hooks.slack.com/services/..." \
+  --default-channel "#dev-notifications"
+
+# Or with bot token (richer features)
+clonr profile notify add work slack \
+  --token "xoxb-..." \
+  --default-channel "#dev-notifications"
+```
+
+Features:
+- [ ] Webhook support (simple setup)
+- [ ] Bot token support (threads, reactions, file uploads)
+- [ ] Interactive messages with buttons
+- [ ] Thread replies for related events
+- [ ] Per-repo channel overrides
+
+**Microsoft Teams:**
+```bash
+clonr profile notify add work teams \
+  --webhook "https://outlook.office.com/webhook/..."
+
+# Or with Power Automate
+clonr profile notify add work teams \
+  --connector "..." \
+  --flow-url "..."
+```
+
+Features:
+- [ ] Incoming webhook support
+- [ ] Adaptive cards for rich formatting
+- [ ] Power Automate connector
+- [ ] @mention support
+
+**Discord:**
+```bash
+clonr profile notify add personal discord \
+  --webhook "https://discord.com/api/webhooks/..."
+
+# Or with bot token
+clonr profile notify add personal discord \
+  --token "..." \
+  --default-channel "123456789"
+```
+
+Features:
+- [ ] Webhook support
+- [ ] Rich embeds with colors
+- [ ] Role mentions
+- [ ] Bot token for DMs and advanced features
+
+**Email:**
+```bash
+# SMTP
+clonr profile notify add work email \
+  --provider smtp \
+  --host "smtp.gmail.com" --port 587 \
+  --user "..." --password "..." \
+  --from "notifications@company.com" \
+  --to "team@company.com"
+
+# SendGrid
+clonr profile notify add work email \
+  --provider sendgrid \
+  --api-key "..." \
+  --from "noreply@company.com" \
+  --to "team@company.com"
+
+# AWS SES
+clonr profile notify add work email \
+  --provider ses \
+  --region us-east-1 \
+  --from "noreply@company.com"
+```
+
+Features:
+- [ ] SMTP, SendGrid, AWS SES support
+- [ ] HTML email templates
+- [ ] Digest mode (batch notifications)
+- [ ] CC/BCC support
+
+**Generic Webhook:**
+```bash
+clonr profile notify add work webhook \
+  --url "https://ci.example.com/notify" \
+  --method POST \
+  --header "X-API-Key: ..." \
+  --template custom-payload.json
+
+# With HMAC signing
+clonr profile notify add work webhook \
+  --url "..." \
+  --hmac-secret "..." \
+  --hmac-header "X-Signature"
+```
+
+Features:
+- [ ] Custom HTTP headers
+- [ ] HMAC signature verification
+- [ ] Customizable payload templates (Go templates)
+- [ ] Retry with exponential backoff
+- [ ] Built-in templates: PagerDuty, Opsgenie, Jira, ServiceNow
+
+#### Supported Events
+
+| Event | Description | Context |
+|-------|-------------|---------|
+| `clone` | Repository cloned | repo name, profile |
+| `push` | Commits pushed | repo, branch, commits |
+| `pull` | Changes pulled | repo, branch, changes |
+| `commit` | Local commit created | repo, message, files |
+| `pr-create` | Pull request created | repo, PR number, title |
+| `pr-merge` | Pull request merged | repo, PR number, author |
+| `ci-pass` | CI workflow passed | repo, workflow, duration |
+| `ci-fail` | CI workflow failed | repo, workflow, error |
+| `release` | New release published | repo, version, notes |
+| `sync` | Standalone sync completed | source, items synced |
+| `error` | Any error occurred | command, error message |
+
+#### Data Model
+
+```go
+// Profile contains notification channels (stored inside encrypted profile blob)
+type Profile struct {
+    // ... existing fields (name, token, ssh_key, etc.)
+
+    // Notification channels - encrypted with profile
+    NotifyChannels []NotifyChannel `json:"notify_channels,omitempty"`
+}
+
+// NotifyChannel represents a notification channel (stored inside Profile, not separate)
+type NotifyChannel struct {
+    ID        string            `json:"id"`
+    Type      ChannelType       `json:"type"`        // slack, teams, discord, email, webhook
+    Name      string            `json:"name"`        // User-friendly name
+    Config    map[string]string `json:"config"`      // Webhook URLs, tokens, API keys (all encrypted with profile)
+    Events    []EventConfig     `json:"events"`      // Which events trigger this channel
+    Enabled   bool              `json:"enabled"`
+    CreatedAt time.Time         `json:"created_at"`
+    UpdatedAt time.Time         `json:"updated_at"`
+}
+
+type EventConfig struct {
+    Event    string   `json:"event"`    // push, pr-merge, etc.
+    Filters  []string `json:"filters"`  // branch:main, repo:critical-*
+    Target   string   `json:"target"`   // #channel, email address, etc.
+    Priority string   `json:"priority"` // low, normal, high
+    Template string   `json:"template"` // Custom template name
+}
+
+type ChannelType string
+const (
+    ChannelSlack   ChannelType = "slack"
+    ChannelTeams   ChannelType = "teams"
+    ChannelDiscord ChannelType = "discord"
+    ChannelEmail   ChannelType = "email"
+    ChannelWebhook ChannelType = "webhook"
+)
+
+// Note: No foreign key needed - channels live inside the Profile struct
+// When profile is serialized → encrypted → stored
+// When profile is loaded → decrypted → channels available in memory
+```
+
+#### Implementation Files
+
+```
+internal/notify/
+├── notify.go           # Notification dispatcher (profile-aware)
+├── channel.go          # NotifyChannel model (no separate store - lives in Profile)
+├── router.go           # Event → channel routing logic
+├── sender.go           # Interface for sending notifications
+├── slack/
+│   ├── client.go       # Slack API client
+│   └── templates.go    # Slack message templates
+├── teams/
+│   ├── client.go       # Teams webhook/connector client
+│   └── cards.go        # Adaptive card builders
+├── discord/
+│   ├── client.go       # Discord webhook/bot client
+│   └── embeds.go       # Embed builders
+├── email/
+│   ├── client.go       # Email client interface
+│   ├── smtp.go         # SMTP implementation
+│   ├── sendgrid.go     # SendGrid implementation
+│   └── ses.go          # AWS SES implementation
+├── webhook/
+│   ├── client.go       # Generic webhook client
+│   └── templates/      # Built-in payload templates
+└── templates/
+    └── *.tmpl          # Go templates for messages
+
+cmd/
+├── profile_notify.go        # clonr profile notify add/remove/list/test
+├── profile_notify_config.go # clonr profile notify config
+└── notify_global.go         # clonr notify global (uses dedicated encrypted store)
+
+internal/core/
+└── profile.go              # Profile struct extended with NotifyChannels field
+
+# Note: No separate notify store needed
+# NotifyChannels are part of Profile → encrypted together → stored in profile bucket
+# Global notifications use a separate encrypted store (not tied to any profile)
+```
+
+#### Security Considerations
+
+**Profile encryption applies to all notification data:**
+- Notification channels are stored **inside the profile's encrypted blob**
+- Webhook URLs, tokens, API keys, SMTP credentials - all encrypted at rest
+- No separate storage - leverages existing profile encryption (AES-256-GCM)
+- Decryption only happens in memory when profile is unlocked
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  PROFILE (encrypted at rest)                                │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  Git Credentials (token, SSH key)                    │   │
+│  ├─────────────────────────────────────────────────────┤   │
+│  │  Notification Channels                               │   │
+│  │  ├── Slack: webhook URL, bot token                  │   │
+│  │  ├── Teams: webhook URL, connector token            │   │
+│  │  ├── Discord: webhook URL, bot token                │   │
+│  │  ├── Email: SMTP password, API keys                 │   │
+│  │  └── Webhook: auth headers, HMAC secrets            │   │
+│  ├─────────────────────────────────────────────────────┤   │
+│  │  Event Configuration                                 │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  Encrypted with: AES-256-GCM + PBKDF2/Argon2               │
+│  Key source: user password or TPM-sealed key               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Additional security measures:
+- [ ] HMAC verification for incoming webhooks (if bidirectional)
+- [ ] Rate limiting to prevent notification spam
+- [ ] Audit log for sent notifications (non-sensitive metadata only)
+- [ ] Token rotation support for long-lived credentials
+- [ ] Memory wiping after use (sensitive fields)
+
 ### Cloud Storage Integrations (PM Context)
 
 Fetch complementary documentation from cloud drives when working with project management tools (Jira, ZenHub). Enables linking PRDs, design docs, meeting notes, and specifications to issues/epics.
@@ -1325,6 +1664,7 @@ clonr pm docs fetch --linked PROJ-123
 | v0.7.1  | ✅ Done | Code refactoring: shared packages, reduced duplication |
 | v0.8.0  | Planned | Multi-database support (BoltDB default, SQLite, PostgreSQL) |
 | v0.9.0  | ✅ Done | Git subcommand reorganization (`gh git`), enhanced git client, error helpers |
+| v0.9.1  | Planned | Messaging integrations (Slack, Teams, Discord, webhooks, email) |
 | v1.0.0  | Planned | Production ready with plugins and enterprise features |
 
 ---

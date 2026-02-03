@@ -196,6 +196,11 @@ func (pm *ProfileManager) DeleteProfile(name string) error {
 	return pm.client.DeleteProfile(name)
 }
 
+// UpdateProfile updates an existing profile
+func (pm *ProfileManager) UpdateProfile(profile *model.Profile) error {
+	return pm.client.SaveProfile(profile)
+}
+
 // GetProfileToken retrieves the token for a profile
 func (pm *ProfileManager) GetProfileToken(name string) (string, error) {
 	profile, err := pm.client.GetProfile(name)

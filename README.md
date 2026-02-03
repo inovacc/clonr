@@ -211,6 +211,34 @@ Clonr uses KeePass database format (`.kdbx`) for secure token storage, with opti
 
 **Without TPM:** KeePass storage is not available. Use system keyring or encrypted file storage instead.
 
+### Key Rotation & Migration
+
+Clonr supports encryption key rotation and migration to enhanced security:
+
+```sh
+# Rotate encryption keys for a profile
+clonr profile rotate work
+
+# Migrate all profiles to keystore encryption
+clonr profile migrate --all
+
+# Preview migration without making changes
+clonr profile migrate --all --dry-run
+```
+
+**Key Rotation:**
+- Generates new profile encryption keys
+- Re-encrypts internal key material
+- Existing encrypted data remains valid
+- Recommended: rotate keys periodically
+
+**Migration:**
+- Converts legacy encryption (`OPEN:`, `ENC:`) to new keystore format (`KS:`)
+- Per-profile encryption key isolation
+- TPM-backed when available
+
+For more security details, see [SECURITY.md](docs/SECURITY.md).
+
 ### Workspace Management
 
 Workspaces allow you to organize repositories into logical groups (e.g., work, personal, projects):

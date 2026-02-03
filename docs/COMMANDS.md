@@ -66,7 +66,9 @@ clonr
 +-- profile                                  # Manage GitHub authentication profiles
 |   +-- add                                  # Create a new profile with GitHub OAuth
 |   +-- list                                 # List all profiles
+|   +-- migrate                              # Migrate tokens to keystore encryption
 |   +-- remove                               # Delete a profile
+|   +-- rotate                               # Rotate encryption keys for a profile
 |   +-- status                               # Show profile information
 |   \-- use                                  # Set the default profile
 +-- reauthor                                 # Rewrite git history to change author/...
