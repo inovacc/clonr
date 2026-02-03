@@ -472,6 +472,92 @@ func (c *Client) ProfileExists(name string) (bool, error) {
 	return resp.GetExists(), nil
 }
 
+// SaveDockerProfile saves or updates a docker profile via gRPC
+func (c *Client) SaveDockerProfile(profile *model.DockerProfile) error {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.SaveDockerProfile(ctx, &v1.SaveDockerProfileRequest{
+		Profile: mapper.ModelToProtoDockerProfile(profile),
+	})
+	if err != nil {
+		return handleGRPCError(err)
+	}
+
+	if !resp.GetSuccess() {
+		return fmt.Errorf("operation failed")
+	}
+
+	return nil
+}
+
+// GetDockerProfile retrieves a docker profile by name
+func (c *Client) GetDockerProfile(name string) (*model.DockerProfile, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.GetDockerProfile(ctx, &v1.GetDockerProfileRequest{
+		Name: name,
+	})
+	if err != nil {
+		return nil, handleGRPCError(err)
+	}
+
+	return mapper.ProtoToModelDockerProfile(resp.GetProfile()), nil
+}
+
+// ListDockerProfiles retrieves all docker profiles
+func (c *Client) ListDockerProfiles() ([]model.DockerProfile, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.ListDockerProfiles(ctx, &v1.ListDockerProfilesRequest{})
+	if err != nil {
+		return nil, handleGRPCError(err)
+	}
+
+	profiles := make([]model.DockerProfile, len(resp.GetProfiles()))
+	for i, pr := range resp.GetProfiles() {
+		profiles[i] = *mapper.ProtoToModelDockerProfile(pr)
+	}
+
+	return profiles, nil
+}
+
+// DeleteDockerProfile removes a docker profile by name
+func (c *Client) DeleteDockerProfile(name string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.DeleteDockerProfile(ctx, &v1.DeleteDockerProfileRequest{
+		Name: name,
+	})
+	if err != nil {
+		return handleGRPCError(err)
+	}
+
+	if !resp.GetSuccess() {
+		return fmt.Errorf("operation failed")
+	}
+
+	return nil
+}
+
+// DockerProfileExists checks if a docker profile exists by name
+func (c *Client) DockerProfileExists(name string) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	resp, err := c.service.DockerProfileExists(ctx, &v1.DockerProfileExistsRequest{
+		Name: name,
+	})
+	if err != nil {
+		return false, handleGRPCError(err)
+	}
+
+	return resp.GetExists(), nil
+}
+
 // SaveWorkspace saves or updates a workspace via gRPC
 func (c *Client) SaveWorkspace(workspace *model.Workspace) error {
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)

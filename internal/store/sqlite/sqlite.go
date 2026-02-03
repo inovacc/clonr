@@ -553,3 +553,173 @@ func (s *Store) WorkspaceExists(name string) (bool, error) {
 	}
 	return result == 1, nil
 }
+
+// ============================================================================
+// Docker Profile Operations
+// ============================================================================
+
+func (s *Store) SaveDockerProfile(profile *model.DockerProfile) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ctx := newContext()
+	tokenStorageStr := string(profile.TokenStorage)
+
+	exists, _ := s.queries.DockerProfileExists(ctx, profile.Name)
+	if exists == 1 {
+		return s.queries.UpdateDockerProfile(ctx, sqlc.UpdateDockerProfileParams{
+			Registry:       ptrString(profile.Registry),
+			Username:       profile.Username,
+			EncryptedToken: profile.EncryptedToken,
+			TokenStorage:   ptrString(tokenStorageStr),
+			Name:           profile.Name,
+		})
+	}
+
+	_, err := s.queries.InsertDockerProfile(ctx, sqlc.InsertDockerProfileParams{
+		Name:           profile.Name,
+		Registry:       ptrString(profile.Registry),
+		Username:       profile.Username,
+		EncryptedToken: profile.EncryptedToken,
+		TokenStorage:   ptrString(tokenStorageStr),
+	})
+	return err
+}
+
+func (s *Store) GetDockerProfile(name string) (*model.DockerProfile, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	ctx := newContext()
+	row, err := s.queries.GetDockerProfile(ctx, name)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return sqlcDockerProfileToModel(row), nil
+}
+
+func (s *Store) ListDockerProfiles() ([]*model.DockerProfile, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	ctx := newContext()
+	rows, err := s.queries.ListDockerProfiles(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	profiles := make([]*model.DockerProfile, 0, len(rows))
+	for _, row := range rows {
+		profiles = append(profiles, sqlcDockerProfileToModel(row))
+	}
+	return profiles, nil
+}
+
+func (s *Store) DeleteDockerProfile(name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ctx := newContext()
+	return s.queries.DeleteDockerProfile(ctx, name)
+}
+
+func (s *Store) DockerProfileExists(name string) (bool, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	ctx := newContext()
+	result, err := s.queries.DockerProfileExists(ctx, name)
+	if err != nil {
+		return false, err
+	}
+	return result == 1, nil
+}
+
+// ============================================================================
+// Sealed Key Operations
+// ============================================================================
+
+// SealedKeyData represents TPM-sealed encryption key data
+type SealedKeyData struct {
+	SealedData   []byte            `json:"sealed_data"`
+	Version      int               `json:"version"`
+	KeyType      string            `json:"key_type"`
+	Metadata     map[string]string `json:"metadata"`
+	CreatedAt    time.Time         `json:"created_at"`
+	RotatedAt    time.Time         `json:"rotated_at,omitempty"`
+	LastAccessed time.Time         `json:"last_accessed,omitempty"`
+}
+
+func (s *Store) GetSealedKey() (*SealedKeyData, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	ctx := newContext()
+	row, err := s.queries.GetSealedKey(ctx)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var metadata map[string]string
+	if row.Metadata != nil && *row.Metadata != "" {
+		_ = json.Unmarshal([]byte(*row.Metadata), &metadata)
+	}
+
+	return &SealedKeyData{
+		SealedData:   row.SealedData,
+		Version:      int(derefInt64(row.Version)),
+		KeyType:      derefString(row.KeyType),
+		Metadata:     metadata,
+		CreatedAt:    row.CreatedAt,
+		RotatedAt:    row.RotatedAt,
+		LastAccessed: row.LastAccessed,
+	}, nil
+}
+
+func (s *Store) SaveSealedKey(data *SealedKeyData) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ctx := newContext()
+
+	var metadataJSON string
+	if data.Metadata != nil {
+		b, _ := json.Marshal(data.Metadata)
+		metadataJSON = string(b)
+	}
+
+	version := int64(data.Version)
+	return s.queries.InsertSealedKey(ctx, sqlc.InsertSealedKeyParams{
+		SealedData: data.SealedData,
+		Version:    &version,
+		KeyType:    ptrString(data.KeyType),
+		Metadata:   ptrString(metadataJSON),
+	})
+}
+
+func (s *Store) DeleteSealedKey() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ctx := newContext()
+	return s.queries.DeleteSealedKey(ctx)
+}
+
+func (s *Store) HasSealedKey() (bool, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	ctx := newContext()
+	result, err := s.queries.SealedKeyExists(ctx)
+	if err != nil {
+		return false, err
+	}
+	return result == 1, nil
+}

@@ -38,6 +38,11 @@ const (
 	ClonrService_ListProfiles_FullMethodName          = "/clonr.v1.ClonrService/ListProfiles"
 	ClonrService_DeleteProfile_FullMethodName         = "/clonr.v1.ClonrService/DeleteProfile"
 	ClonrService_ProfileExists_FullMethodName         = "/clonr.v1.ClonrService/ProfileExists"
+	ClonrService_SaveDockerProfile_FullMethodName     = "/clonr.v1.ClonrService/SaveDockerProfile"
+	ClonrService_GetDockerProfile_FullMethodName      = "/clonr.v1.ClonrService/GetDockerProfile"
+	ClonrService_ListDockerProfiles_FullMethodName    = "/clonr.v1.ClonrService/ListDockerProfiles"
+	ClonrService_DeleteDockerProfile_FullMethodName   = "/clonr.v1.ClonrService/DeleteDockerProfile"
+	ClonrService_DockerProfileExists_FullMethodName   = "/clonr.v1.ClonrService/DockerProfileExists"
 	ClonrService_SaveWorkspace_FullMethodName         = "/clonr.v1.ClonrService/SaveWorkspace"
 	ClonrService_GetWorkspace_FullMethodName          = "/clonr.v1.ClonrService/GetWorkspace"
 	ClonrService_GetActiveWorkspace_FullMethodName    = "/clonr.v1.ClonrService/GetActiveWorkspace"
@@ -78,6 +83,12 @@ type ClonrServiceClient interface {
 	ListProfiles(ctx context.Context, in *ListProfilesRequest, opts ...grpc.CallOption) (*ListProfilesResponse, error)
 	DeleteProfile(ctx context.Context, in *DeleteProfileRequest, opts ...grpc.CallOption) (*DeleteProfileResponse, error)
 	ProfileExists(ctx context.Context, in *ProfileExistsRequest, opts ...grpc.CallOption) (*ProfileExistsResponse, error)
+	// Docker profile operations
+	SaveDockerProfile(ctx context.Context, in *SaveDockerProfileRequest, opts ...grpc.CallOption) (*SaveDockerProfileResponse, error)
+	GetDockerProfile(ctx context.Context, in *GetDockerProfileRequest, opts ...grpc.CallOption) (*GetDockerProfileResponse, error)
+	ListDockerProfiles(ctx context.Context, in *ListDockerProfilesRequest, opts ...grpc.CallOption) (*ListDockerProfilesResponse, error)
+	DeleteDockerProfile(ctx context.Context, in *DeleteDockerProfileRequest, opts ...grpc.CallOption) (*DeleteDockerProfileResponse, error)
+	DockerProfileExists(ctx context.Context, in *DockerProfileExistsRequest, opts ...grpc.CallOption) (*DockerProfileExistsResponse, error)
 	// Workspace operations
 	SaveWorkspace(ctx context.Context, in *SaveWorkspaceRequest, opts ...grpc.CallOption) (*SaveWorkspaceResponse, error)
 	GetWorkspace(ctx context.Context, in *GetWorkspaceRequest, opts ...grpc.CallOption) (*GetWorkspaceResponse, error)
@@ -288,6 +299,56 @@ func (c *clonrServiceClient) ProfileExists(ctx context.Context, in *ProfileExist
 	return out, nil
 }
 
+func (c *clonrServiceClient) SaveDockerProfile(ctx context.Context, in *SaveDockerProfileRequest, opts ...grpc.CallOption) (*SaveDockerProfileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SaveDockerProfileResponse)
+	err := c.cc.Invoke(ctx, ClonrService_SaveDockerProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) GetDockerProfile(ctx context.Context, in *GetDockerProfileRequest, opts ...grpc.CallOption) (*GetDockerProfileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDockerProfileResponse)
+	err := c.cc.Invoke(ctx, ClonrService_GetDockerProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) ListDockerProfiles(ctx context.Context, in *ListDockerProfilesRequest, opts ...grpc.CallOption) (*ListDockerProfilesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListDockerProfilesResponse)
+	err := c.cc.Invoke(ctx, ClonrService_ListDockerProfiles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) DeleteDockerProfile(ctx context.Context, in *DeleteDockerProfileRequest, opts ...grpc.CallOption) (*DeleteDockerProfileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteDockerProfileResponse)
+	err := c.cc.Invoke(ctx, ClonrService_DeleteDockerProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *clonrServiceClient) DockerProfileExists(ctx context.Context, in *DockerProfileExistsRequest, opts ...grpc.CallOption) (*DockerProfileExistsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DockerProfileExistsResponse)
+	err := c.cc.Invoke(ctx, ClonrService_DockerProfileExists_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *clonrServiceClient) SaveWorkspace(ctx context.Context, in *SaveWorkspaceRequest, opts ...grpc.CallOption) (*SaveWorkspaceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SaveWorkspaceResponse)
@@ -407,6 +468,12 @@ type ClonrServiceServer interface {
 	ListProfiles(context.Context, *ListProfilesRequest) (*ListProfilesResponse, error)
 	DeleteProfile(context.Context, *DeleteProfileRequest) (*DeleteProfileResponse, error)
 	ProfileExists(context.Context, *ProfileExistsRequest) (*ProfileExistsResponse, error)
+	// Docker profile operations
+	SaveDockerProfile(context.Context, *SaveDockerProfileRequest) (*SaveDockerProfileResponse, error)
+	GetDockerProfile(context.Context, *GetDockerProfileRequest) (*GetDockerProfileResponse, error)
+	ListDockerProfiles(context.Context, *ListDockerProfilesRequest) (*ListDockerProfilesResponse, error)
+	DeleteDockerProfile(context.Context, *DeleteDockerProfileRequest) (*DeleteDockerProfileResponse, error)
+	DockerProfileExists(context.Context, *DockerProfileExistsRequest) (*DockerProfileExistsResponse, error)
 	// Workspace operations
 	SaveWorkspace(context.Context, *SaveWorkspaceRequest) (*SaveWorkspaceResponse, error)
 	GetWorkspace(context.Context, *GetWorkspaceRequest) (*GetWorkspaceResponse, error)
@@ -483,6 +550,21 @@ func (UnimplementedClonrServiceServer) DeleteProfile(context.Context, *DeletePro
 }
 func (UnimplementedClonrServiceServer) ProfileExists(context.Context, *ProfileExistsRequest) (*ProfileExistsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ProfileExists not implemented")
+}
+func (UnimplementedClonrServiceServer) SaveDockerProfile(context.Context, *SaveDockerProfileRequest) (*SaveDockerProfileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveDockerProfile not implemented")
+}
+func (UnimplementedClonrServiceServer) GetDockerProfile(context.Context, *GetDockerProfileRequest) (*GetDockerProfileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetDockerProfile not implemented")
+}
+func (UnimplementedClonrServiceServer) ListDockerProfiles(context.Context, *ListDockerProfilesRequest) (*ListDockerProfilesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListDockerProfiles not implemented")
+}
+func (UnimplementedClonrServiceServer) DeleteDockerProfile(context.Context, *DeleteDockerProfileRequest) (*DeleteDockerProfileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteDockerProfile not implemented")
+}
+func (UnimplementedClonrServiceServer) DockerProfileExists(context.Context, *DockerProfileExistsRequest) (*DockerProfileExistsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DockerProfileExists not implemented")
 }
 func (UnimplementedClonrServiceServer) SaveWorkspace(context.Context, *SaveWorkspaceRequest) (*SaveWorkspaceResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SaveWorkspace not implemented")
@@ -874,6 +956,96 @@ func _ClonrService_ProfileExists_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClonrService_SaveDockerProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveDockerProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).SaveDockerProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_SaveDockerProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).SaveDockerProfile(ctx, req.(*SaveDockerProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_GetDockerProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDockerProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).GetDockerProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_GetDockerProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).GetDockerProfile(ctx, req.(*GetDockerProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_ListDockerProfiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDockerProfilesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).ListDockerProfiles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_ListDockerProfiles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).ListDockerProfiles(ctx, req.(*ListDockerProfilesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_DeleteDockerProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteDockerProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).DeleteDockerProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_DeleteDockerProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).DeleteDockerProfile(ctx, req.(*DeleteDockerProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ClonrService_DockerProfileExists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DockerProfileExistsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClonrServiceServer).DockerProfileExists(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClonrService_DockerProfileExists_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClonrServiceServer).DockerProfileExists(ctx, req.(*DockerProfileExistsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ClonrService_SaveWorkspace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SaveWorkspaceRequest)
 	if err := dec(in); err != nil {
@@ -1118,6 +1290,26 @@ var ClonrService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ProfileExists",
 			Handler:    _ClonrService_ProfileExists_Handler,
+		},
+		{
+			MethodName: "SaveDockerProfile",
+			Handler:    _ClonrService_SaveDockerProfile_Handler,
+		},
+		{
+			MethodName: "GetDockerProfile",
+			Handler:    _ClonrService_GetDockerProfile_Handler,
+		},
+		{
+			MethodName: "ListDockerProfiles",
+			Handler:    _ClonrService_ListDockerProfiles_Handler,
+		},
+		{
+			MethodName: "DeleteDockerProfile",
+			Handler:    _ClonrService_DeleteDockerProfile_Handler,
+		},
+		{
+			MethodName: "DockerProfileExists",
+			Handler:    _ClonrService_DockerProfileExists_Handler,
 		},
 		{
 			MethodName: "SaveWorkspace",

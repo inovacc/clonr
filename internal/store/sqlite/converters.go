@@ -143,3 +143,16 @@ func sqlcRegisteredClientToModel(row sqlc.RegisteredClient) *standalone.Register
 		LastSeenAt:        row.LastSeenAt,
 	}
 }
+
+// sqlcDockerProfileToModel converts a sqlc DockerProfile to a model.DockerProfile.
+func sqlcDockerProfileToModel(row sqlc.DockerProfile) *model.DockerProfile {
+	return &model.DockerProfile{
+		Name:           row.Name,
+		Registry:       derefString(row.Registry),
+		Username:       row.Username,
+		EncryptedToken: row.EncryptedToken,
+		TokenStorage:   model.TokenStorage(derefString(row.TokenStorage)),
+		CreatedAt:      row.CreatedAt,
+		LastUsedAt:     row.LastUsedAt,
+	}
+}

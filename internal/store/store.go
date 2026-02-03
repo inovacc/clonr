@@ -3,10 +3,22 @@ package store
 import (
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/inovacc/clonr/internal/model"
 	"github.com/inovacc/clonr/internal/standalone"
 )
+
+// SealedKeyData represents TPM-sealed encryption key data stored in the database
+type SealedKeyData struct {
+	SealedData   []byte            `json:"sealed_data"`
+	Version      int               `json:"version"`
+	KeyType      string            `json:"key_type"` // "tpm", "password", "software"
+	Metadata     map[string]string `json:"metadata"`
+	CreatedAt    time.Time         `json:"created_at"`
+	RotatedAt    time.Time         `json:"rotated_at,omitempty"`
+	LastAccessed time.Time         `json:"last_accessed,omitempty"`
+}
 
 // Store defines the database operations used by the app.
 //
@@ -34,6 +46,13 @@ type Store interface {
 	ListProfiles() ([]model.Profile, error)
 	DeleteProfile(name string) error
 	ProfileExists(name string) (bool, error)
+
+	// Docker profile operations
+	SaveDockerProfile(profile *model.DockerProfile) error
+	GetDockerProfile(name string) (*model.DockerProfile, error)
+	ListDockerProfiles() ([]model.DockerProfile, error)
+	DeleteDockerProfile(name string) error
+	DockerProfileExists(name string) (bool, error)
 
 	// Workspace operations
 	SaveWorkspace(workspace *model.Workspace) error
@@ -82,6 +101,12 @@ type Store interface {
 	GetRegisteredClient(clientID string) (*standalone.RegisteredClient, error)
 	ListRegisteredClients() ([]*standalone.RegisteredClient, error)
 	DeleteRegisteredClient(clientID string) error
+
+	// Sealed key operations (TPM-sealed encryption key stored in database)
+	GetSealedKey() (*SealedKeyData, error)
+	SaveSealedKey(data *SealedKeyData) error
+	DeleteSealedKey() error
+	HasSealedKey() (bool, error)
 }
 
 var (

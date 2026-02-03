@@ -17,6 +17,18 @@ type Config struct {
 	ServerPort      *int64    `json:"server_port"`
 	CustomEditors   *string   `json:"custom_editors"`
 	UpdatedAt       time.Time `json:"updated_at"`
+	KeyRotationDays *int64    `json:"key_rotation_days"`
+}
+
+type DockerProfile struct {
+	ID             int64     `json:"id"`
+	Name           string    `json:"name"`
+	Registry       *string   `json:"registry"`
+	Username       string    `json:"username"`
+	EncryptedToken []byte    `json:"encrypted_token"`
+	TokenStorage   *string   `json:"token_storage"`
+	CreatedAt      time.Time `json:"created_at"`
+	LastUsedAt     time.Time `json:"last_used_at"`
 }
 
 type PendingRegistration struct {
@@ -75,6 +87,17 @@ type SchemaMigration struct {
 	Version     int64      `json:"version"`
 	AppliedAt   *time.Time `json:"applied_at"`
 	Description *string    `json:"description"`
+}
+
+type SealedKey struct {
+	ID           int64     `json:"id"`
+	SealedData   []byte    `json:"sealed_data"`
+	Version      *int64    `json:"version"`
+	KeyType      *string   `json:"key_type"`
+	Metadata     *string   `json:"metadata"`
+	CreatedAt    time.Time `json:"created_at"`
+	RotatedAt    time.Time `json:"rotated_at"`
+	LastAccessed time.Time `json:"last_accessed"`
 }
 
 type ServerEncryptionConfig struct {

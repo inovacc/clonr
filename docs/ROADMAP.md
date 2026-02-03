@@ -291,10 +291,46 @@ CLI: `clonr nerds [repo-name]`
 
 ## Database
 
-- Current: internal/database/database.go (inspect for existing schema: name, path, remote, etc.)
-- Add column `favorite` BOOLEAN DEFAULT 0
-- Migrations:
-  - On DB init, ensure table exists and add missing columns using PRAGMA table_info
+### Storage Backend ✅ (Completed)
+
+- **SQLite is now the default** storage backend for new instances
+- BoltDB remains available with `-tags bolt` build flag for backward compatibility
+- Build tags:
+  - Default (no tags): SQLite
+  - `-tags bolt`: BoltDB (legacy)
+
+### Sealed Key Storage ✅ (Completed)
+
+- TPM-sealed encryption keys are now stored in SQLite (`sealed_keys` table) instead of filesystem
+- Benefits:
+  - Single database file contains all application state
+  - Better backup/restore (database export includes encryption keys)
+  - Cleaner application directory structure
+- Schema:
+  ```sql
+  CREATE TABLE sealed_keys (
+      id INTEGER PRIMARY KEY CHECK (id = 1),  -- Singleton
+      sealed_data BLOB NOT NULL,
+      version INTEGER DEFAULT 1,
+      key_type TEXT DEFAULT 'tpm',  -- 'tpm', 'password', 'software'
+      metadata TEXT DEFAULT '{}',
+      created_at DATETIME,
+      rotated_at DATETIME,
+      last_accessed DATETIME
+  );
+  ```
+
+### Docker Profile Storage ✅ (Completed)
+
+- Container registry credentials stored in `docker_profiles` table
+- Supports multiple registries (Docker Hub, GHCR, ECR, etc.)
+- Tokens encrypted using keystore envelope encryption
+
+### Migrations
+
+- Migration 001: Initial schema (repositories, profiles, workspaces, etc.)
+- Migration 002: Added `sealed_keys` and `docker_profiles` tables
+- Migrations are embedded and run automatically on database initialization
 
 ## Telemetry & Metrics
 
@@ -1224,13 +1260,91 @@ All existing top-level commands continue to work:
 
 ## Ideas & Future Exploration
 
+### AI-Friendly Output (`--airesponse`)
+
+Add a global `--airesponse` flag that formats command output optimized for AI assistants like Claude Code.
+
+#### Motivation
+
+When AI assistants interact with clonr, they need:
+- Concise, structured output (no decorative formatting)
+- Clear success/failure indicators
+- Actionable context for next steps
+- Machine-parseable format without being overly verbose
+
+#### Commands
+
+```bash
+# Global flag available on all commands
+clonr profile list --airesponse
+clonr clone owner/repo --airesponse
+clonr push --airesponse
+clonr gh git status --airesponse
+
+# Can combine with --json for structured data
+clonr profile status work --airesponse --json
+```
+
+#### Output Format
+
+```
+# Success example
+OK: Profile 'work' created successfully
+  registry: docker.io
+  username: myuser
+  next: clonr profile docker login work
+
+# Error example
+ERROR: Failed to clone repository
+  reason: authentication required
+  suggestion: clonr profile add <name> --workspace <ws>
+
+# Status example
+STATUS: 3 profiles, 2 workspaces, 45 repos
+  active_profile: work
+  active_workspace: default
+```
+
+#### Features
+- [ ] Global `--airesponse` flag on root command
+- [ ] Consistent prefix format: `OK:`, `ERROR:`, `STATUS:`, `WARN:`
+- [ ] Include `next:` field with suggested follow-up commands
+- [ ] Include `suggestion:` field for error recovery
+- [ ] Suppress decorative output (spinners, progress bars, emojis)
+- [ ] Environment variable `CLONR_AI_RESPONSE=1` for default enable
+- [ ] Combine with `--json` for structured machine-readable output
+
+#### Implementation
+
+```go
+// cmd/root.go
+var aiResponseMode bool
+
+func init() {
+    rootCmd.PersistentFlags().BoolVar(&aiResponseMode, "airesponse", false, "Output optimized for AI assistants")
+}
+
+// internal/output/ai.go
+type AIResponse struct {
+    Status     string            `json:"status"`     // ok, error, warn
+    Message    string            `json:"message"`
+    Data       any               `json:"data,omitempty"`
+    Next       string            `json:"next,omitempty"`
+    Suggestion string            `json:"suggestion,omitempty"`
+}
+
+func (r AIResponse) String() string {
+    // Format as "STATUS: message\n  key: value\n..."
+}
+```
+
 ### Integrations
 - [ ] GitLab support
 - [ ] Bitbucket support
 - [ ] Azure DevOps support
 - [ ] Gitea/Forgejo support
 
-### Container Registry Profiles
+### Container Registry Profiles ✅ (Completed)
 
 Store Docker/container registry credentials securely using the same encryption as GitHub profiles.
 
@@ -1238,35 +1352,35 @@ Store Docker/container registry credentials securely using the same encryption a
 
 ```bash
 # Add Docker Hub credentials
-clonr profile docker add dockerhub --username myuser
-# Prompts for password/token, encrypts with keystore
+clonr profile docker add dockerhub --username myuser --token mytoken
+# Encrypts token with keystore
 
 # Add other registries
-clonr profile docker add ghcr --registry ghcr.io --username myuser
-clonr profile docker add ecr --registry 123456789.dkr.ecr.us-east-1.amazonaws.com
-clonr profile docker add gcr --registry gcr.io --service-account key.json
+clonr profile docker add ghcr --registry ghcr.io --username myuser --token ghp_xxx
+clonr profile docker add ecr --registry ecr.aws --username AWS --token $(aws ecr get-login-password)
 
 # List docker profiles
 clonr profile docker list
+clonr profile docker list --json
 
 # Login to registry (uses stored credentials)
 clonr profile docker login dockerhub
-clonr profile docker login --all  # Login to all registries
 
 # Remove docker profile
 clonr profile docker remove dockerhub
 
 # Show docker profile status
-clonr profile docker status dockerhub --json
+clonr profile docker status dockerhub
 ```
 
 #### Features
-- [ ] Docker Hub authentication
-- [ ] GitHub Container Registry (ghcr.io)
-- [ ] AWS ECR authentication
-- [ ] Google Container Registry (gcr.io)
-- [ ] Azure Container Registry
-- [ ] Generic registry support (any Docker v2 registry)
+- [x] Docker Hub authentication
+- [x] GitHub Container Registry (ghcr.io)
+- [x] AWS ECR authentication
+- [x] Google Container Registry (gcr.io)
+- [x] Azure Container Registry
+- [x] Generic registry support (any Docker v2 registry)
+- [x] Credential encryption with keystore
 - [ ] Credential rotation with keystore
 - [ ] Auto-login on `docker pull/push` (via credential helper)
 

@@ -1,4 +1,4 @@
-//go:build sqlite
+//go:build !bolt
 
 package store
 
@@ -314,4 +314,75 @@ func (w *SQLiteWrapper) ListRegisteredClients() ([]*standalone.RegisteredClient,
 
 func (w *SQLiteWrapper) DeleteRegisteredClient(clientID string) error {
 	return w.store.DeleteRegisteredClient(clientID)
+}
+
+// Docker profile operations
+
+func (w *SQLiteWrapper) SaveDockerProfile(profile *model.DockerProfile) error {
+	return w.store.SaveDockerProfile(profile)
+}
+
+func (w *SQLiteWrapper) GetDockerProfile(name string) (*model.DockerProfile, error) {
+	return w.store.GetDockerProfile(name)
+}
+
+func (w *SQLiteWrapper) ListDockerProfiles() ([]model.DockerProfile, error) {
+	profiles, err := w.store.ListDockerProfiles()
+	if err != nil {
+		return nil, err
+	}
+	result := make([]model.DockerProfile, len(profiles))
+	for i, p := range profiles {
+		result[i] = *p
+	}
+	return result, nil
+}
+
+func (w *SQLiteWrapper) DeleteDockerProfile(name string) error {
+	return w.store.DeleteDockerProfile(name)
+}
+
+func (w *SQLiteWrapper) DockerProfileExists(name string) (bool, error) {
+	return w.store.DockerProfileExists(name)
+}
+
+// Sealed key operations
+
+func (w *SQLiteWrapper) GetSealedKey() (*SealedKeyData, error) {
+	sqliteKey, err := w.store.GetSealedKey()
+	if err != nil {
+		return nil, err
+	}
+	if sqliteKey == nil {
+		return nil, nil
+	}
+	return &SealedKeyData{
+		SealedData:   sqliteKey.SealedData,
+		Version:      sqliteKey.Version,
+		KeyType:      sqliteKey.KeyType,
+		Metadata:     sqliteKey.Metadata,
+		CreatedAt:    sqliteKey.CreatedAt,
+		RotatedAt:    sqliteKey.RotatedAt,
+		LastAccessed: sqliteKey.LastAccessed,
+	}, nil
+}
+
+func (w *SQLiteWrapper) SaveSealedKey(data *SealedKeyData) error {
+	return w.store.SaveSealedKey(&sqlite.SealedKeyData{
+		SealedData:   data.SealedData,
+		Version:      data.Version,
+		KeyType:      data.KeyType,
+		Metadata:     data.Metadata,
+		CreatedAt:    data.CreatedAt,
+		RotatedAt:    data.RotatedAt,
+		LastAccessed: data.LastAccessed,
+	})
+}
+
+func (w *SQLiteWrapper) DeleteSealedKey() error {
+	return w.store.DeleteSealedKey()
+}
+
+func (w *SQLiteWrapper) HasSealedKey() (bool, error) {
+	return w.store.HasSealedKey()
 }

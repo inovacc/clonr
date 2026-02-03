@@ -155,3 +155,39 @@ func ProtoToModelWorkspace(protoWorkspace *v1.Workspace) *model.Workspace {
 		UpdatedAt:   protoWorkspace.GetUpdatedAt().AsTime(),
 	}
 }
+
+// Docker Profile conversions
+
+// ModelToProtoDockerProfile converts a model.DockerProfile to a proto DockerProfile
+func ModelToProtoDockerProfile(profile *model.DockerProfile) *v1.DockerProfile {
+	if profile == nil {
+		return nil
+	}
+
+	return &v1.DockerProfile{
+		Name:           profile.Name,
+		Registry:       profile.Registry,
+		Username:       profile.Username,
+		EncryptedToken: profile.EncryptedToken,
+		TokenStorage:   string(profile.TokenStorage),
+		CreatedAt:      timestamppb.New(profile.CreatedAt),
+		LastUsedAt:     timestamppb.New(profile.LastUsedAt),
+	}
+}
+
+// ProtoToModelDockerProfile converts a proto DockerProfile to a model.DockerProfile
+func ProtoToModelDockerProfile(protoProfile *v1.DockerProfile) *model.DockerProfile {
+	if protoProfile == nil {
+		return nil
+	}
+
+	return &model.DockerProfile{
+		Name:           protoProfile.GetName(),
+		Registry:       protoProfile.GetRegistry(),
+		Username:       protoProfile.GetUsername(),
+		EncryptedToken: protoProfile.GetEncryptedToken(),
+		TokenStorage:   model.TokenStorage(protoProfile.GetTokenStorage()),
+		CreatedAt:      protoProfile.GetCreatedAt().AsTime(),
+		LastUsedAt:     protoProfile.GetLastUsedAt().AsTime(),
+	}
+}

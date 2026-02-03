@@ -48,3 +48,13 @@ func ModelToProtoWorkspace(workspace *model.Workspace) *v1.Workspace {
 func ProtoToModelWorkspace(protoWorkspace *v1.Workspace) *model.Workspace {
 	return mapper.ProtoToModelWorkspace(protoWorkspace)
 }
+
+// ModelToProtoDockerProfile converts a model.DockerProfile to a proto DockerProfile
+func ModelToProtoDockerProfile(profile *model.DockerProfile) *v1.DockerProfile {
+	return mapper.ModelToProtoDockerProfile(profile)
+}
+
+// ProtoToModelDockerProfile converts a proto DockerProfile to a model.DockerProfile
+func ProtoToModelDockerProfile(protoProfile *v1.DockerProfile) *model.DockerProfile {
+	return mapper.ProtoToModelDockerProfile(protoProfile)
+}

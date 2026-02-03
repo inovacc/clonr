@@ -9,6 +9,7 @@ import (
 	v1 "github.com/inovacc/clonr/internal/api/v1"
 	"github.com/inovacc/clonr/internal/model"
 	"github.com/inovacc/clonr/internal/standalone"
+	"github.com/inovacc/clonr/internal/store"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -142,6 +143,27 @@ func (m *mockStore) DeleteProfile(_ string) error {
 
 func (m *mockStore) ProfileExists(_ string) (bool, error) {
 	return m.profileExistsResult, m.profileExistsErr
+}
+
+// Docker profile operations
+func (m *mockStore) SaveDockerProfile(_ *model.DockerProfile) error {
+	return nil
+}
+
+func (m *mockStore) GetDockerProfile(_ string) (*model.DockerProfile, error) {
+	return nil, nil
+}
+
+func (m *mockStore) ListDockerProfiles() ([]model.DockerProfile, error) {
+	return nil, nil
+}
+
+func (m *mockStore) DeleteDockerProfile(_ string) error {
+	return nil
+}
+
+func (m *mockStore) DockerProfileExists(_ string) (bool, error) {
+	return false, nil
 }
 
 func (m *mockStore) SaveRepoWithWorkspace(_ *url.URL, _ string, _ string) error {
@@ -284,6 +306,23 @@ func (m *mockStore) ListRegisteredClients() ([]*standalone.RegisteredClient, err
 
 func (m *mockStore) DeleteRegisteredClient(_ string) error {
 	return nil
+}
+
+// Sealed key operations
+func (m *mockStore) GetSealedKey() (*store.SealedKeyData, error) {
+	return nil, nil
+}
+
+func (m *mockStore) SaveSealedKey(_ *store.SealedKeyData) error {
+	return nil
+}
+
+func (m *mockStore) DeleteSealedKey() error {
+	return nil
+}
+
+func (m *mockStore) HasSealedKey() (bool, error) {
+	return false, nil
 }
 
 func TestNewService(t *testing.T) {

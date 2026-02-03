@@ -1,3 +1,5 @@
+//go:build bolt
+
 package store
 
 import (

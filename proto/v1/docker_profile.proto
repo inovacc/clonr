@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package clonr.v1;
+
+option go_package = "github.com/inovacc/clonr/internal/api/v1";
+
+import "google/protobuf/timestamp.proto";
+
+// DockerProfile represents container registry credentials
+message DockerProfile {
+  string name = 1;
+  string registry = 2;
+  string username = 3;
+  bytes encrypted_token = 4;
+  string token_storage = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp last_used_at = 7;
+}
+
+// SaveDockerProfile RPC messages
+message SaveDockerProfileRequest {
+  DockerProfile profile = 1;
+}
+
+message SaveDockerProfileResponse {
+  bool success = 1;
+}
+
+// GetDockerProfile RPC messages
+message GetDockerProfileRequest {
+  string name = 1;
+}
+
+message GetDockerProfileResponse {
+  DockerProfile profile = 1;
+}
+
+// ListDockerProfiles RPC messages
+message ListDockerProfilesRequest {}
+
+message ListDockerProfilesResponse {
+  repeated DockerProfile profiles = 1;
+}
+
+// DeleteDockerProfile RPC messages
+message DeleteDockerProfileRequest {
+  string name = 1;
+}
+
+message DeleteDockerProfileResponse {
+  bool success = 1;
+}
+
+// DockerProfileExists RPC messages
+message DockerProfileExistsRequest {
+  string name = 1;
+}
+
+message DockerProfileExistsResponse {
+  bool exists = 1;
+}

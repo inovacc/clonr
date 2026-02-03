@@ -2,9 +2,16 @@ package cmd
 
 import (
 	"os"
+	"sync"
 
 	"github.com/inovacc/clonr/internal/application"
+	"github.com/inovacc/clonr/internal/crypto/tpm"
+	"github.com/inovacc/clonr/internal/store"
 	"github.com/spf13/cobra"
+)
+
+var (
+	initOnce sync.Once
 )
 
 var rootCmd = &cobra.Command{
@@ -13,6 +20,13 @@ var rootCmd = &cobra.Command{
 	Long: `Clonr is a command-line tool for managing Git repositories efficiently.
 It provides an interactive interface for cloning, organizing, and working with
 multiple repositories.`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// Initialize TPM with database storage (runs once)
+		initOnce.Do(func() {
+			// Configure TPM to use SQLite for sealed key storage
+			tpm.SetDBStore(store.GetDB())
+		})
+	},
 }
 
 func Execute() {

@@ -10,7 +10,7 @@ import (
 )
 
 const getConfig = `-- name: GetConfig :one
-SELECT id, default_clone_dir, editor, terminal, monitor_interval, server_port, custom_editors, updated_at FROM config WHERE id = 1
+SELECT id, default_clone_dir, editor, terminal, monitor_interval, server_port, custom_editors, updated_at, key_rotation_days FROM config WHERE id = 1
 `
 
 func (q *Queries) GetConfig(ctx context.Context) (Config, error) {
@@ -25,6 +25,7 @@ func (q *Queries) GetConfig(ctx context.Context) (Config, error) {
 		&i.ServerPort,
 		&i.CustomEditors,
 		&i.UpdatedAt,
+		&i.KeyRotationDays,
 	)
 	return i, err
 }

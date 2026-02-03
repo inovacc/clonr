@@ -1,4 +1,4 @@
-//go:build !sqlite
+//go:build bolt
 
 package store
 
@@ -18,14 +18,15 @@ import (
 )
 
 const (
-	boltBucketRepos         = "repos"         // key: URL -> Repository JSON
-	boltBucketPaths         = "paths"         // key: Path -> URL string
-	boltBucketConfig        = "config"        // key: "config" -> Config JSON
-	boltBucketProfiles      = "profiles"      // key: name -> Profile JSON
-	boltBucketWorkspaces    = "workspaces"    // key: name -> Workspace JSON
-	boltBucketStandalone    = "standalone"    // key: "config" -> StandaloneConfig, "client:<id>" -> Client, "encryption" -> ServerEncryptionConfig
-	boltBucketConnections   = "connections"   // key: name -> StandaloneConnection (destination side)
-	boltBucketSyncedData    = "synced_data"   // key: "connection:type:name" -> SyncedData (encrypted until decrypted)
+	boltBucketRepos          = "repos"           // key: URL -> Repository JSON
+	boltBucketPaths          = "paths"           // key: Path -> URL string
+	boltBucketConfig         = "config"          // key: "config" -> Config JSON
+	boltBucketProfiles       = "profiles"        // key: name -> Profile JSON
+	boltBucketDockerProfiles = "docker_profiles" // key: name -> DockerProfile JSON
+	boltBucketWorkspaces     = "workspaces"      // key: name -> Workspace JSON
+	boltBucketStandalone     = "standalone"      // key: "config" -> StandaloneConfig, "client:<id>" -> Client, "encryption" -> ServerEncryptionConfig
+	boltBucketConnections    = "connections"     // key: name -> StandaloneConnection (destination side)
+	boltBucketSyncedData     = "synced_data"     // key: "connection:type:name" -> SyncedData (encrypted until decrypted)
 )
 
 type Bolt struct {
@@ -54,6 +55,10 @@ func NewBolt(path string) (*Bolt, error) {
 		}
 
 		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketProfiles)); err != nil {
+			return err
+		}
+
+		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketDockerProfiles)); err != nil {
 			return err
 		}
 
@@ -110,6 +115,10 @@ func initDB() (Store, error) {
 		}
 
 		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketProfiles)); err != nil {
+			return err
+		}
+
+		if _, err := tx.CreateBucketIfNotExists([]byte(boltBucketDockerProfiles)); err != nil {
 			return err
 		}
 
@@ -572,6 +581,100 @@ func (b *Bolt) ProfileExists(name string) (bool, error) {
 
 	err := b.storage.View(func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket([]byte(boltBucketProfiles))
+		exists = bucket.Get([]byte(name)) != nil
+
+		return nil
+	})
+
+	return exists, err
+}
+
+// Docker profile operations
+
+// SaveDockerProfile saves or updates a docker profile
+func (b *Bolt) SaveDockerProfile(profile *model.DockerProfile) error {
+	if profile == nil {
+		return errors.New("docker profile is required")
+	}
+
+	if profile.Name == "" {
+		return errors.New("docker profile name is required")
+	}
+
+	data, err := json.Marshal(profile)
+	if err != nil {
+		return err
+	}
+
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketDockerProfiles))
+
+		return bucket.Put([]byte(profile.Name), data)
+	})
+}
+
+// GetDockerProfile retrieves a docker profile by name
+func (b *Bolt) GetDockerProfile(name string) (*model.DockerProfile, error) {
+	var profile *model.DockerProfile
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketDockerProfiles))
+		v := bucket.Get([]byte(name))
+
+		if v == nil {
+			return nil
+		}
+
+		var p model.DockerProfile
+		if err := json.Unmarshal(v, &p); err != nil {
+			return err
+		}
+
+		profile = &p
+
+		return nil
+	})
+
+	return profile, err
+}
+
+// ListDockerProfiles retrieves all docker profiles
+func (b *Bolt) ListDockerProfiles() ([]model.DockerProfile, error) {
+	var profiles []model.DockerProfile
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketDockerProfiles))
+
+		return bucket.ForEach(func(k, v []byte) error {
+			var p model.DockerProfile
+			if err := json.Unmarshal(v, &p); err != nil {
+				return err
+			}
+
+			profiles = append(profiles, p)
+
+			return nil
+		})
+	})
+
+	return profiles, err
+}
+
+// DeleteDockerProfile removes a docker profile by name
+func (b *Bolt) DeleteDockerProfile(name string) error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketDockerProfiles))
+
+		return bucket.Delete([]byte(name))
+	})
+}
+
+// DockerProfileExists checks if a docker profile exists by name
+func (b *Bolt) DockerProfileExists(name string) (bool, error) {
+	var exists bool
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketDockerProfiles))
 		exists = bucket.Get([]byte(name)) != nil
 
 		return nil
@@ -1287,4 +1390,71 @@ func (b *Bolt) DeleteRegisteredClient(clientID string) error {
 		bucket := tx.Bucket([]byte(boltBucketStandalone))
 		return bucket.Delete([]byte("registered:" + clientID))
 	})
+}
+
+// Sealed key operations
+
+// GetSealedKey retrieves the sealed key data from the database
+func (b *Bolt) GetSealedKey() (*SealedKeyData, error) {
+	var data *SealedKeyData
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketConfig))
+		v := bucket.Get([]byte("sealed_key"))
+
+		if v == nil {
+			return nil
+		}
+
+		var d SealedKeyData
+		if err := json.Unmarshal(v, &d); err != nil {
+			return err
+		}
+
+		data = &d
+		return nil
+	})
+
+	return data, err
+}
+
+// SaveSealedKey saves or updates the sealed key data in the database
+func (b *Bolt) SaveSealedKey(data *SealedKeyData) error {
+	if data == nil {
+		return errors.New("sealed key data is required")
+	}
+
+	// Update last accessed time
+	data.LastAccessed = time.Now()
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketConfig))
+		return bucket.Put([]byte("sealed_key"), jsonData)
+	})
+}
+
+// DeleteSealedKey removes the sealed key from the database
+func (b *Bolt) DeleteSealedKey() error {
+	return b.storage.Update(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketConfig))
+		return bucket.Delete([]byte("sealed_key"))
+	})
+}
+
+// HasSealedKey checks if a sealed key exists in the database
+func (b *Bolt) HasSealedKey() (bool, error) {
+	var exists bool
+
+	err := b.storage.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket([]byte(boltBucketConfig))
+		exists = bucket.Get([]byte("sealed_key")) != nil
+		return nil
+	})
+
+	return exists, err
 }

@@ -8,6 +8,7 @@ import "v1/common.proto";
 import "v1/repository.proto";
 import "v1/config.proto";
 import "v1/profile.proto";
+import "v1/docker_profile.proto";
 import "v1/workspace.proto";
 
 // ClonrService defines all database operations for Clonr
@@ -38,6 +39,13 @@ service ClonrService {
   rpc ListProfiles(ListProfilesRequest) returns (ListProfilesResponse);
   rpc DeleteProfile(DeleteProfileRequest) returns (DeleteProfileResponse);
   rpc ProfileExists(ProfileExistsRequest) returns (ProfileExistsResponse);
+
+  // Docker profile operations
+  rpc SaveDockerProfile(SaveDockerProfileRequest) returns (SaveDockerProfileResponse);
+  rpc GetDockerProfile(GetDockerProfileRequest) returns (GetDockerProfileResponse);
+  rpc ListDockerProfiles(ListDockerProfilesRequest) returns (ListDockerProfilesResponse);
+  rpc DeleteDockerProfile(DeleteDockerProfileRequest) returns (DeleteDockerProfileResponse);
+  rpc DockerProfileExists(DockerProfileExistsRequest) returns (DockerProfileExistsResponse);
 
   // Workspace operations
   rpc SaveWorkspace(SaveWorkspaceRequest) returns (SaveWorkspaceResponse);

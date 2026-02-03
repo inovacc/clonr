@@ -319,6 +319,84 @@ func (s *Service) ProfileExists(_ context.Context, req *v1.ProfileExistsRequest)
 	return &v1.ProfileExistsResponse{Exists: exists}, nil
 }
 
+// SaveDockerProfile saves or updates a docker profile
+func (s *Service) SaveDockerProfile(_ context.Context, req *v1.SaveDockerProfileRequest) (*v1.SaveDockerProfileResponse, error) {
+	if req.GetProfile() == nil {
+		return nil, status.Error(codes.InvalidArgument, "docker profile is required")
+	}
+
+	if req.GetProfile().GetName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "docker profile name is required")
+	}
+
+	profile := ProtoToModelDockerProfile(req.GetProfile())
+	if err := s.db.SaveDockerProfile(profile); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to save docker profile: %v", err)
+	}
+
+	return &v1.SaveDockerProfileResponse{Success: true}, nil
+}
+
+// GetDockerProfile retrieves a docker profile by name
+func (s *Service) GetDockerProfile(_ context.Context, req *v1.GetDockerProfileRequest) (*v1.GetDockerProfileResponse, error) {
+	if req.GetName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "name is required")
+	}
+
+	profile, err := s.db.GetDockerProfile(req.GetName())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get docker profile: %v", err)
+	}
+
+	if profile == nil {
+		return nil, status.Error(codes.NotFound, "docker profile not found")
+	}
+
+	return &v1.GetDockerProfileResponse{Profile: ModelToProtoDockerProfile(profile)}, nil
+}
+
+// ListDockerProfiles retrieves all docker profiles
+func (s *Service) ListDockerProfiles(_ context.Context, _ *v1.ListDockerProfilesRequest) (*v1.ListDockerProfilesResponse, error) {
+	profiles, err := s.db.ListDockerProfiles()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list docker profiles: %v", err)
+	}
+
+	protoProfiles := make([]*v1.DockerProfile, len(profiles))
+	for i, profile := range profiles {
+		protoProfiles[i] = ModelToProtoDockerProfile(&profile)
+	}
+
+	return &v1.ListDockerProfilesResponse{Profiles: protoProfiles}, nil
+}
+
+// DeleteDockerProfile removes a docker profile by name
+func (s *Service) DeleteDockerProfile(_ context.Context, req *v1.DeleteDockerProfileRequest) (*v1.DeleteDockerProfileResponse, error) {
+	if req.GetName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "name is required")
+	}
+
+	if err := s.db.DeleteDockerProfile(req.GetName()); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete docker profile: %v", err)
+	}
+
+	return &v1.DeleteDockerProfileResponse{Success: true}, nil
+}
+
+// DockerProfileExists checks if a docker profile exists by name
+func (s *Service) DockerProfileExists(_ context.Context, req *v1.DockerProfileExistsRequest) (*v1.DockerProfileExistsResponse, error) {
+	if req.GetName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "name is required")
+	}
+
+	exists, err := s.db.DockerProfileExists(req.GetName())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check docker profile existence: %v", err)
+	}
+
+	return &v1.DockerProfileExistsResponse{Exists: exists}, nil
+}
+
 // SaveWorkspace saves or updates a workspace
 func (s *Service) SaveWorkspace(_ context.Context, req *v1.SaveWorkspaceRequest) (*v1.SaveWorkspaceResponse, error) {
 	if req.GetWorkspace() == nil {
