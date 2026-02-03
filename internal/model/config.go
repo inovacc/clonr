@@ -40,9 +40,18 @@ type Config struct {
 	CustomEditors []Editor `json:"custom_editors,omitempty"`
 
 	// KeyRotationDays is the number of days before encryption keys are auto-rotated.
-	// Set to 0 to disable auto-rotation. Default is 30 days.
+	// Minimum is 7 days, maximum is 365 days. Default is 30 days.
 	KeyRotationDays int `json:"key_rotation_days"`
 }
+
+const (
+	// MinKeyRotationDays is the minimum allowed key rotation interval
+	MinKeyRotationDays = 7
+	// MaxKeyRotationDays is the maximum allowed key rotation interval
+	MaxKeyRotationDays = 365
+	// DefaultKeyRotationDays is the default key rotation interval
+	DefaultKeyRotationDays = 30
+)
 
 // DefaultConfig returns a Config with sensible defaults
 func DefaultConfig() Config {
@@ -58,6 +67,18 @@ func DefaultConfig() Config {
 		Terminal:        "",
 		MonitorInterval: 300, // 5 minutes
 		ServerPort:      4000,
-		KeyRotationDays: 30,  // Auto-rotate keys after 30 days
+		KeyRotationDays: DefaultKeyRotationDays,
 	}
+}
+
+// ValidateKeyRotationDays ensures the rotation interval is within bounds.
+// Returns the validated value (clamped to min/max if out of range).
+func ValidateKeyRotationDays(days int) int {
+	if days < MinKeyRotationDays {
+		return MinKeyRotationDays
+	}
+	if days > MaxKeyRotationDays {
+		return MaxKeyRotationDays
+	}
+	return days
 }

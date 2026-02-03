@@ -99,8 +99,10 @@ The server automatically rotates keys based on the configured interval:
 ```bash
 # Configure rotation interval (in days, default: 30)
 clonr configure
-# Set key_rotation_days to desired value (0 to disable)
+# Set key_rotation_days (min: 7, max: 365)
 ```
+
+Key rotation is **mandatory** and cannot be disabled. This ensures encryption keys are regularly refreshed for security.
 
 When the server starts:
 - Checks all profile keys for expiration

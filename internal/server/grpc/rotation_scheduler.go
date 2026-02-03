@@ -38,8 +38,8 @@ func (rs *RotationScheduler) Start() {
 	rs.mu.Lock()
 	defer rs.mu.Unlock()
 
-	if rs.running || rs.maxAge <= 0 {
-		return // Already running or disabled
+	if rs.running {
+		return // Already running
 	}
 
 	rs.ctx, rs.cancel = context.WithCancel(context.Background())

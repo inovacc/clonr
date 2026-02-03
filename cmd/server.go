@@ -15,6 +15,7 @@ import (
 
 	"github.com/inovacc/clonr/internal/actionsdb"
 	"github.com/inovacc/clonr/internal/core"
+	"github.com/inovacc/clonr/internal/model"
 	"github.com/inovacc/clonr/internal/process"
 	"github.com/inovacc/clonr/internal/server/grpc"
 	"github.com/inovacc/clonr/internal/store"
@@ -385,13 +386,14 @@ func startRotationScheduler(db store.Store) {
 		return
 	}
 
-	// Convert days to duration
-	if cfg.KeyRotationDays <= 0 {
-		log.Println("Key rotation scheduler disabled (key_rotation_days = 0)")
-		return
+	// Validate and clamp rotation days to allowed range (7-365)
+	rotationDays := model.ValidateKeyRotationDays(cfg.KeyRotationDays)
+	if rotationDays != cfg.KeyRotationDays {
+		log.Printf("Key rotation days adjusted from %d to %d (min: %d, max: %d)",
+			cfg.KeyRotationDays, rotationDays, model.MinKeyRotationDays, model.MaxKeyRotationDays)
 	}
 
-	maxAge := time.Duration(cfg.KeyRotationDays) * 24 * time.Hour
+	maxAge := time.Duration(rotationDays) * 24 * time.Hour
 	checkInterval := 1 * time.Hour // Check every hour
 
 	rotationScheduler = grpc.NewRotationScheduler(db, checkInterval, maxAge)

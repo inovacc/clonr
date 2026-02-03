@@ -180,10 +180,6 @@ func GetProfileMetadata(name string) (*ProfileKeyMetadata, error) {
 
 // NeedsRotation checks if a profile's key needs rotation based on the given maxAge
 func NeedsRotation(name string, maxAge time.Duration) (bool, error) {
-	if maxAge <= 0 {
-		return false, nil // Auto-rotation disabled
-	}
-
 	ks, err := GetKeystore()
 	if err != nil {
 		return false, err
