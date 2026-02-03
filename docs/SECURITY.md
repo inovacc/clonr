@@ -92,6 +92,26 @@ Regular key rotation limits exposure:
 - Forward secrecy for new data
 - No re-encryption of existing data needed
 
+### Automatic Key Rotation
+
+The server automatically rotates keys based on the configured interval:
+
+```bash
+# Configure rotation interval (in days, default: 30)
+clonr configure
+# Set key_rotation_days to desired value (0 to disable)
+```
+
+When the server starts:
+- Checks all profile keys for expiration
+- Rotates keys older than `key_rotation_days`
+- Logs rotation events for auditing
+- Runs checks every hour while server is active
+
+The rotation timestamp is tracked per profile:
+- `CreatedAt`: Initial key creation time
+- `RotatedAt`: Last rotation time (used for expiration check)
+
 ## Storage
 
 Keystore data is stored at:

@@ -22,6 +22,7 @@ import (
 )
 
 var actionsWorker *actionsdb.Worker
+var rotationScheduler *grpc.RotationScheduler
 
 var (
 	serverPort        int
@@ -161,6 +162,9 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 		log.Printf("Warning: failed to start actions worker: %v", err)
 	}
 
+	// Start key rotation scheduler
+	startRotationScheduler(db)
+
 	// Wait for a shutdown signal (OS signal, idle timeout, or max runtime)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
@@ -181,6 +185,9 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 
 	// Stop idle tracker
 	srvWithHealth.IdleTracker.Stop()
+
+	// Stop rotation scheduler
+	stopRotationScheduler()
 
 	// Stop actions worker
 	stopActionsWorker()
@@ -367,5 +374,33 @@ func stopActionsWorker() {
 	if actionsWorker != nil && actionsWorker.IsRunning() {
 		actionsWorker.Stop()
 		log.Println("GitHub Actions monitoring worker stopped")
+	}
+}
+
+// startRotationScheduler initializes and starts the key rotation scheduler
+func startRotationScheduler(db store.Store) {
+	cfg, err := db.GetConfig()
+	if err != nil {
+		log.Printf("Warning: failed to get config for rotation scheduler: %v", err)
+		return
+	}
+
+	// Convert days to duration
+	if cfg.KeyRotationDays <= 0 {
+		log.Println("Key rotation scheduler disabled (key_rotation_days = 0)")
+		return
+	}
+
+	maxAge := time.Duration(cfg.KeyRotationDays) * 24 * time.Hour
+	checkInterval := 1 * time.Hour // Check every hour
+
+	rotationScheduler = grpc.NewRotationScheduler(db, checkInterval, maxAge)
+	rotationScheduler.Start()
+}
+
+// stopRotationScheduler stops the key rotation scheduler
+func stopRotationScheduler() {
+	if rotationScheduler != nil {
+		rotationScheduler.Stop()
 	}
 }

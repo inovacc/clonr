@@ -38,6 +38,10 @@ type Config struct {
 
 	// CustomEditors is a list of user-defined editors
 	CustomEditors []Editor `json:"custom_editors,omitempty"`
+
+	// KeyRotationDays is the number of days before encryption keys are auto-rotated.
+	// Set to 0 to disable auto-rotation. Default is 30 days.
+	KeyRotationDays int `json:"key_rotation_days"`
 }
 
 // DefaultConfig returns a Config with sensible defaults
@@ -54,5 +58,6 @@ func DefaultConfig() Config {
 		Terminal:        "",
 		MonitorInterval: 300, // 5 minutes
 		ServerPort:      4000,
+		KeyRotationDays: 30,  // Auto-rotate keys after 30 days
 	}
 }

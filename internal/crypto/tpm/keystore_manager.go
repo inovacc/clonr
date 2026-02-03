@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/inovacc/clonr/internal/application"
 	"github.com/inovacc/sealbox"
@@ -149,4 +150,69 @@ func CloseKeystore() error {
 func IsKeystoreAvailable() bool {
 	ks, err := GetKeystore()
 	return err == nil && ks != nil && ks.IsOpen()
+}
+
+// ProfileKeyMetadata contains profile key rotation metadata
+type ProfileKeyMetadata struct {
+	Version   int
+	CreatedAt time.Time
+	RotatedAt time.Time
+}
+
+// GetProfileMetadata returns the metadata for a profile's encryption key
+func GetProfileMetadata(name string) (*ProfileKeyMetadata, error) {
+	ks, err := GetKeystore()
+	if err != nil {
+		return nil, err
+	}
+
+	meta, err := ks.GetProfileMetadata(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ProfileKeyMetadata{
+		Version:   meta.Version,
+		CreatedAt: meta.CreatedAt,
+		RotatedAt: meta.RotatedAt,
+	}, nil
+}
+
+// NeedsRotation checks if a profile's key needs rotation based on the given maxAge
+func NeedsRotation(name string, maxAge time.Duration) (bool, error) {
+	if maxAge <= 0 {
+		return false, nil // Auto-rotation disabled
+	}
+
+	ks, err := GetKeystore()
+	if err != nil {
+		return false, err
+	}
+
+	if !ks.HasProfile(name) {
+		return false, nil // Profile doesn't exist in keystore
+	}
+
+	meta, err := ks.GetProfileMetadata(name)
+	if err != nil {
+		return false, err
+	}
+
+	// Use RotatedAt if available, otherwise use CreatedAt
+	lastRotation := meta.RotatedAt
+	if lastRotation.IsZero() {
+		lastRotation = meta.CreatedAt
+	}
+
+	return time.Since(lastRotation) > maxAge, nil
+}
+
+// ListKeystoreProfiles returns all profile names in the keystore
+func ListKeystoreProfiles() ([]string, error) {
+	ks, err := GetKeystore()
+	if err != nil {
+		return nil, err
+	}
+
+	return ks.ListProfiles(), nil
 }
