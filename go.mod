@@ -14,7 +14,7 @@ require (
 	github.com/google/gops v0.3.29
 	github.com/google/uuid v1.6.0
 	github.com/inovacc/git-nerds v1.1.1
-	github.com/inovacc/sealbox v0.2.1-0.20260203200440-4fb6adcb0cd4
+	github.com/inovacc/sealbox v0.3.0
 	github.com/kardianos/service v1.2.4
 	github.com/pion/ice/v3 v3.0.16
 	github.com/pion/stun v0.6.1

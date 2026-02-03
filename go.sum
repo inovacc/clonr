@@ -144,10 +144,8 @@ github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/inovacc/git-nerds v1.1.1 h1:r4dB+D7MB2ay2oIK/yRXgBi0CpQ3KM6n4wIcv0fKC+I=
 github.com/inovacc/git-nerds v1.1.1/go.mod h1:NQeB8nDi42f5pNDlbMco8rPTkeAZHMHcYqMa2Qp1+Fc=
-github.com/inovacc/sealbox v0.2.0 h1:756qccdma/HikLA48q1Do2X2w2YUlRMJ3YZRwDkQHUE=
-github.com/inovacc/sealbox v0.2.0/go.mod h1:h1wlXLHQIFP4VxKAtqVLzOyIugnt1aJ4CNShkril+eo=
-github.com/inovacc/sealbox v0.2.1-0.20260203200440-4fb6adcb0cd4 h1:Gc0q3djMjvrG2b0kTC/bxQ43bH2zNlRKixj8XXXg0nQ=
-github.com/inovacc/sealbox v0.2.1-0.20260203200440-4fb6adcb0cd4/go.mod h1:h1wlXLHQIFP4VxKAtqVLzOyIugnt1aJ4CNShkril+eo=
+github.com/inovacc/sealbox v0.3.0 h1:etgVEaZsGQ2MHNpOJuTVgZNpxWZWCU651el4rhj48GM=
+github.com/inovacc/sealbox v0.3.0/go.mod h1:h1wlXLHQIFP4VxKAtqVLzOyIugnt1aJ4CNShkril+eo=
 github.com/jessevdk/go-flags v0.0.0-20141203071132-1679536dcc89/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jrick/logrotate v1.0.0/go.mod h1:LNinyqDIJnpAur+b8yyulnQw/wDuN1+BYKlTRt3OuAQ=
 github.com/kardianos/service v1.2.4 h1:XNlGtZOYNx2u91urOdg/Kfmc+gfmuIo1Dd3rEi2OgBk=
