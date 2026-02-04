@@ -1,0 +1,98 @@
+{{template "layout" .}}
+
+{{define "content"}}
+<div class="max-w-3xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 dark:text-white sm:text-3xl sm:truncate">
+                Slack Integration
+            </h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Connect Slack for notifications and messaging
+            </p>
+        </div>
+    </div>
+
+    {{if not .ActiveProfile}}
+    <!-- No active profile warning -->
+    <div class="rounded-md bg-yellow-50 dark:bg-yellow-900/50 p-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">No Active Profile</h3>
+                <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                    <p>You need an active profile to configure Slack integration. <a href="/profiles" class="font-medium underline">Create or select a profile</a> first.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{else}}
+    <!-- Status card -->
+    <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg" id="slack-status-card">
+        <div class="px-4 py-5 sm:p-6" hx-get="/api/slack/status" hx-trigger="load" hx-swap="innerHTML">
+            <div class="flex items-center justify-center py-4">
+                <svg class="animate-spin h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">Loading status...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Slack with Token -->
+    <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">Add Slack with Bot Token</h3>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Enter your Slack Bot User OAuth Token to connect. You can find this in your Slack App settings under "OAuth & Permissions".
+            </p>
+            <form hx-post="/api/slack/add" hx-target="#slack-status-card" hx-swap="innerHTML" class="mt-5">
+                <div class="flex items-end space-x-4">
+                    <div class="flex-1">
+                        <label for="token" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Bot Token</label>
+                        <input type="password" name="token" id="token"
+                            class="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                            placeholder="xoxb-...">
+                    </div>
+                    <button type="submit"
+                        class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Connect
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Help section -->
+    <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">How to get a Slack Bot Token</h3>
+            <div class="mt-4 prose prose-sm text-gray-500 dark:text-gray-400">
+                <ol class="list-decimal list-inside space-y-2">
+                    <li>Go to <a href="https://api.slack.com/apps" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">api.slack.com/apps</a></li>
+                    <li>Click "Create New App" and choose "From scratch"</li>
+                    <li>Name your app (e.g., "Clonr") and select your workspace</li>
+                    <li>Go to "OAuth & Permissions" in the sidebar</li>
+                    <li>Under "Bot Token Scopes", add these scopes:
+                        <ul class="list-disc list-inside ml-4 mt-1">
+                            <li>channels:read</li>
+                            <li>channels:history</li>
+                            <li>chat:write</li>
+                            <li>users:read</li>
+                        </ul>
+                    </li>
+                    <li>Click "Install to Workspace" at the top of the page</li>
+                    <li>Copy the "Bot User OAuth Token" (starts with <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">xoxb-</code>)</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+    {{end}}
+</div>
+{{end}}

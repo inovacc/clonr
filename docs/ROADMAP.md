@@ -1238,6 +1238,28 @@ All existing top-level commands continue to work:
 - [ ] `clonr gh git remote` - Remote management
 - [ ] `clonr gh repo create/fork` - Repository creation via API
 
+### v0.9.2 – PM Communication Integrations
+
+Consume messages from communication platforms for project management context.
+
+#### Gmail Integration
+- `clonr pm gmail auth` - OAuth2 authentication
+- `clonr pm gmail list` - List emails with filters
+- `clonr pm gmail search` - Search emails
+- `clonr pm gmail link` - Link emails to issues
+
+#### Outlook Integration
+- `clonr pm outlook auth` - Microsoft Graph OAuth2
+- `clonr pm outlook list` - List emails
+- `clonr pm outlook search` - Search emails
+- `clonr pm outlook calendar` - Calendar integration
+
+#### MS Teams Integration
+- `clonr pm teams auth` - Microsoft Graph OAuth2
+- `clonr pm teams channels` - List team channels
+- `clonr pm teams messages` - List/search messages
+- `clonr pm teams meetings` - Meeting notes and transcripts
+
 ### v1.0.0 – Production Ready
 
 #### Plugin System
@@ -1797,6 +1819,88 @@ clonr pm docs fetch --linked PROJ-123
 - [ ] Monday.com integration
 - [ ] ClickUp integration
 
+### Communication Integrations (PM Context)
+
+Fetch and consume messages from communication platforms for project management context. Enables tracking discussions, decisions, and action items related to issues/projects.
+
+**Gmail:**
+```bash
+# Configure Gmail OAuth
+clonr pm gmail auth
+
+# List emails matching filters
+clonr pm gmail list --label "Projects" --unread
+clonr pm gmail list --from "team@company.com" --days 7
+
+# Search emails
+clonr pm gmail search "project kickoff" --limit 10
+clonr pm gmail search --thread <thread-id>
+
+# Link to issues
+clonr pm gmail link <message-id> --issue PROJ-123
+clonr pm jira issues view PROJ-123 --with-emails
+```
+
+Features:
+- [ ] OAuth2 authentication with Gmail API
+- [ ] Label-based filtering
+- [ ] Thread conversation view
+- [ ] Link emails to Jira/ZenHub issues
+- [ ] Search across inbox
+- [ ] JSON output for AI context
+
+**Outlook:**
+```bash
+# Configure Outlook OAuth (Microsoft Graph)
+clonr pm outlook auth
+
+# List emails
+clonr pm outlook list --folder "Inbox" --unread
+clonr pm outlook list --from "manager@company.com" --days 14
+
+# Search emails
+clonr pm outlook search "quarterly review"
+clonr pm outlook search --conversation <id>
+
+# Calendar integration
+clonr pm outlook calendar list --days 7
+clonr pm outlook calendar search "standup"
+```
+
+Features:
+- [ ] Microsoft Graph API OAuth2
+- [ ] Folder-based filtering
+- [ ] Conversation threading
+- [ ] Calendar event listing
+- [ ] Meeting notes extraction
+- [ ] Link to issues/projects
+
+**Microsoft Teams:**
+```bash
+# Configure Teams OAuth (Microsoft Graph)
+clonr pm teams auth
+
+# List channels and messages
+clonr pm teams channels list --team "Engineering"
+clonr pm teams messages list --channel "general" --days 7
+
+# Search messages
+clonr pm teams search "deployment" --team "DevOps"
+clonr pm teams search --thread <message-id>
+
+# Meeting context
+clonr pm teams meetings list --upcoming
+clonr pm teams meetings notes <meeting-id>
+```
+
+Features:
+- [ ] Microsoft Graph API OAuth2
+- [ ] Team/channel browsing
+- [ ] Message search and filtering
+- [ ] Meeting transcripts and notes
+- [ ] Thread conversations
+- [ ] Link discussions to issues
+
 ### Developer Experience
 - [ ] Shell completions (bash, zsh, fish, powershell)
 - [ ] VS Code extension
@@ -1838,6 +1942,7 @@ clonr pm docs fetch --linked PROJ-123
 | v0.8.0  | Planned | Multi-database support (BoltDB default, SQLite, PostgreSQL) |
 | v0.9.0  | ✅ Done | Git subcommand reorganization (`gh git`), enhanced git client, error helpers |
 | v0.9.1  | Planned | Messaging integrations (Slack, Teams, Discord, webhooks, email) |
+| v0.9.2  | Planned | PM communication integrations (Gmail, Outlook, MS Teams message consumption) |
 | v1.0.0  | Planned | Production ready with plugins and enterprise features |
 
 ---

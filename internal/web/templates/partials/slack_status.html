@@ -1,0 +1,52 @@
+{{define "slack_status.html"}}
+{{if .connected}}
+<div class="sm:flex sm:items-start sm:justify-between">
+    <div>
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">Slack Connected</h3>
+        <div class="mt-2 max-w-xl text-sm text-gray-500 dark:text-gray-400">
+            <p>Slack is configured for profile: <span class="font-medium">{{.profile}}</span></p>
+            {{if .channel}}
+            <p class="mt-1">Channel: <span class="font-medium">{{.channel}}</span></p>
+            {{end}}
+        </div>
+    </div>
+    <div class="mt-5 sm:mt-0 sm:ml-6 sm:flex-shrink-0 sm:flex sm:items-center">
+        <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 mr-3">
+            <svg class="-ml-1 mr-1.5 h-2 w-2 text-green-400" fill="currentColor" viewBox="0 0 8 8">
+                <circle cx="4" cy="4" r="3" />
+            </svg>
+            Connected
+        </span>
+        <button
+            hx-delete="/api/slack/remove"
+            hx-target="#slack-status-card"
+            hx-swap="innerHTML"
+            hx-confirm="Are you sure you want to disconnect Slack?"
+            class="inline-flex items-center px-4 py-2 border border-red-300 dark:border-red-700 shadow-sm font-medium rounded-md text-red-700 dark:text-red-400 bg-white dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm">
+            Disconnect
+        </button>
+    </div>
+</div>
+{{else}}
+<div class="sm:flex sm:items-start sm:justify-between">
+    <div>
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">Slack Not Connected</h3>
+        <div class="mt-2 max-w-xl text-sm text-gray-500 dark:text-gray-400">
+            {{if .error}}
+            <p class="text-red-600 dark:text-red-400">{{.error}}</p>
+            {{else}}
+            <p>Connect Slack to receive notifications for your profile: <span class="font-medium">{{.profile}}</span></p>
+            {{end}}
+        </div>
+    </div>
+    <div class="mt-5 sm:mt-0 sm:ml-6 sm:flex-shrink-0 sm:flex sm:items-center">
+        <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+            <svg class="-ml-1 mr-1.5 h-2 w-2 text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 8 8">
+                <circle cx="4" cy="4" r="3" />
+            </svg>
+            Not Connected
+        </span>
+    </div>
+</div>
+{{end}}
+{{end}}

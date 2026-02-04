@@ -1,0 +1,46 @@
+{{define "status.html"}}
+<div class="grid grid-cols-3 gap-4 text-center">
+    <div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
+        <div class="text-sm font-medium text-gray-500 dark:text-gray-400">TPM</div>
+        <div class="mt-1">
+            {{if .tpm_available}}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                Available
+            </span>
+            {{else}}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200">
+                Not Available
+            </span>
+            {{end}}
+        </div>
+    </div>
+    <div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
+        <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Encryption</div>
+        <div class="mt-1">
+            {{if .encryption_available}}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                Enabled
+            </span>
+            {{else}}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                Software Only
+            </span>
+            {{end}}
+        </div>
+    </div>
+    <div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-700">
+        <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Server</div>
+        <div class="mt-1">
+            {{if .server_connected}}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                Connected
+            </span>
+            {{else}}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
+                Disconnected
+            </span>
+            {{end}}
+        </div>
+    </div>
+</div>
+{{end}}
