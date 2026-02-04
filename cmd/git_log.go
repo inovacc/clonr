@@ -10,34 +10,34 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ghGitLogCmd = &cobra.Command{
+var gitLogCmd = &cobra.Command{
 	Use:   "log",
 	Short: "Show commit logs",
 	Long: `Show the commit logs with optional filtering and formatting.
 
 Examples:
-  clonr gh git log
-  clonr gh git log --limit 10
-  clonr gh git log --oneline
-  clonr gh git log --author "John"
-  clonr gh git log --since "2024-01-01"
-  clonr gh git log --json`,
-	RunE: runGhGitLog,
+  clonr git log
+  clonr git log --limit 10
+  clonr git log --oneline
+  clonr git log --author "John"
+  clonr git log --since "2024-01-01"
+  clonr git log --json`,
+	RunE: runGitLog,
 }
 
 func init() {
-	ghGitCmd.AddCommand(ghGitLogCmd)
-	ghGitLogCmd.Flags().IntP("limit", "n", 10, "Limit the number of commits")
-	ghGitLogCmd.Flags().Bool("oneline", false, "Show each commit on a single line")
-	ghGitLogCmd.Flags().Bool("all", false, "Show commits from all branches")
-	ghGitLogCmd.Flags().String("author", "", "Filter by author")
-	ghGitLogCmd.Flags().String("since", "", "Show commits more recent than date")
-	ghGitLogCmd.Flags().String("until", "", "Show commits older than date")
-	ghGitLogCmd.Flags().String("grep", "", "Filter by commit message")
-	ghGitLogCmd.Flags().Bool("json", false, "Output as JSON")
+	gitCmd.AddCommand(gitLogCmd)
+	gitLogCmd.Flags().IntP("limit", "n", 10, "Limit the number of commits")
+	gitLogCmd.Flags().Bool("oneline", false, "Show each commit on a single line")
+	gitLogCmd.Flags().Bool("all", false, "Show commits from all branches")
+	gitLogCmd.Flags().String("author", "", "Filter by author")
+	gitLogCmd.Flags().String("since", "", "Show commits more recent than date")
+	gitLogCmd.Flags().String("until", "", "Show commits older than date")
+	gitLogCmd.Flags().String("grep", "", "Filter by commit message")
+	gitLogCmd.Flags().Bool("json", false, "Output as JSON")
 }
 
-func runGhGitLog(cmd *cobra.Command, _ []string) error {
+func runGitLog(cmd *cobra.Command, _ []string) error {
 	client := git.NewClient()
 	ctx := context.Background()
 

@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ghGitPushCmd = &cobra.Command{
+var gitPushCmd = &cobra.Command{
 	Use:   "push [remote] [branch]",
 	Short: "Push changes to remote repository",
 	Long: `Update remote refs along with associated objects.
@@ -23,23 +23,23 @@ Uses clonr profile authentication automatically. By default, scans for
 secrets before pushing to prevent accidental credential leaks.
 
 Examples:
-  clonr gh git push
-  clonr gh git push origin main
-  clonr gh git push -u origin feature-branch
-  clonr gh git push --tags
-  clonr gh git push --skip-leaks  # Skip security scan (not recommended)`,
-	RunE: runGhGitPush,
+  clonr git push
+  clonr git push origin main
+  clonr git push -u origin feature-branch
+  clonr git push --tags
+  clonr git push --skip-leaks  # Skip security scan (not recommended)`,
+	RunE: runGitPush,
 }
 
 func init() {
-	ghGitCmd.AddCommand(ghGitPushCmd)
-	ghGitPushCmd.Flags().BoolP("set-upstream", "u", false, "Set upstream for the current branch")
-	ghGitPushCmd.Flags().BoolP("force", "f", false, "Force push (use with caution)")
-	ghGitPushCmd.Flags().Bool("tags", false, "Push all tags")
-	ghGitPushCmd.Flags().Bool("skip-leaks", false, "Skip pre-push secret scanning")
+	gitCmd.AddCommand(gitPushCmd)
+	gitPushCmd.Flags().BoolP("set-upstream", "u", false, "Set upstream for the current branch")
+	gitPushCmd.Flags().BoolP("force", "f", false, "Force push (use with caution)")
+	gitPushCmd.Flags().Bool("tags", false, "Push all tags")
+	gitPushCmd.Flags().Bool("skip-leaks", false, "Skip pre-push secret scanning")
 }
 
-type ghPushScanModel struct {
+type gitPushScanModel struct {
 	spinner  spinner.Model
 	scanning bool
 	done     bool
@@ -47,27 +47,27 @@ type ghPushScanModel struct {
 	err      error
 }
 
-type ghPushScanDoneMsg struct {
+type gitPushScanDoneMsg struct {
 	result *security.ScanResult
 	err    error
 }
 
-func newGhPushScanModel() ghPushScanModel {
+func newGitPushScanModel() gitPushScanModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = spinStyle
 
-	return ghPushScanModel{spinner: s, scanning: true}
+	return gitPushScanModel{spinner: s, scanning: true}
 }
 
-func (m ghPushScanModel) Init() tea.Cmd {
+func (m gitPushScanModel) Init() tea.Cmd {
 	return tea.Batch(m.spinner.Tick, m.runScan)
 }
 
-func (m ghPushScanModel) runScan() tea.Msg {
+func (m gitPushScanModel) runScan() tea.Msg {
 	scanner, err := security.NewLeakScanner()
 	if err != nil {
-		return ghPushScanDoneMsg{err: err}
+		return gitPushScanDoneMsg{err: err}
 	}
 
 	repoPath, _ := os.Getwd()
@@ -78,16 +78,16 @@ func (m ghPushScanModel) runScan() tea.Msg {
 
 	result, err := scanner.ScanUnpushedCommits(ctx, repoPath)
 
-	return ghPushScanDoneMsg{result: result, err: err}
+	return gitPushScanDoneMsg{result: result, err: err}
 }
 
-func (m ghPushScanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m gitPushScanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
 		}
-	case ghPushScanDoneMsg:
+	case gitPushScanDoneMsg:
 		m.scanning = false
 		m.done = true
 		m.result = msg.result
@@ -105,7 +105,7 @@ func (m ghPushScanModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m ghPushScanModel) View() string {
+func (m gitPushScanModel) View() string {
 	if m.done {
 		if m.err != nil {
 			return warnStyle.Render("  Warning: ") + dimStyle.Render(m.err.Error()) + "\n"
@@ -125,7 +125,7 @@ func (m ghPushScanModel) View() string {
 	return ""
 }
 
-func runGhGitPush(cmd *cobra.Command, args []string) error {
+func runGitPush(cmd *cobra.Command, args []string) error {
 	client := git.NewClient()
 	ctx := context.Background()
 
@@ -143,14 +143,14 @@ func runGhGitPush(cmd *cobra.Command, args []string) error {
 		_, _ = fmt.Fprintln(os.Stdout, "\n"+dimStyle.Render("Pre-push security check"))
 		_, _ = fmt.Fprintln(os.Stdout, dimStyle.Render("───────────────────────"))
 
-		m := newGhPushScanModel()
+		m := newGitPushScanModel()
 		p := tea.NewProgram(m, tea.WithInput(nil))
 
 		finalModel, err := p.Run()
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, warnStyle.Render("  Warning: scan failed: %v\n"), err)
 		} else {
-			scanM := finalModel.(ghPushScanModel)
+			scanM := finalModel.(gitPushScanModel)
 			if scanM.result != nil && scanM.result.HasLeaks {
 				_, _ = fmt.Fprint(os.Stderr, security.FormatFindings(scanM.result.Findings))
 				_, _ = fmt.Fprintln(os.Stderr, errStyle.Render("\nPush aborted: secrets detected!"))
@@ -191,14 +191,14 @@ func runGhGitPush(cmd *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintln(os.Stdout, okStyle.Render("Push completed successfully!"))
 
 	// Enqueue for GitHub Actions monitoring
-	if err := enqueueGhGitPushForMonitoring(ctx, remote); err != nil {
+	if err := enqueueGitPushForMonitoring(ctx, remote); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, dimStyle.Render("  Note: Could not enqueue for actions monitoring: %v\n"), err)
 	}
 
 	return nil
 }
 
-func enqueueGhGitPushForMonitoring(ctx context.Context, remote string) error {
+func enqueueGitPushForMonitoring(ctx context.Context, remote string) error {
 	repoPath, err := os.Getwd()
 	if err != nil {
 		return err

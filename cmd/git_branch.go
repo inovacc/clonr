@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ghGitBranchCmd = &cobra.Command{
+var gitBranchCmd = &cobra.Command{
 	Use:   "branch [name]",
 	Short: "List, create, or delete branches",
 	Long: `List, create, or delete branches.
@@ -19,24 +19,24 @@ If called without arguments, lists existing branches.
 The current branch is highlighted with an asterisk.
 
 Examples:
-  clonr gh git branch                  # List local branches
-  clonr gh git branch --all            # List all branches (local and remote)
-  clonr gh git branch feature          # Create new branch
-  clonr gh git branch -d feature       # Delete branch
-  clonr gh git branch -D feature       # Force delete branch
-  clonr gh git branch --json           # Output as JSON`,
-	RunE: runGhGitBranch,
+  clonr git branch                  # List local branches
+  clonr git branch --all            # List all branches (local and remote)
+  clonr git branch feature          # Create new branch
+  clonr git branch -d feature       # Delete branch
+  clonr git branch -D feature       # Force delete branch
+  clonr git branch --json           # Output as JSON`,
+	RunE: runGitBranch,
 }
 
 func init() {
-	ghGitCmd.AddCommand(ghGitBranchCmd)
-	ghGitBranchCmd.Flags().BoolP("all", "a", false, "List both local and remote branches")
-	ghGitBranchCmd.Flags().BoolP("delete", "d", false, "Delete the branch")
-	ghGitBranchCmd.Flags().BoolP("force-delete", "D", false, "Force delete the branch")
-	ghGitBranchCmd.Flags().Bool("json", false, "Output as JSON")
+	gitCmd.AddCommand(gitBranchCmd)
+	gitBranchCmd.Flags().BoolP("all", "a", false, "List both local and remote branches")
+	gitBranchCmd.Flags().BoolP("delete", "d", false, "Delete the branch")
+	gitBranchCmd.Flags().BoolP("force-delete", "D", false, "Force delete the branch")
+	gitBranchCmd.Flags().Bool("json", false, "Output as JSON")
 }
 
-func runGhGitBranch(cmd *cobra.Command, args []string) error {
+func runGitBranch(cmd *cobra.Command, args []string) error {
 	client := git.NewClient()
 	ctx := context.Background()
 

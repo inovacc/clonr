@@ -15,7 +15,7 @@ import (
 var ghCmd = &cobra.Command{
 	Use:   "gh",
 	Short: "GitHub operations for repositories",
-	Long: `Interact with GitHub issues, PRs, actions, releases, contributors, and git operations.
+	Long: `Interact with GitHub issues, PRs, actions, releases, and contributors.
 
 Available Commands:
   issues        Manage GitHub issues (list, create, close)
@@ -23,7 +23,6 @@ Available Commands:
   actions       Check GitHub Actions workflow status
   release       Manage GitHub releases (create, download)
   contributors  View contributors and their activity journey
-  git           Git operations with profile authentication
 
 Repository Detection:
   Commands auto-detect the repository from the current directory,
@@ -39,33 +38,8 @@ Authentication:
   6. gh CLI authentication`,
 }
 
-var ghGitCmd = &cobra.Command{
-	Use:   "git",
-	Short: "Git operations with profile authentication",
-	Long: `Git operations that use clonr profile authentication.
-
-These commands mirror standard git commands but automatically use
-the active clonr profile for authentication with GitHub.
-
-Available Commands:
-  clone     Clone a repository
-  status    Show working tree status
-  commit    Create a commit
-  push      Push changes (with pre-push security scan)
-  pull      Pull changes from remote
-  log       Show commit log
-  diff      Show changes
-  branch    Manage branches
-
-Examples:
-  clonr gh git status
-  clonr gh git log --limit 5
-  clonr gh git push -u origin main`,
-}
-
 func init() {
 	rootCmd.AddCommand(ghCmd)
-	ghCmd.AddCommand(ghGitCmd)
 }
 
 // addGHCommonFlags adds flags common to all gh subcommands

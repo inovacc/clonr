@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ghGitCommitCmd = &cobra.Command{
+var gitCommitCmd = &cobra.Command{
 	Use:   "commit",
 	Short: "Create a git commit",
 	Long: `Record changes to the repository.
@@ -18,20 +18,20 @@ Creates a new commit containing the current contents of the index
 and the given log message describing the changes.
 
 Examples:
-  clonr gh git commit -m "feat: add new feature"
-  clonr gh git commit -a -m "fix: resolve bug"
-  clonr gh git commit --all -m "chore: update dependencies"`,
-	RunE: runGhGitCommit,
+  clonr git commit -m "feat: add new feature"
+  clonr git commit -a -m "fix: resolve bug"
+  clonr git commit --all -m "chore: update dependencies"`,
+	RunE: runGitCommit,
 }
 
 func init() {
-	ghGitCmd.AddCommand(ghGitCommitCmd)
-	ghGitCommitCmd.Flags().StringP("message", "m", "", "Commit message (required)")
-	ghGitCommitCmd.Flags().BoolP("all", "a", false, "Stage all modified and deleted files")
-	_ = ghGitCommitCmd.MarkFlagRequired("message")
+	gitCmd.AddCommand(gitCommitCmd)
+	gitCommitCmd.Flags().StringP("message", "m", "", "Commit message (required)")
+	gitCommitCmd.Flags().BoolP("all", "a", false, "Stage all modified and deleted files")
+	_ = gitCommitCmd.MarkFlagRequired("message")
 }
 
-func runGhGitCommit(cmd *cobra.Command, _ []string) error {
+func runGitCommit(cmd *cobra.Command, _ []string) error {
 	client := git.NewClient()
 	ctx := context.Background()
 

@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ghGitCloneCmd = &cobra.Command{
+var gitCloneCmd = &cobra.Command{
 	Use:   "clone <repository> [<directory>]",
 	Short: "Clone a repository with profile authentication",
 	Long: `Clone a Git repository using clonr profile authentication.
@@ -27,24 +27,24 @@ Supports multiple repository formats:
 Uses the active clonr profile for authentication with private repositories.
 
 Examples:
-  clonr gh git clone owner/repo
-  clonr gh git clone owner/repo ~/projects/myrepo
-  clonr gh git clone https://github.com/owner/repo.git
-  clonr gh git clone --profile work owner/repo
-  clonr gh git clone --no-tui owner/repo`,
+  clonr git clone owner/repo
+  clonr git clone owner/repo ~/projects/myrepo
+  clonr git clone https://github.com/owner/repo.git
+  clonr git clone --profile work owner/repo
+  clonr git clone --no-tui owner/repo`,
 	Args: cobra.MinimumNArgs(1),
-	RunE: runGhGitClone,
+	RunE: runGitClone,
 }
 
 func init() {
-	ghGitCmd.AddCommand(ghGitCloneCmd)
-	ghGitCloneCmd.Flags().BoolP("force", "f", false, "Force clone even if directory exists (removes existing)")
-	ghGitCloneCmd.Flags().Bool("no-tui", false, "Non-interactive mode")
-	ghGitCloneCmd.Flags().StringP("workspace", "w", "", "Workspace to clone into")
-	ghGitCloneCmd.Flags().StringP("profile", "p", "", "Profile to use for authentication")
+	gitCmd.AddCommand(gitCloneCmd)
+	gitCloneCmd.Flags().BoolP("force", "f", false, "Force clone even if directory exists (removes existing)")
+	gitCloneCmd.Flags().Bool("no-tui", false, "Non-interactive mode")
+	gitCloneCmd.Flags().StringP("workspace", "w", "", "Workspace to clone into")
+	gitCloneCmd.Flags().StringP("profile", "p", "", "Profile to use for authentication")
 }
 
-func runGhGitClone(cmd *cobra.Command, args []string) error {
+func runGitClone(cmd *cobra.Command, args []string) error {
 	force, _ := cmd.Flags().GetBool("force")
 	noTUI, _ := cmd.Flags().GetBool("no-tui")
 	workspace, _ := cmd.Flags().GetString("workspace")
@@ -124,7 +124,7 @@ func runGhGitClone(cmd *cobra.Command, args []string) error {
 		}
 
 		if len(workspaces) == 0 {
-			if err := createGhGitDefaultWorkspace(client); err != nil {
+			if err := createGitDefaultWorkspace(client); err != nil {
 				return err
 			}
 		} else if len(workspaces) > 1 {
@@ -149,7 +149,7 @@ func runGhGitClone(cmd *cobra.Command, args []string) error {
 					opts.Workspace = active.Name
 				}
 			case selector.IsNewWorkspace():
-				if err := createGhGitWorkspaceFromSelection(client, selected); err != nil {
+				if err := createGitWorkspaceFromSelection(client, selected); err != nil {
 					return err
 				}
 				opts.Workspace = selected.Name
@@ -187,7 +187,7 @@ func runGhGitClone(cmd *cobra.Command, args []string) error {
 	return core.SaveClonedRepoFromResult(result)
 }
 
-func createGhGitDefaultWorkspace(client *grpc.Client) error {
+func createGitDefaultWorkspace(client *grpc.Client) error {
 	cfg, err := client.GetConfig()
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
@@ -211,7 +211,7 @@ func createGhGitDefaultWorkspace(client *grpc.Client) error {
 	return nil
 }
 
-func createGhGitWorkspaceFromSelection(client *grpc.Client, ws *model.Workspace) error {
+func createGitWorkspaceFromSelection(client *grpc.Client, ws *model.Workspace) error {
 	path := ws.Path
 	if len(path) > 0 && path[0] == '~' {
 		home, err := os.UserHomeDir()

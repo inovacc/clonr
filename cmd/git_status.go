@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ghGitStatusCmd = &cobra.Command{
+var gitStatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show the working tree status",
 	Long: `Displays paths that have differences between the index file and the
@@ -19,20 +19,20 @@ tree and the index file, and paths in the working tree that are not
 tracked by Git.
 
 Examples:
-  clonr gh git status
-  clonr gh git status --short
-  clonr gh git status --porcelain`,
-	RunE: runGhGitStatus,
+  clonr git status
+  clonr git status --short
+  clonr git status --porcelain`,
+	RunE: runGitStatus,
 }
 
 func init() {
-	ghGitCmd.AddCommand(ghGitStatusCmd)
-	ghGitStatusCmd.Flags().BoolP("short", "s", false, "Give output in short format")
-	ghGitStatusCmd.Flags().Bool("porcelain", false, "Give output in machine-readable format")
-	ghGitStatusCmd.Flags().BoolP("branch", "b", false, "Show branch info in short format")
+	gitCmd.AddCommand(gitStatusCmd)
+	gitStatusCmd.Flags().BoolP("short", "s", false, "Give output in short format")
+	gitStatusCmd.Flags().Bool("porcelain", false, "Give output in machine-readable format")
+	gitStatusCmd.Flags().BoolP("branch", "b", false, "Show branch info in short format")
 }
 
-func runGhGitStatus(cmd *cobra.Command, _ []string) error {
+func runGitStatus(cmd *cobra.Command, _ []string) error {
 	client := git.NewClient()
 	ctx := context.Background()
 

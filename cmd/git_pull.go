@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ghGitPullCmd = &cobra.Command{
+var gitPullCmd = &cobra.Command{
 	Use:   "pull [remote] [branch]",
 	Short: "Fetch and integrate with remote repository",
 	Long: `Fetch from and integrate with another repository or local branch.
@@ -17,17 +17,17 @@ var ghGitPullCmd = &cobra.Command{
 Uses clonr profile authentication automatically for private repositories.
 
 Examples:
-  clonr gh git pull
-  clonr gh git pull origin
-  clonr gh git pull origin main`,
-	RunE: runGhGitPull,
+  clonr git pull
+  clonr git pull origin
+  clonr git pull origin main`,
+	RunE: runGitPull,
 }
 
 func init() {
-	ghGitCmd.AddCommand(ghGitPullCmd)
+	gitCmd.AddCommand(gitPullCmd)
 }
 
-func runGhGitPull(_ *cobra.Command, args []string) error {
+func runGitPull(_ *cobra.Command, args []string) error {
 	client := git.NewClient()
 	ctx := context.Background()
 
