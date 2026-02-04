@@ -92,6 +92,9 @@ var aiCategoryMap = map[string]string{
 	// Project Management
 	"pm": "Project Management",
 
+	// Notifications
+	"slack": "Notifications",
+
 	// Configuration
 	"configure": "Configuration", "config": "Configuration",
 	"profile": "Configuration",
@@ -113,6 +116,7 @@ var aiCategoryDescriptions = map[string]string{
 	"GitHub Integration":    "GitHub API integration for issues, PRs, actions, and releases",
 	"Organization":          "Manage and mirror organization repositories",
 	"Project Management":    "Integrate with project management tools (Jira, ZenHub)",
+	"Notifications":         "Slack, Teams, Discord notifications and messaging",
 	"Configuration":         "Configure clonr settings and profiles",
 	"Infrastructure":        "Server mode, services, and repository mirroring",
 	"Tooling":               "Development and introspection tools",
@@ -228,6 +232,7 @@ func buildAIOverview() AIOverview {
 			"GitHub issues, PRs, actions, and releases management",
 			"Organization repository mirroring",
 			"Jira and ZenHub integration",
+			"Slack notifications and messaging",
 			"Git statistics and branch management",
 			"Profile-based configuration",
 			"Server mode with gRPC API",
