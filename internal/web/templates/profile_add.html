@@ -80,7 +80,7 @@
                                         onchange="toggleAuthMethod('pat')">
                                 </div>
                                 <div class="ml-3 text-sm">
-                                    <label for="auth-pat" class="font-medium text-gray-700 dark:text-gray-300">Personal Access Token (PAT)</label>
+                                    <label for="auth-pat" class="font-medium text-gray-700 dark:text-gray-300">Personal Access Token (PAT) - Recommended</label>
                                     <p class="text-gray-500 dark:text-gray-400">Use an existing token from GitHub Settings</p>
                                 </div>
                             </div>
@@ -94,7 +94,7 @@
                                 </div>
                                 <div class="ml-3 text-sm">
                                     <label for="auth-oauth" class="font-medium text-gray-700 dark:text-gray-300">OAuth Device Flow</label>
-                                    <p class="text-gray-500 dark:text-gray-400">Authorize via browser (more secure)</p>
+                                    <p class="text-gray-500 dark:text-gray-400">Requires gh CLI installed (experimental)</p>
                                 </div>
                             </div>
                         </div>
@@ -260,6 +260,20 @@ function pollOAuthStatus(name) {
                 } else if (data.status === 'error') {
                     clearInterval(oauthPollInterval);
                     statusDiv.innerHTML = `<div class="text-sm text-red-500 dark:text-red-400">Error: ${data.error}</div>`;
+                } else if (data.status === 'waiting' && data.user_code) {
+                    // Show the user code if we now have it
+                    statusDiv.innerHTML = `
+                        <div class="rounded-md bg-green-50 dark:bg-green-900/50 p-4">
+                            <div class="text-center">
+                                <p class="text-sm font-medium text-green-800 dark:text-green-200 mb-2">Enter this code at GitHub:</p>
+                                <p class="text-3xl font-bold text-green-900 dark:text-green-100 font-mono tracking-wider">${data.user_code}</p>
+                                <p class="mt-3 text-sm text-green-700 dark:text-green-300">
+                                    <a href="${data.verify_url}" target="_blank" class="underline">Open GitHub</a>
+                                </p>
+                                <p class="mt-2 text-xs text-green-600 dark:text-green-400">Waiting for authorization...</p>
+                            </div>
+                        </div>
+                    `;
                 }
             })
             .catch(() => {

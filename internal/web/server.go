@@ -45,7 +45,7 @@ type Server struct {
 	grpcClient *grpc.Client
 	pm         *core.ProfileManager
 	config     Config
-	templates  *template.Template
+	templates  map[string]*template.Template
 }
 
 // New creates a new web server
@@ -76,9 +76,9 @@ func New(config Config) (*Server, error) {
 	}, nil
 }
 
-// parseTemplates parses all embedded HTML templates
-func parseTemplates() (*template.Template, error) {
-	funcMap := template.FuncMap{
+// templateFuncMap returns the common template functions
+func templateFuncMap() template.FuncMap {
+	return template.FuncMap{
 		"formatTime": func(t time.Time) string {
 			if t.IsZero() {
 				return "Never"
@@ -128,16 +128,53 @@ func parseTemplates() (*template.Template, error) {
 			return s[:maxLen-3] + "..."
 		},
 	}
+}
 
-	tmpl := template.New("").Funcs(funcMap)
+// parseTemplates parses all embedded HTML templates
+// Each page gets its own template instance to avoid content block conflicts
+func parseTemplates() (map[string]*template.Template, error) {
+	templates := make(map[string]*template.Template)
+	funcMap := templateFuncMap()
 
-	// Parse all templates from embedded FS
-	tmpl, err := tmpl.ParseFS(templatesFS, "templates/*.html", "templates/partials/*.html")
-	if err != nil {
-		return nil, err
+	// Page templates that need their own instance
+	pageTemplates := []string{
+		"index.html",
+		"profiles.html",
+		"profile_add.html",
+		"workspaces.html",
+		"slack.html",
 	}
 
-	return tmpl, nil
+	for _, page := range pageTemplates {
+		// Create a new template instance for each page
+		tmpl := template.New("").Funcs(funcMap)
+
+		// Parse layout first
+		tmpl, err := tmpl.ParseFS(templatesFS, "templates/layout.html")
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse layout: %w", err)
+		}
+
+		// Parse the specific page template
+		tmpl, err = tmpl.ParseFS(templatesFS, "templates/"+page)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse %s: %w", page, err)
+		}
+
+		templates[page] = tmpl
+	}
+
+	// Parse partial templates separately (for HTMX responses)
+	partialTmpl := template.New("").Funcs(funcMap)
+
+	partialTmpl, err := partialTmpl.ParseFS(templatesFS, "templates/partials/*.html")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse partials: %w", err)
+	}
+
+	templates["partials"] = partialTmpl
+
+	return templates, nil
 }
 
 // Start starts the web server
@@ -234,7 +271,15 @@ func openBrowser(url string) error {
 func (s *Server) render(w http.ResponseWriter, templateName string, data any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	if err := s.templates.ExecuteTemplate(w, templateName, data); err != nil {
+	tmpl, ok := s.templates[templateName]
+	if !ok {
+		log.Printf("Template not found: %s", templateName)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Execute the layout template which includes the content block
+	if err := tmpl.ExecuteTemplate(w, "layout", data); err != nil {
 		log.Printf("Template error: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
@@ -244,7 +289,14 @@ func (s *Server) render(w http.ResponseWriter, templateName string, data any) {
 func (s *Server) renderPartial(w http.ResponseWriter, templateName string, data any) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
-	if err := s.templates.ExecuteTemplate(w, templateName, data); err != nil {
+	partials, ok := s.templates["partials"]
+	if !ok {
+		log.Printf("Partials template not found")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	if err := partials.ExecuteTemplate(w, templateName, data); err != nil {
 		log.Printf("Template error: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}

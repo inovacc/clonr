@@ -85,13 +85,18 @@ func (s *Server) handleGitHubOAuthStart(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Create OAuth session
+	// Create OAuth session and store it immediately
 	session := &OAuthSession{
 		ProfileName: name,
 		Workspace:   workspace,
 		Host:        host,
 		ExpiresAt:   time.Now().Add(10 * time.Minute),
 	}
+
+	// Store session immediately so status endpoint can find it
+	oauthSessionMutex.Lock()
+	oauthSessions[name] = session
+	oauthSessionMutex.Unlock()
 
 	// Start OAuth flow in background
 	go func() { //nolint:contextcheck // background goroutine creates its own context
@@ -104,7 +109,6 @@ func (s *Server) handleGitHubOAuthStart(w http.ResponseWriter, r *http.Request) 
 			oauthSessionMutex.Lock()
 			session.UserCode = code
 			session.VerifyURL = url
-			oauthSessions[name] = session
 			oauthSessionMutex.Unlock()
 		})
 

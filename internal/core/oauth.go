@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/cli/oauth"
@@ -94,7 +95,7 @@ func (f *OAuthFlow) Run(ctx context.Context) (*OAuthResult, error) {
 		}
 	}
 
-	// Run the OAuth flow
+	// Try DetectFlow which will attempt device flow and fall back to web app flow
 	accessToken, err := flow.DetectFlow()
 	if err != nil {
 		return nil, fmt.Errorf("OAuth flow failed: %w", err)
@@ -113,13 +114,19 @@ func (f *OAuthFlow) Run(ctx context.Context) (*OAuthResult, error) {
 	}, nil
 }
 
-// getGitHubHost returns the host string for oauth
+// getGitHubHost returns the host URL string for oauth (needs https:// prefix)
 func (f *OAuthFlow) getGitHubHost() string {
 	if f.config.Host == "" || f.config.Host == "github.com" {
-		return "github.com"
+		return "https://github.com"
 	}
 
-	return f.config.Host
+	// For enterprise GitHub, ensure https:// prefix
+	host := f.config.Host
+	if !strings.HasPrefix(host, "https://") && !strings.HasPrefix(host, "http://") {
+		host = "https://" + host
+	}
+
+	return host
 }
 
 // getUsername fetches the authenticated user's username

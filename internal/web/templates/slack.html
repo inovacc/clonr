@@ -45,10 +45,43 @@
         </div>
     </div>
 
-    <!-- Add Slack with Token -->
+    <!-- Add Slack via OAuth -->
     <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg">
         <div class="px-4 py-5 sm:p-6">
-            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">Add Slack with Bot Token</h3>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">Connect via OAuth</h3>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Authorize clonr to access your Slack workspace. This will open Slack in a new tab.
+            </p>
+            <div class="mt-5 space-y-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="client_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Client ID</label>
+                        <input type="text" name="client_id" id="client_id"
+                            class="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                            placeholder="Your Slack App Client ID">
+                    </div>
+                    <div>
+                        <label for="client_secret" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Client Secret</label>
+                        <input type="password" name="client_secret" id="client_secret"
+                            class="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                            placeholder="Your Slack App Client Secret">
+                    </div>
+                </div>
+                <button type="button" onclick="startSlackOAuth()"
+                    class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                    <svg class="-ml-1 mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/>
+                    </svg>
+                    Connect with Slack
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Or add with Bot Token -->
+    <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">Or Add Bot Token Directly</h3>
             <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 Enter your Slack Bot User OAuth Token to connect. You can find this in your Slack App settings under "OAuth & Permissions".
             </p>
@@ -95,4 +128,50 @@
     </div>
     {{end}}
 </div>
+
+<script>
+function startSlackOAuth() {
+    const clientId = document.getElementById('client_id').value.trim();
+    const clientSecret = document.getElementById('client_secret').value.trim();
+
+    if (!clientId || !clientSecret) {
+        alert('Please enter both Client ID and Client Secret');
+        return;
+    }
+
+    // Call the OAuth start endpoint
+    fetch(`/oauth/slack/start?client_id=${encodeURIComponent(clientId)}&client_secret=${encodeURIComponent(clientSecret)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+                return;
+            }
+
+            if (data.auth_url) {
+                // Open Slack authorization in a new tab
+                window.open(data.auth_url, '_blank');
+
+                // Show a message to the user
+                const statusCard = document.getElementById('slack-status-card');
+                if (statusCard) {
+                    statusCard.innerHTML = `
+                        <div class="p-4">
+                            <div class="flex items-center">
+                                <svg class="animate-spin h-5 w-5 text-purple-600 mr-3" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span class="text-gray-700 dark:text-gray-300">Waiting for Slack authorization... Complete the process in the new tab.</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        })
+        .catch(err => {
+            alert('Error starting OAuth: ' + err.message);
+        });
+}
+</script>
 {{end}}
