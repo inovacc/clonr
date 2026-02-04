@@ -325,6 +325,27 @@ func (m *mockStore) HasSealedKey() (bool, error) {
 	return false, nil
 }
 
+// Slack configuration operations
+func (m *mockStore) GetSlackConfig() (*model.SlackConfig, error) {
+	return nil, nil
+}
+
+func (m *mockStore) SaveSlackConfig(_ *model.SlackConfig) error {
+	return nil
+}
+
+func (m *mockStore) DeleteSlackConfig() error {
+	return nil
+}
+
+func (m *mockStore) EnableSlackNotifications() error {
+	return nil
+}
+
+func (m *mockStore) DisableSlackNotifications() error {
+	return nil
+}
+
 func TestNewService(t *testing.T) {
 	mock := &mockStore{}
 

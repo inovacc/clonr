@@ -386,3 +386,25 @@ func (w *SQLiteWrapper) DeleteSealedKey() error {
 func (w *SQLiteWrapper) HasSealedKey() (bool, error) {
 	return w.store.HasSealedKey()
 }
+
+// Slack configuration operations
+
+func (w *SQLiteWrapper) GetSlackConfig() (*model.SlackConfig, error) {
+	return w.store.GetSlackConfig()
+}
+
+func (w *SQLiteWrapper) SaveSlackConfig(config *model.SlackConfig) error {
+	return w.store.SaveSlackConfig(config)
+}
+
+func (w *SQLiteWrapper) DeleteSlackConfig() error {
+	return w.store.DeleteSlackConfig()
+}
+
+func (w *SQLiteWrapper) EnableSlackNotifications() error {
+	return w.store.EnableSlackNotifications()
+}
+
+func (w *SQLiteWrapper) DisableSlackNotifications() error {
+	return w.store.DisableSlackNotifications()
+}

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -183,7 +184,15 @@ func runGitClone(cmd *cobra.Command, args []string) error {
 
 	_, _ = fmt.Fprintln(os.Stdout, okStyle.Render("Clone completed successfully!"))
 
-	return core.SaveClonedRepoFromResult(result)
+	// Save repo and send notification
+	if err := core.SaveClonedRepoFromResult(result); err != nil {
+		return err
+	}
+
+	// Send clone notification (async, non-blocking)
+	go core.NotifyClone(context.Background(), result.CloneURL, result.TargetPath)
+
+	return nil
 }
 
 func createGitDefaultWorkspace(client ClientInterface) error {

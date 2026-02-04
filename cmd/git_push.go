@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/inovacc/clonr/internal/actionsdb"
+	"github.com/inovacc/clonr/internal/core"
 	"github.com/inovacc/clonr/internal/git"
 	"github.com/inovacc/clonr/internal/security"
 	"github.com/spf13/cobra"
@@ -194,6 +195,16 @@ func runGitPush(cmd *cobra.Command, args []string) error {
 	if err := enqueueGitPushForMonitoring(ctx, remote); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, dimStyle.Render("  Note: Could not enqueue for actions monitoring: %v\n"), err)
 	}
+
+	// Send push notification (async, non-blocking)
+	repoPath, _ := os.Getwd()
+	actualBranch := branch
+	if actualBranch == "" {
+		if b, err := client.CurrentBranch(ctx); err == nil {
+			actualBranch = b
+		}
+	}
+	go core.NotifyPush(ctx, repoPath, remote, actualBranch)
 
 	return nil
 }

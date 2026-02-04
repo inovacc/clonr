@@ -107,6 +107,13 @@ type Store interface {
 	SaveSealedKey(data *SealedKeyData) error
 	DeleteSealedKey() error
 	HasSealedKey() (bool, error)
+
+	// Slack configuration operations
+	GetSlackConfig() (*model.SlackConfig, error)
+	SaveSlackConfig(config *model.SlackConfig) error
+	DeleteSlackConfig() error
+	EnableSlackNotifications() error
+	DisableSlackNotifications() error
 }
 
 var (

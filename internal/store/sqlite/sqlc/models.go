@@ -109,6 +109,20 @@ type ServerEncryptionConfig struct {
 	ConfiguredAt time.Time `json:"configured_at"`
 }
 
+type SlackConfig struct {
+	ID                  int64     `json:"id"`
+	Enabled             *int64    `json:"enabled"`
+	WorkspaceID         *string   `json:"workspace_id"`
+	WorkspaceName       *string   `json:"workspace_name"`
+	EncryptedWebhookUrl []byte    `json:"encrypted_webhook_url"`
+	EncryptedBotToken   []byte    `json:"encrypted_bot_token"`
+	DefaultChannel      *string   `json:"default_channel"`
+	BotEnabled          *int64    `json:"bot_enabled"`
+	Events              *string   `json:"events"`
+	CreatedAt           time.Time `json:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
+}
+
 type StandaloneClient struct {
 	ID          string     `json:"id"`
 	Name        string     `json:"name"`

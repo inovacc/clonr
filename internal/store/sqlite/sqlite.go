@@ -723,3 +723,92 @@ func (s *Store) HasSealedKey() (bool, error) {
 	}
 	return result == 1, nil
 }
+
+// ============================================================================
+// Slack Configuration Operations
+// ============================================================================
+
+func (s *Store) GetSlackConfig() (*model.SlackConfig, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	ctx := newContext()
+	row, err := s.queries.GetSlackConfig(ctx)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return sqlcSlackConfigToModel(row), nil
+}
+
+func (s *Store) SaveSlackConfig(config *model.SlackConfig) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ctx := newContext()
+
+	eventsJSON, _ := json.Marshal(config.Events)
+	eventsStr := string(eventsJSON)
+
+	enabled := int64(0)
+	if config.Enabled {
+		enabled = 1
+	}
+	botEnabled := int64(0)
+	if config.BotEnabled {
+		botEnabled = 1
+	}
+
+	exists, _ := s.queries.SlackConfigExists(ctx)
+	if exists == 1 {
+		return s.queries.UpdateSlackConfig(ctx, sqlc.UpdateSlackConfigParams{
+			Enabled:             ptrInt64(enabled),
+			WorkspaceID:         ptrString(config.WorkspaceID),
+			WorkspaceName:       ptrString(config.WorkspaceName),
+			EncryptedWebhookUrl: config.EncryptedWebhookURL,
+			EncryptedBotToken:   config.EncryptedBotToken,
+			DefaultChannel:      ptrString(config.DefaultChannel),
+			BotEnabled:          ptrInt64(botEnabled),
+			Events:              &eventsStr,
+		})
+	}
+
+	_, err := s.queries.InsertSlackConfig(ctx, sqlc.InsertSlackConfigParams{
+		Enabled:             ptrInt64(enabled),
+		WorkspaceID:         ptrString(config.WorkspaceID),
+		WorkspaceName:       ptrString(config.WorkspaceName),
+		EncryptedWebhookUrl: config.EncryptedWebhookURL,
+		EncryptedBotToken:   config.EncryptedBotToken,
+		DefaultChannel:      ptrString(config.DefaultChannel),
+		BotEnabled:          ptrInt64(botEnabled),
+		Events:              &eventsStr,
+	})
+	return err
+}
+
+func (s *Store) DeleteSlackConfig() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ctx := newContext()
+	return s.queries.DeleteSlackConfig(ctx)
+}
+
+func (s *Store) EnableSlackNotifications() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ctx := newContext()
+	return s.queries.EnableSlackNotifications(ctx)
+}
+
+func (s *Store) DisableSlackNotifications() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ctx := newContext()
+	return s.queries.DisableSlackNotifications(ctx)
+}

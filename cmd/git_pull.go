@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/inovacc/clonr/internal/core"
 	"github.com/inovacc/clonr/internal/git"
 	"github.com/spf13/cobra"
 )
@@ -61,6 +62,10 @@ func runGitPull(_ *cobra.Command, args []string) error {
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout, okStyle.Render("Pull completed successfully!"))
+
+	// Send pull notification (async, non-blocking)
+	repoPath, _ := os.Getwd()
+	go core.NotifyPull(ctx, repoPath)
 
 	return nil
 }

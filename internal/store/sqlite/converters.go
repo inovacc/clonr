@@ -156,3 +156,25 @@ func sqlcDockerProfileToModel(row sqlc.DockerProfile) *model.DockerProfile {
 		LastUsedAt:     row.LastUsedAt,
 	}
 }
+
+// sqlcSlackConfigToModel converts a sqlc SlackConfig to a model.SlackConfig.
+func sqlcSlackConfigToModel(row sqlc.SlackConfig) *model.SlackConfig {
+	var events []model.SlackEventConfig
+	if row.Events != nil && *row.Events != "" {
+		_ = json.Unmarshal([]byte(*row.Events), &events)
+	}
+
+	return &model.SlackConfig{
+		ID:                  int(row.ID),
+		Enabled:             derefInt64ToBool(row.Enabled),
+		WorkspaceID:         derefString(row.WorkspaceID),
+		WorkspaceName:       derefString(row.WorkspaceName),
+		EncryptedWebhookURL: row.EncryptedWebhookUrl,
+		EncryptedBotToken:   row.EncryptedBotToken,
+		DefaultChannel:      derefString(row.DefaultChannel),
+		BotEnabled:          derefInt64ToBool(row.BotEnabled),
+		Events:              events,
+		CreatedAt:           row.CreatedAt,
+		UpdatedAt:           row.UpdatedAt,
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/inovacc/clonr/internal/core"
 	"github.com/inovacc/clonr/internal/git"
 	"github.com/spf13/cobra"
 )
@@ -61,6 +62,10 @@ func runGitCommit(cmd *cobra.Command, _ []string) error {
 	if err == nil {
 		_, _ = fmt.Fprintf(os.Stdout, dimStyle.Render("  commit: %s\n"), head)
 	}
+
+	// Send commit notification (async, non-blocking)
+	repoPath, _ := os.Getwd()
+	go core.NotifyCommit(ctx, repoPath, head, message)
 
 	return nil
 }
