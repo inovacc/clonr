@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/go-github/v82/github"
 	"github.com/inovacc/clonr/internal/core"
-	"github.com/inovacc/clonr/internal/crypto/tpm"
 	"github.com/inovacc/clonr/internal/model"
 	"github.com/inovacc/clonr/internal/slack"
 )
@@ -64,7 +63,7 @@ func (s *Server) handleGitHubOAuthStart(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Check if profile exists
-	exists, err := s.grpcClient.ProfileExists(name) //nolint:contextcheck // client manages its own timeout
+	exists, err := s.profileService.ProfileExists(name)
 	if err != nil {
 		s.jsonError(w, "Failed to check profile existence", http.StatusInternalServerError)
 		return
@@ -75,7 +74,7 @@ func (s *Server) handleGitHubOAuthStart(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Check workspace exists
-	wsExists, err := s.grpcClient.WorkspaceExists(workspace) //nolint:contextcheck // client manages its own timeout
+	wsExists, err := s.workspaceService.WorkspaceExists(workspace)
 	if err != nil {
 		s.jsonError(w, "Failed to check workspace existence", http.StatusInternalServerError)
 		return
@@ -99,7 +98,7 @@ func (s *Server) handleGitHubOAuthStart(w http.ResponseWriter, r *http.Request) 
 	oauthSessionMutex.Unlock()
 
 	// Start OAuth flow in background
-	go func() { //nolint:contextcheck // background goroutine creates its own context
+	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 
@@ -221,38 +220,17 @@ func (s *Server) handleGitHubOAuthStatus(w http.ResponseWriter, r *http.Request)
 		// Create the profile
 		result := session.Result
 
-		// Encrypt token
-		encryptedToken, err := tpm.EncryptToken(result.Token, name, session.Host)
+		// Create profile with token
+		profile, err := s.profileService.CreateProfileWithToken(
+			name,
+			session.Host,
+			result.Username,
+			result.Token,
+			session.Workspace,
+			result.Scopes,
+		)
 		if err != nil {
-			s.jsonError(w, "Failed to encrypt token", http.StatusInternalServerError)
-			return
-		}
-
-		tokenStorage := model.TokenStorageEncrypted
-		if tpm.IsDataOpen(encryptedToken) {
-			tokenStorage = model.TokenStorageOpen
-		}
-
-		// Check if first profile
-		profiles, _ := s.pm.ListProfiles()
-		isFirst := len(profiles) == 0
-
-		// Create profile
-		profile := &model.Profile{
-			Name:           name,
-			Host:           session.Host,
-			User:           result.Username,
-			TokenStorage:   tokenStorage,
-			Scopes:         result.Scopes,
-			Default:        isFirst,
-			EncryptedToken: encryptedToken,
-			CreatedAt:      time.Now(),
-			LastUsedAt:     time.Now(),
-			Workspace:      session.Workspace,
-		}
-
-		if err := s.grpcClient.SaveProfile(profile); err != nil { //nolint:contextcheck // client manages its own timeout
-			s.jsonError(w, "Failed to save profile", http.StatusInternalServerError)
+			s.jsonError(w, "Failed to create profile", http.StatusInternalServerError)
 			return
 		}
 
@@ -309,7 +287,7 @@ func (s *Server) handleSlackOAuthStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	activeProfile, err := s.pm.GetActiveProfile()
+	activeProfile, err := s.profileService.GetActiveProfile()
 	if err != nil || activeProfile == nil {
 		s.jsonError(w, "No active profile", http.StatusBadRequest)
 		return
@@ -419,30 +397,33 @@ func (s *Server) renderSlackCallbackError(w http.ResponseWriter, title, message 
 
 // handleSlackStatus returns Slack integration status for active profile
 func (s *Server) handleSlackStatus(w http.ResponseWriter, r *http.Request) {
-	activeProfile, err := s.pm.GetActiveProfile()
-	if err != nil || activeProfile == nil {
-		s.jsonResponse(w, map[string]any{
+	connected, profileName, channelName, err := s.slackService.GetStatus()
+	if err != nil {
+		data := map[string]any{
 			"connected": false,
 			"error":     "No active profile",
-		})
+		}
+		if r.Header.Get("HX-Request") == "true" {
+			s.renderPartial(w, "slack_status.html", data)
+			return
+		}
+		s.jsonResponse(w, data)
 		return
 	}
 
-	// Check if Slack channel exists
-	channel, err := s.pm.GetNotifyChannelByType(activeProfile.Name, model.ChannelSlack)
-	if err != nil || channel == nil {
-		s.jsonResponse(w, map[string]any{
-			"connected": false,
-			"profile":   activeProfile.Name,
-		})
-		return
+	data := map[string]any{
+		"connected": connected,
+		"profile":   profileName,
+	}
+	if channelName != "" {
+		data["channel"] = channelName
 	}
 
-	s.jsonResponse(w, map[string]any{
-		"connected": true,
-		"profile":   activeProfile.Name,
-		"channel":   channel.Name,
-	})
+	if r.Header.Get("HX-Request") == "true" {
+		s.renderPartial(w, "slack_status.html", data)
+		return
+	}
+	s.jsonResponse(w, data)
 }
 
 // handleSlackAdd adds Slack integration with a token
@@ -458,7 +439,7 @@ func (s *Server) handleSlackAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	activeProfile, err := s.pm.GetActiveProfile()
+	activeProfile, err := s.profileService.GetActiveProfile()
 	if err != nil || activeProfile == nil {
 		s.jsonError(w, "No active profile", http.StatusBadRequest)
 		return
@@ -477,10 +458,19 @@ func (s *Server) handleSlackAdd(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: time.Now(),
 	}
 
-	if err := s.pm.AddNotifyChannel(activeProfile.Name, channel); err != nil {
+	if err := s.profileService.AddNotifyChannel(activeProfile.Name, channel); err != nil {
+		s.BroadcastEvent(EventNotification, "Failed to add Slack", map[string]any{
+			"type":   "error",
+			"detail": err.Error(),
+		})
 		s.jsonError(w, "Failed to add Slack channel", http.StatusInternalServerError)
 		return
 	}
+
+	// Broadcast SSE event
+	s.BroadcastEvent(EventSlackConnected, "Slack connected", map[string]any{
+		"profile": activeProfile.Name,
+	})
 
 	if r.Header.Get("HX-Request") == "true" {
 		s.renderPartial(w, "slack_status.html", map[string]any{
@@ -499,15 +489,23 @@ func (s *Server) handleSlackAdd(w http.ResponseWriter, r *http.Request) {
 
 // handleSlackRemove removes Slack integration
 func (s *Server) handleSlackRemove(w http.ResponseWriter, r *http.Request) {
-	activeProfile, err := s.pm.GetActiveProfile()
+	activeProfile, err := s.profileService.GetActiveProfile()
 	if err != nil || activeProfile == nil {
 		s.jsonError(w, "No active profile", http.StatusBadRequest)
 		return
 	}
 
 	channelID := "slack-" + activeProfile.Name
-	if err := s.pm.RemoveNotifyChannel(activeProfile.Name, channelID); err != nil {
+	if err := s.profileService.RemoveNotifyChannel(activeProfile.Name, channelID); err != nil {
 		log.Printf("Failed to remove Slack channel: %v", err)
+		s.BroadcastEvent(EventNotification, "Failed to remove Slack", map[string]any{
+			"type":   "error",
+			"detail": err.Error(),
+		})
+	} else {
+		s.BroadcastEvent(EventSlackDisconnected, "Slack disconnected", map[string]any{
+			"profile": activeProfile.Name,
+		})
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
@@ -549,4 +547,199 @@ func validateGitHubToken(ctx context.Context, token, host string) (bool, string,
 	}
 
 	return true, user.GetLogin(), nil
+}
+
+// handleSlackMessagesPage renders the Slack messages page
+func (s *Server) handleSlackMessagesPage(w http.ResponseWriter, _ *http.Request) {
+	activeProfile, err := s.profileService.GetActiveProfile()
+	if err != nil || activeProfile == nil {
+		s.render(w, "slack_messages.html", map[string]any{
+			"Title":      "Slack Messages",
+			"ActivePage": "slack",
+			"Connected":  false,
+		})
+		return
+	}
+
+	// Check if Slack is connected
+	connected, _, _ := s.slackService.IsConnected()
+
+	s.render(w, "slack_messages.html", map[string]any{
+		"Title":         "Slack Messages",
+		"ActivePage":    "slack",
+		"Connected":     connected,
+		"ActiveProfile": activeProfile.Name,
+	})
+}
+
+// handleSlackChannels returns list of Slack channels
+func (s *Server) handleSlackChannels(w http.ResponseWriter, r *http.Request) {
+	channels, err := s.slackService.ListChannels(r.Context())
+	if err != nil {
+		if r.Header.Get("HX-Request") == "true" {
+			s.renderPartial(w, "slack_channels.html", map[string]any{"error": err.Error()})
+			return
+		}
+		s.jsonError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if r.Header.Get("HX-Request") == "true" {
+		s.renderPartial(w, "slack_channels.html", map[string]any{"channels": channels})
+		return
+	}
+
+	s.jsonResponse(w, channels)
+}
+
+// handleSlackMessages returns messages from a channel
+func (s *Server) handleSlackMessages(w http.ResponseWriter, r *http.Request) {
+	channelID := r.URL.Query().Get("channel")
+	if channelID == "" {
+		if r.Header.Get("HX-Request") == "true" {
+			s.renderPartial(w, "slack_messages.html", map[string]any{"error": "Channel ID required"})
+			return
+		}
+		s.jsonError(w, "Channel ID required", http.StatusBadRequest)
+		return
+	}
+
+	cursor := r.URL.Query().Get("cursor")
+	result, err := s.slackService.GetChannelHistory(r.Context(), channelID, 50, cursor)
+	if err != nil {
+		if r.Header.Get("HX-Request") == "true" {
+			s.renderPartial(w, "slack_messages.html", map[string]any{"error": err.Error()})
+			return
+		}
+		s.jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Fetch user info for messages
+	userCache := make(map[string]*slack.User)
+	messages := make([]map[string]any, 0, len(result.Messages))
+
+	for _, msg := range result.Messages {
+		msgData := map[string]any{
+			"Text":        msg.Text,
+			"Timestamp":   msg.Timestamp,
+			"ThreadTS":    msg.ThreadTS,
+			"ReplyCount":  msg.ReplyCount,
+			"Reactions":   msg.Reactions,
+			"Attachments": msg.Attachments,
+			"Files":       msg.Files,
+			"ChannelID":   channelID,
+		}
+
+		// Format timestamp
+		if t, err := slack.ParseTimestamp(msg.Timestamp); err == nil {
+			msgData["FormattedTime"] = t.Format("Jan 2, 3:04 PM")
+		}
+
+		// Get user info
+		if msg.User != "" {
+			if user, ok := userCache[msg.User]; ok {
+				msgData["UserName"] = getUserDisplayName(user)
+				msgData["UserAvatar"] = user.Profile.Image48
+			} else {
+				if user, err := s.slackService.GetUser(r.Context(), msg.User); err == nil {
+					userCache[msg.User] = user
+					msgData["UserName"] = getUserDisplayName(user)
+					msgData["UserAvatar"] = user.Profile.Image48
+				}
+			}
+		}
+
+		// Bot info
+		if msg.BotProfile != nil {
+			msgData["BotName"] = msg.BotProfile.Name
+		}
+
+		messages = append(messages, msgData)
+	}
+
+	if r.Header.Get("HX-Request") == "true" {
+		s.renderPartial(w, "slack_messages.html", map[string]any{
+			"messages":   messages,
+			"hasMore":    result.HasMore,
+			"nextCursor": result.NextCursor,
+			"channelID":  channelID,
+		})
+		return
+	}
+
+	s.jsonResponse(w, map[string]any{
+		"messages":   messages,
+		"hasMore":    result.HasMore,
+		"nextCursor": result.NextCursor,
+	})
+}
+
+// handleSlackSearch searches Slack messages
+func (s *Server) handleSlackSearch(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		if r.Header.Get("HX-Request") == "true" {
+			s.renderPartial(w, "slack_messages.html", map[string]any{"error": "Search query required"})
+			return
+		}
+		s.jsonError(w, "Search query required", http.StatusBadRequest)
+		return
+	}
+
+	result, err := s.slackService.SearchMessages(r.Context(), query, 50)
+	if err != nil {
+		if r.Header.Get("HX-Request") == "true" {
+			s.renderPartial(w, "slack_messages.html", map[string]any{"error": err.Error()})
+			return
+		}
+		s.jsonError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Convert search results to message format
+	messages := make([]map[string]any, 0, len(result.Matches))
+	for _, match := range result.Matches {
+		msgData := map[string]any{
+			"Text":        match.Text,
+			"Timestamp":   match.Timestamp,
+			"UserName":    match.Username,
+			"ChannelID":   match.Channel.ID,
+			"ChannelName": match.Channel.Name,
+			"Permalink":   match.Permalink,
+		}
+
+		if t, err := slack.ParseTimestamp(match.Timestamp); err == nil {
+			msgData["FormattedTime"] = t.Format("Jan 2, 3:04 PM")
+		}
+
+		messages = append(messages, msgData)
+	}
+
+	if r.Header.Get("HX-Request") == "true" {
+		s.renderPartial(w, "slack_messages.html", map[string]any{
+			"messages": messages,
+			"isSearch": true,
+			"query":    query,
+			"total":    result.Total,
+		})
+		return
+	}
+
+	s.jsonResponse(w, map[string]any{
+		"messages": messages,
+		"total":    result.Total,
+		"query":    query,
+	})
+}
+
+// getUserDisplayName returns the best display name for a user
+func getUserDisplayName(user *slack.User) string {
+	if user.Profile.DisplayName != "" {
+		return user.Profile.DisplayName
+	}
+	if user.RealName != "" {
+		return user.RealName
+	}
+	return user.Name
 }

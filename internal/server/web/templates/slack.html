@@ -12,6 +12,14 @@
                 Connect Slack for notifications and messaging
             </p>
         </div>
+        <div class="mt-4 flex md:mt-0 md:ml-4">
+            <a href="/slack/messages" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                View Messages
+            </a>
+        </div>
     </div>
 
     {{if not .ActiveProfile}}
@@ -57,13 +65,13 @@
                     <div>
                         <label for="client_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Client ID</label>
                         <input type="text" name="client_id" id="client_id"
-                            class="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                            class="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-base py-2.5 px-3 border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                             placeholder="Your Slack App Client ID">
                     </div>
                     <div>
                         <label for="client_secret" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Client Secret</label>
                         <input type="password" name="client_secret" id="client_secret"
-                            class="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                            class="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-base py-2.5 px-3 border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                             placeholder="Your Slack App Client Secret">
                     </div>
                 </div>
@@ -90,7 +98,7 @@
                     <div class="flex-1">
                         <label for="token" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Bot Token</label>
                         <input type="password" name="token" id="token"
-                            class="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                            class="mt-1 shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-base py-2.5 px-3 border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                             placeholder="xoxb-...">
                     </div>
                     <button type="submit"

@@ -54,7 +54,12 @@
                         </a>
                     </div>
                 </div>
-                <div class="flex items-center">
+                <div class="flex items-center space-x-3">
+                    <!-- SSE connection status -->
+                    <div class="flex items-center space-x-1" title="Real-time connection">
+                        <div id="sse-status" class="w-2 h-2 rounded-full bg-gray-400"></div>
+                        <span class="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">Live</span>
+                    </div>
                     <!-- Dark mode toggle -->
                     <button id="theme-toggle" type="button" class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-700">
                         <!-- Sun icon (shown in dark mode) -->
@@ -134,6 +139,153 @@
                 if (confirm(evt.detail.elt.getAttribute('hx-confirm'))) {
                     evt.detail.issueRequest();
                 }
+            }
+        });
+
+        // SSE (Server-Sent Events) connection
+        let eventSource = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+
+        function connectSSE() {
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            eventSource = new EventSource('/events');
+
+            eventSource.addEventListener('connected', function(e) {
+                console.log('SSE connected');
+                reconnectAttempts = 0;
+                updateConnectionStatus(true);
+            });
+
+            eventSource.addEventListener('heartbeat', function(e) {
+                // Keep-alive received
+            });
+
+            // Profile events
+            eventSource.addEventListener('profile:created', function(e) {
+                const data = JSON.parse(e.data);
+                showToast('success', data.message, `Profile "${data.data.name}" created`);
+            });
+
+            eventSource.addEventListener('profile:updated', function(e) {
+                const data = JSON.parse(e.data);
+                showToast('info', data.message, `Profile "${data.data.name}" updated`);
+            });
+
+            eventSource.addEventListener('profile:deleted', function(e) {
+                const data = JSON.parse(e.data);
+                showToast('warning', data.message, `Profile "${data.data.name}" deleted`);
+            });
+
+            eventSource.addEventListener('profile:activated', function(e) {
+                const data = JSON.parse(e.data);
+                showToast('success', data.message, `Profile "${data.data.name}" is now active`);
+            });
+
+            // Workspace events
+            eventSource.addEventListener('workspace:created', function(e) {
+                const data = JSON.parse(e.data);
+                showToast('success', data.message, `Workspace "${data.data.name}" created`);
+            });
+
+            eventSource.addEventListener('workspace:deleted', function(e) {
+                const data = JSON.parse(e.data);
+                showToast('warning', data.message, `Workspace "${data.data.name}" deleted`);
+            });
+
+            // Slack events
+            eventSource.addEventListener('slack:connected', function(e) {
+                const data = JSON.parse(e.data);
+                showToast('success', data.message, `Profile "${data.data.profile}"`);
+            });
+
+            eventSource.addEventListener('slack:disconnected', function(e) {
+                const data = JSON.parse(e.data);
+                showToast('warning', data.message, `Profile "${data.data.profile}"`);
+            });
+
+            // Notification events
+            eventSource.addEventListener('notification', function(e) {
+                const data = JSON.parse(e.data);
+                const type = data.data?.type || 'info';
+                showToast(type, data.message, data.data?.detail || '');
+            });
+
+            eventSource.onerror = function(e) {
+                console.log('SSE error, reconnecting...');
+                updateConnectionStatus(false);
+                eventSource.close();
+
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    setTimeout(connectSSE, 2000 * reconnectAttempts);
+                }
+            };
+        }
+
+        function updateConnectionStatus(connected) {
+            const indicator = document.getElementById('sse-status');
+            if (indicator) {
+                indicator.className = connected
+                    ? 'w-2 h-2 rounded-full bg-green-500'
+                    : 'w-2 h-2 rounded-full bg-red-500';
+                indicator.title = connected ? 'Connected' : 'Disconnected';
+            }
+        }
+
+        function showToast(type, title, message) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                warning: 'bg-yellow-500',
+                info: 'bg-blue-500'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `${colors[type] || colors.info} text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3 transform transition-all duration-300 translate-x-full`;
+            toast.innerHTML = `
+                <div class="flex-shrink-0">
+                    ${type === 'success' ? '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' : ''}
+                    ${type === 'error' ? '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>' : ''}
+                    ${type === 'warning' ? '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>' : ''}
+                    ${type === 'info' ? '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' : ''}
+                </div>
+                <div>
+                    <p class="font-medium text-sm">${title}</p>
+                    ${message ? `<p class="text-xs opacity-90">${message}</p>` : ''}
+                </div>
+                <button onclick="this.parentElement.remove()" class="ml-auto flex-shrink-0 text-white hover:text-gray-200">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            `;
+
+            container.appendChild(toast);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-full');
+            });
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        // Connect to SSE on page load
+        document.addEventListener('DOMContentLoaded', connectSSE);
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (eventSource) {
+                eventSource.close();
             }
         });
     </script>

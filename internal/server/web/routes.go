@@ -15,14 +15,17 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /", s.handleIndex)
 	mux.HandleFunc("GET /profiles", s.handleProfilesPage)
 	mux.HandleFunc("GET /profiles/add", s.handleProfileAddPage)
+	mux.HandleFunc("GET /profiles/edit/{name}", s.handleProfileEditPage)
 	mux.HandleFunc("GET /workspaces", s.handleWorkspacesPage)
 	mux.HandleFunc("GET /slack", s.handleSlackPage)
+	mux.HandleFunc("GET /slack/messages", s.handleSlackMessagesPage)
 
 	// Profile API
 	mux.HandleFunc("GET /api/profiles", s.handleListProfiles)
 	mux.HandleFunc("GET /api/profiles/active", s.handleGetActiveProfile)
 	mux.HandleFunc("GET /api/profiles/{name}", s.handleGetProfile)
 	mux.HandleFunc("POST /api/profiles", s.handleCreateProfile)
+	mux.HandleFunc("PUT /api/profiles/{name}", s.handleUpdateProfile)
 	mux.HandleFunc("DELETE /api/profiles/{name}", s.handleDeleteProfile)
 	mux.HandleFunc("PUT /api/profiles/{name}/active", s.handleSetActiveProfile)
 
@@ -41,8 +44,14 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/slack/status", s.handleSlackStatus)
 	mux.HandleFunc("POST /api/slack/add", s.handleSlackAdd)
 	mux.HandleFunc("DELETE /api/slack/remove", s.handleSlackRemove)
+	mux.HandleFunc("GET /api/slack/channels", s.handleSlackChannels)
+	mux.HandleFunc("GET /api/slack/messages", s.handleSlackMessages)
+	mux.HandleFunc("GET /api/slack/search", s.handleSlackSearch)
 
 	// System
 	mux.HandleFunc("GET /api/status", s.handleStatus)
 	mux.HandleFunc("GET /health", s.handleHealth)
+
+	// SSE (Server-Sent Events)
+	mux.HandleFunc("GET /events", s.handleSSE)
 }

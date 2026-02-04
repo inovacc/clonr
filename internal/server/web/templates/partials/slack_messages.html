@@ -1,0 +1,111 @@
+{{define "slack_messages.html"}}
+{{if .error}}
+<div class="p-8 text-center text-red-500 dark:text-red-400">
+    <svg class="mx-auto h-12 w-12 text-red-400 dark:text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+    <p class="mt-2">{{.error}}</p>
+</div>
+{{else if .messages}}
+{{range .messages}}
+<div data-message="{{.Timestamp}}" class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+    <div class="flex items-start space-x-3">
+        <!-- Avatar -->
+        <div class="flex-shrink-0">
+            {{if .UserAvatar}}
+            <img src="{{.UserAvatar}}" alt="{{.UserName}}" class="h-9 w-9 rounded-md">
+            {{else}}
+            <div class="h-9 w-9 rounded-md bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                <span class="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                    {{if .UserName}}{{slice .UserName 0 1}}{{else}}?{{end}}
+                </span>
+            </div>
+            {{end}}
+        </div>
+        <!-- Content -->
+        <div class="flex-1 min-w-0">
+            <div class="flex items-baseline space-x-2">
+                <span class="font-medium text-sm text-gray-900 dark:text-white">
+                    {{if .UserName}}{{.UserName}}{{else if .BotName}}{{.BotName}}{{else}}Unknown{{end}}
+                </span>
+                {{if .BotName}}
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                    APP
+                </span>
+                {{end}}
+                <span class="text-xs text-gray-400 dark:text-gray-500">{{.FormattedTime}}</span>
+            </div>
+            <div class="mt-1 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">{{.Text}}</div>
+
+            {{if .Attachments}}
+            <div class="mt-2 space-y-2">
+                {{range .Attachments}}
+                <div class="border-l-4 border-gray-300 dark:border-gray-600 pl-3 py-1">
+                    {{if .Title}}
+                    <div class="font-medium text-sm text-gray-900 dark:text-white">
+                        {{if .TitleLink}}<a href="{{.TitleLink}}" target="_blank" class="hover:underline">{{.Title}}</a>{{else}}{{.Title}}{{end}}
+                    </div>
+                    {{end}}
+                    {{if .Text}}
+                    <div class="text-sm text-gray-600 dark:text-gray-400">{{.Text}}</div>
+                    {{end}}
+                </div>
+                {{end}}
+            </div>
+            {{end}}
+
+            {{if .Files}}
+            <div class="mt-2 flex flex-wrap gap-2">
+                {{range .Files}}
+                <a href="{{.Permalink}}" target="_blank" class="inline-flex items-center px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
+                    <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                    {{.Name}}
+                </a>
+                {{end}}
+            </div>
+            {{end}}
+
+            {{if .Reactions}}
+            <div class="mt-2 flex flex-wrap gap-1">
+                {{range .Reactions}}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                    :{{.Name}}: {{.Count}}
+                </span>
+                {{end}}
+            </div>
+            {{end}}
+
+            {{if .ReplyCount}}
+            <div class="mt-2">
+                <button onclick="loadThread('{{.ChannelID}}', '{{.Timestamp}}')" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+                    {{.ReplyCount}} {{if eq .ReplyCount 1}}reply{{else}}replies{{end}}
+                </button>
+            </div>
+            {{end}}
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{if .hasMore}}
+<div class="p-4 text-center">
+    <button
+        hx-get="/api/slack/messages?channel={{.channelID}}&cursor={{.nextCursor}}"
+        hx-target="#message-list"
+        hx-swap="beforeend"
+        class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        Load More
+    </button>
+</div>
+{{end}}
+{{else}}
+<div class="p-8 text-center text-gray-500 dark:text-gray-400">
+    <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+    </svg>
+    <p class="mt-2">No messages found</p>
+</div>
+{{end}}
+{{end}}

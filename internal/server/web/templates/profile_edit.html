@@ -1,0 +1,184 @@
+{{template "layout" .}}
+
+{{define "content"}}
+<div class="max-w-2xl mx-auto">
+    <!-- Header -->
+    <div class="md:flex md:items-center md:justify-between mb-6">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 dark:text-white sm:text-3xl sm:truncate">
+                Edit Profile
+            </h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Update profile settings for <span class="font-medium text-indigo-600 dark:text-indigo-400">{{.Data.Profile.Name}}</span>
+            </p>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            <form id="profile-form" hx-put="/api/profiles/{{.Data.Profile.Name}}" hx-swap="none">
+                <div class="space-y-6">
+                    <!-- Profile name (read-only) -->
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Profile Name
+                        </label>
+                        <div class="mt-1">
+                            <input type="text" name="name" id="name" value="{{.Data.Profile.Name}}" disabled
+                                class="shadow-sm block w-full text-base py-2.5 px-3 border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed">
+                        </div>
+                        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Profile name cannot be changed</p>
+                    </div>
+
+                    <!-- Workspace -->
+                    <div>
+                        <label for="workspace" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Workspace
+                        </label>
+                        <div class="mt-1">
+                            <select name="workspace" id="workspace" required
+                                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-base py-2.5 px-3 border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
+                                {{range .Workspaces}}
+                                <option value="{{.Name}}" {{if eq .Name $.Data.Profile.Workspace}}selected{{end}}>{{.Name}} ({{.Path}})</option>
+                                {{end}}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- GitHub host (read-only) -->
+                    <div>
+                        <label for="host" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            GitHub Host
+                        </label>
+                        <div class="mt-1">
+                            <input type="text" name="host" id="host" value="{{.Data.Profile.Host}}" disabled
+                                class="shadow-sm block w-full text-base py-2.5 px-3 border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed">
+                        </div>
+                        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Host cannot be changed after creation</p>
+                    </div>
+
+                    <!-- User info (read-only) -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            GitHub User
+                        </label>
+                        <div class="mt-1">
+                            <input type="text" value="{{.Data.Profile.User}}" disabled
+                                class="shadow-sm block w-full text-base py-2.5 px-3 border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed">
+                        </div>
+                    </div>
+
+                    <!-- Token storage info -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Token Storage
+                        </label>
+                        <div class="mt-1 flex items-center">
+                            {{if eq .Data.Profile.TokenStorage "encrypted"}}
+                            <span class="inline-flex items-center px-3 py-1.5 rounded text-sm font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                                <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                Encrypted (TPM)
+                            </span>
+                            {{else}}
+                            <span class="inline-flex items-center px-3 py-1.5 rounded text-sm font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                                <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                Plain Text
+                            </span>
+                            {{end}}
+                        </div>
+                    </div>
+
+                    <!-- Scopes -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Scopes
+                        </label>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            {{range .Data.Profile.Scopes}}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
+                                {{.}}
+                            </span>
+                            {{end}}
+                        </div>
+                    </div>
+
+                    <!-- Update Token Section -->
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-4">Update Token (Optional)</h4>
+                        <div>
+                            <label for="token" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                New Personal Access Token
+                            </label>
+                            <div class="mt-1">
+                                <input type="password" name="token" id="token"
+                                    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-base py-2.5 px-3 border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                                    placeholder="Leave empty to keep current token">
+                            </div>
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                Only fill this if you want to replace the existing token
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="mt-6 flex items-center justify-end space-x-3">
+                    <a href="/profiles" class="bg-white dark:bg-gray-700 py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Cancel
+                    </a>
+                    <button type="submit" id="submit-btn"
+                        class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <span class="htmx-indicator mr-2">
+                            <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Timestamps -->
+    <div class="mt-6 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-4">Profile Information</h4>
+            <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+                <div>
+                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Created</dt>
+                    <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{formatTime .Data.Profile.CreatedAt}}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Last Used</dt>
+                    <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{formatTime .Data.Profile.LastUsedAt}}</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+</div>
+
+<script>
+// Handle form submission response
+document.getElementById('profile-form').addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.successful) {
+        // Redirect handled by HX-Redirect header
+    } else {
+        try {
+            const response = JSON.parse(evt.detail.xhr.responseText);
+            if (response.error) {
+                alert('Error: ' + response.error);
+            }
+        } catch (e) {
+            alert('An error occurred');
+        }
+    }
+});
+</script>
+{{end}}

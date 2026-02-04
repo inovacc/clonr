@@ -26,7 +26,7 @@
                         </label>
                         <div class="mt-1">
                             <input type="text" name="name" id="name" required
-                                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-base py-2.5 px-3 border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                                 placeholder="e.g., work, personal, enterprise">
                         </div>
                         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">A unique identifier for this profile</p>
@@ -39,7 +39,7 @@
                         </label>
                         <div class="mt-1">
                             <select name="workspace" id="workspace" required
-                                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
+                                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-base py-2.5 px-3 border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white">
                                 <option value="">Select a workspace</option>
                                 {{range .Workspaces}}
                                 <option value="{{.Name}}">{{.Name}} ({{.Path}})</option>
@@ -60,7 +60,7 @@
                         </label>
                         <div class="mt-1">
                             <input type="text" name="host" id="host" value="github.com"
-                                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-base py-2.5 px-3 border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                                 placeholder="github.com">
                         </div>
                         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Use github.com for public GitHub, or your enterprise URL</p>
@@ -107,7 +107,7 @@
                         </label>
                         <div class="mt-1">
                             <input type="password" name="token" id="token"
-                                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full text-base py-2.5 px-3 border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                                 placeholder="ghp_xxxxxxxxxxxx">
                         </div>
                         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">

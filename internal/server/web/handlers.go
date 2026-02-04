@@ -43,15 +43,15 @@ type APIResponse struct {
 
 // handleIndex renders the main dashboard
 func (s *Server) handleIndex(w http.ResponseWriter, _ *http.Request) {
-	profiles, err := s.pm.ListProfiles()
+	profiles, err := s.profileService.ListProfiles()
 	if err != nil {
 		log.Printf("Failed to list profiles: %v", err)
 		profiles = []model.Profile{}
 	}
 
-	activeProfile, _ := s.pm.GetActiveProfile()
+	activeProfile, _ := s.profileService.GetActiveProfile()
 
-	workspaces, err := s.grpcClient.ListWorkspaces() //nolint:contextcheck // client manages its own timeout
+	workspaces, err := s.workspaceService.ListWorkspaces()
 	if err != nil {
 		log.Printf("Failed to list workspaces: %v", err)
 		workspaces = []model.Workspace{}
@@ -71,13 +71,13 @@ func (s *Server) handleIndex(w http.ResponseWriter, _ *http.Request) {
 
 // handleProfilesPage renders the profiles page
 func (s *Server) handleProfilesPage(w http.ResponseWriter, _ *http.Request) {
-	profiles, err := s.pm.ListProfiles()
+	profiles, err := s.profileService.ListProfiles()
 	if err != nil {
 		log.Printf("Failed to list profiles: %v", err)
 		profiles = []model.Profile{}
 	}
 
-	activeProfile, _ := s.pm.GetActiveProfile()
+	activeProfile, _ := s.profileService.GetActiveProfile()
 
 	data := PageData{
 		Title:         "Profiles",
@@ -92,7 +92,7 @@ func (s *Server) handleProfilesPage(w http.ResponseWriter, _ *http.Request) {
 
 // handleProfileAddPage renders the add profile page
 func (s *Server) handleProfileAddPage(w http.ResponseWriter, _ *http.Request) {
-	workspaces, err := s.grpcClient.ListWorkspaces() //nolint:contextcheck // client manages its own timeout
+	workspaces, err := s.workspaceService.ListWorkspaces()
 	if err != nil {
 		log.Printf("Failed to list workspaces: %v", err)
 		workspaces = []model.Workspace{}
@@ -108,9 +108,43 @@ func (s *Server) handleProfileAddPage(w http.ResponseWriter, _ *http.Request) {
 	s.render(w, "profile_add.html", data)
 }
 
+// handleProfileEditPage renders the edit profile page
+func (s *Server) handleProfileEditPage(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if name == "" {
+		http.Redirect(w, r, "/profiles", http.StatusFound)
+		return
+	}
+
+	profile, err := s.profileService.GetProfile(name)
+	if err != nil || profile == nil {
+		log.Printf("Profile not found: %s", name)
+		http.Redirect(w, r, "/profiles", http.StatusFound)
+		return
+	}
+
+	workspaces, err := s.workspaceService.ListWorkspaces()
+	if err != nil {
+		log.Printf("Failed to list workspaces: %v", err)
+		workspaces = []model.Workspace{}
+	}
+
+	data := PageData{
+		Title:        "Edit Profile",
+		ActivePage:   "profiles",
+		Workspaces:   workspaces,
+		TPMAvailable: tpm.IsTPMAvailable(),
+		Data: ProfileData{
+			Profile: profile,
+		},
+	}
+
+	s.render(w, "profile_edit.html", data)
+}
+
 // handleWorkspacesPage renders the workspaces page
 func (s *Server) handleWorkspacesPage(w http.ResponseWriter, _ *http.Request) {
-	workspaces, err := s.grpcClient.ListWorkspaces() //nolint:contextcheck // client manages its own timeout
+	workspaces, err := s.workspaceService.ListWorkspaces()
 	if err != nil {
 		log.Printf("Failed to list workspaces: %v", err)
 		workspaces = []model.Workspace{}
@@ -128,7 +162,7 @@ func (s *Server) handleWorkspacesPage(w http.ResponseWriter, _ *http.Request) {
 
 // handleSlackPage renders the Slack integration page
 func (s *Server) handleSlackPage(w http.ResponseWriter, _ *http.Request) {
-	activeProfile, _ := s.pm.GetActiveProfile()
+	activeProfile, _ := s.profileService.GetActiveProfile()
 
 	data := PageData{
 		Title:         "Slack Integration",
@@ -142,7 +176,7 @@ func (s *Server) handleSlackPage(w http.ResponseWriter, _ *http.Request) {
 
 // handleListProfiles returns all profiles as JSON or HTML partial
 func (s *Server) handleListProfiles(w http.ResponseWriter, r *http.Request) {
-	profiles, err := s.pm.ListProfiles()
+	profiles, err := s.profileService.ListProfiles()
 	if err != nil {
 		s.jsonError(w, "Failed to list profiles", http.StatusInternalServerError)
 		return
@@ -165,7 +199,7 @@ func (s *Server) handleGetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	profile, err := s.pm.GetProfile(name)
+	profile, err := s.profileService.GetProfile(name)
 	if err != nil {
 		s.jsonError(w, "Profile not found", http.StatusNotFound)
 		return
@@ -176,7 +210,7 @@ func (s *Server) handleGetProfile(w http.ResponseWriter, r *http.Request) {
 
 // handleGetActiveProfile returns the active profile
 func (s *Server) handleGetActiveProfile(w http.ResponseWriter, r *http.Request) {
-	profile, err := s.pm.GetActiveProfile()
+	profile, err := s.profileService.GetActiveProfile()
 	if err != nil {
 		s.jsonError(w, "No active profile", http.StatusNotFound)
 		return
@@ -218,7 +252,7 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if profile exists
-	exists, err := s.grpcClient.ProfileExists(name) //nolint:contextcheck // client manages its own timeout
+	exists, err := s.profileService.ProfileExists(name)
 	if err != nil {
 		log.Printf("Failed to check profile existence for %q: %v", name, err)
 		s.jsonError(w, fmt.Sprintf("Failed to check profile existence: %v", err), http.StatusInternalServerError)
@@ -230,7 +264,7 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check workspace exists
-	wsExists, err := s.grpcClient.WorkspaceExists(workspace) //nolint:contextcheck // client manages its own timeout
+	wsExists, err := s.workspaceService.WorkspaceExists(workspace)
 	if err != nil {
 		log.Printf("Failed to check workspace existence for %q: %v", workspace, err)
 		s.jsonError(w, fmt.Sprintf("Failed to check workspace existence: %v", err), http.StatusInternalServerError)
@@ -257,42 +291,20 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Printf("Token validated successfully for user %q on host %q", username, host)
 
-		// Encrypt token
-		encryptedToken, err := tpm.EncryptToken(token, name, host)
+		// Create profile with token
+		profile, err := s.profileService.CreateProfileWithToken(name, host, username, token, workspace, model.DefaultScopes())
 		if err != nil {
-			log.Printf("Token encryption failed: %v", err)
-			s.jsonError(w, fmt.Sprintf("Failed to encrypt token: %v", err), http.StatusInternalServerError)
+			log.Printf("Failed to create profile: %v", err)
+			s.jsonError(w, fmt.Sprintf("Failed to create profile: %v", err), http.StatusInternalServerError)
 			return
 		}
 
-		tokenStorage := model.TokenStorageEncrypted
-		if tpm.IsDataOpen(encryptedToken) {
-			tokenStorage = model.TokenStorageOpen
-		}
-
-		// Check if first profile
-		profiles, _ := s.pm.ListProfiles()
-		isFirst := len(profiles) == 0
-
-		// Create profile
-		profile := &model.Profile{
-			Name:           name,
-			Host:           host,
-			User:           username,
-			TokenStorage:   tokenStorage,
-			Scopes:         model.DefaultScopes(),
-			Default:        isFirst,
-			EncryptedToken: encryptedToken,
-			CreatedAt:      time.Now(),
-			LastUsedAt:     time.Now(),
-			Workspace:      workspace,
-		}
-
-		if err := s.grpcClient.SaveProfile(profile); err != nil { //nolint:contextcheck // client manages its own timeout
-			log.Printf("Failed to save profile: %v", err)
-			s.jsonError(w, fmt.Sprintf("Failed to save profile: %v", err), http.StatusInternalServerError)
-			return
-		}
+		// Broadcast SSE event
+		s.BroadcastEvent(EventProfileCreated, "Profile created", map[string]any{
+			"name": profile.Name,
+			"user": profile.User,
+			"host": profile.Host,
+		})
 
 		// Return success
 		if r.Header.Get("HX-Request") == "true" {
@@ -314,6 +326,102 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 	s.jsonError(w, "Token required (OAuth flow not implemented for web)", http.StatusBadRequest)
 }
 
+// handleUpdateProfile updates an existing profile
+func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if name == "" {
+		s.jsonError(w, "Profile name required", http.StatusBadRequest)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		s.jsonError(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	// Get existing profile
+	profile, err := s.profileService.GetProfile(name)
+	if err != nil || profile == nil {
+		s.jsonError(w, "Profile not found", http.StatusNotFound)
+		return
+	}
+
+	// Update workspace if changed
+	workspace := strings.TrimSpace(r.FormValue("workspace"))
+	if workspace != "" && workspace != profile.Workspace {
+		// Verify workspace exists
+		wsExists, err := s.workspaceService.WorkspaceExists(workspace)
+		if err != nil {
+			log.Printf("Failed to check workspace existence: %v", err)
+			s.jsonError(w, fmt.Sprintf("Failed to check workspace: %v", err), http.StatusInternalServerError)
+			return
+		}
+		if !wsExists {
+			s.jsonError(w, fmt.Sprintf("Workspace %q not found", workspace), http.StatusBadRequest)
+			return
+		}
+		profile.Workspace = workspace
+	}
+
+	// Update token if provided
+	token := strings.TrimSpace(r.FormValue("token"))
+	if token != "" {
+		// Validate new token
+		ctx := r.Context()
+		valid, username, err := validateGitHubToken(ctx, token, profile.Host)
+		if err != nil {
+			log.Printf("Token validation error: %v", err)
+			s.jsonError(w, fmt.Sprintf("Token validation failed: %v", err), http.StatusBadRequest)
+			return
+		}
+		if !valid {
+			s.jsonError(w, "Invalid or expired token", http.StatusBadRequest)
+			return
+		}
+
+		// Encrypt new token
+		encryptedToken, tokenStorage, err := s.profileService.EncryptToken(token, name, profile.Host)
+		if err != nil {
+			log.Printf("Token encryption failed: %v", err)
+			s.jsonError(w, fmt.Sprintf("Failed to encrypt token: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		profile.EncryptedToken = encryptedToken
+		profile.User = username
+		profile.TokenStorage = tokenStorage
+	}
+
+	// Update last used timestamp
+	profile.LastUsedAt = time.Now()
+
+	// Save profile
+	if err := s.profileService.SaveProfile(profile); err != nil {
+		log.Printf("Failed to save profile: %v", err)
+		s.jsonError(w, fmt.Sprintf("Failed to save profile: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Broadcast SSE event
+	s.BroadcastEvent(EventProfileUpdated, "Profile updated", map[string]any{
+		"name": profile.Name,
+		"user": profile.User,
+	})
+
+	// Return success
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/profiles")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	s.jsonResponse(w, APIResponse{
+		Success: true,
+		Message: "Profile updated successfully",
+		Data:    profile,
+	})
+}
+
 // handleDeleteProfile deletes a profile
 func (s *Server) handleDeleteProfile(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
@@ -322,10 +430,15 @@ func (s *Server) handleDeleteProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.pm.DeleteProfile(name); err != nil {
+	if err := s.profileService.DeleteProfile(name); err != nil {
 		s.jsonError(w, "Failed to delete profile", http.StatusInternalServerError)
 		return
 	}
+
+	// Broadcast SSE event
+	s.BroadcastEvent(EventProfileDeleted, "Profile deleted", map[string]any{
+		"name": name,
+	})
 
 	// Check if HTMX request
 	if r.Header.Get("HX-Request") == "true" {
@@ -348,14 +461,19 @@ func (s *Server) handleSetActiveProfile(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := s.pm.SetActiveProfile(name); err != nil {
+	if err := s.profileService.SetActiveProfile(name); err != nil {
 		s.jsonError(w, "Failed to set active profile", http.StatusInternalServerError)
 		return
 	}
 
+	// Broadcast SSE event
+	s.BroadcastEvent(EventProfileActivated, "Profile activated", map[string]any{
+		"name": name,
+	})
+
 	// Check if HTMX request - refresh the profile list
 	if r.Header.Get("HX-Request") == "true" {
-		profiles, _ := s.pm.ListProfiles()
+		profiles, _ := s.profileService.ListProfiles()
 		s.renderPartial(w, "profile_list.html", profiles)
 		return
 	}
@@ -368,7 +486,7 @@ func (s *Server) handleSetActiveProfile(w http.ResponseWriter, r *http.Request) 
 
 // handleListWorkspaces returns all workspaces
 func (s *Server) handleListWorkspaces(w http.ResponseWriter, r *http.Request) {
-	workspaces, err := s.grpcClient.ListWorkspaces() //nolint:contextcheck // client manages its own timeout
+	workspaces, err := s.workspaceService.ListWorkspaces()
 	if err != nil {
 		s.jsonError(w, "Failed to list workspaces", http.StatusInternalServerError)
 		return
@@ -404,34 +522,18 @@ func (s *Server) handleCreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if workspace exists
-	exists, err := s.grpcClient.WorkspaceExists(name) //nolint:contextcheck // client manages its own timeout
+	// Create workspace
+	workspace, err := s.workspaceService.CreateWorkspace(name, path, description)
 	if err != nil {
-		s.jsonError(w, "Failed to check workspace existence", http.StatusInternalServerError)
-		return
-	}
-	if exists {
-		s.jsonError(w, "Workspace already exists", http.StatusConflict)
+		s.jsonError(w, fmt.Sprintf("Failed to create workspace: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	// Check if first workspace
-	workspaces, _ := s.grpcClient.ListWorkspaces() //nolint:contextcheck // client manages its own timeout
-	isFirst := len(workspaces) == 0
-
-	workspace := &model.Workspace{
-		Name:        name,
-		Description: description,
-		Path:        path,
-		Active:      isFirst,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-	}
-
-	if err := s.grpcClient.SaveWorkspace(workspace); err != nil { //nolint:contextcheck // client manages its own timeout
-		s.jsonError(w, "Failed to save workspace", http.StatusInternalServerError)
-		return
-	}
+	// Broadcast SSE event
+	s.BroadcastEvent(EventWorkspaceCreated, "Workspace created", map[string]any{
+		"name": workspace.Name,
+		"path": workspace.Path,
+	})
 
 	// Check if HTMX request
 	if r.Header.Get("HX-Request") == "true" {
@@ -455,10 +557,15 @@ func (s *Server) handleDeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.grpcClient.DeleteWorkspace(name); err != nil { //nolint:contextcheck // client manages its own timeout
+	if err := s.workspaceService.DeleteWorkspace(name); err != nil {
 		s.jsonError(w, "Failed to delete workspace", http.StatusInternalServerError)
 		return
 	}
+
+	// Broadcast SSE event
+	s.BroadcastEvent(EventWorkspaceDeleted, "Workspace deleted", map[string]any{
+		"name": name,
+	})
 
 	// Check if HTMX request
 	if r.Header.Get("HX-Request") == "true" {
@@ -477,7 +584,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	status := map[string]any{
 		"tpm_available":        tpm.IsTPMAvailable(),
 		"encryption_available": tpm.IsEncryptionAvailable(),
-		"server_connected":     s.grpcClient.Ping() == nil, //nolint:contextcheck // client manages its own timeout
+		"server_connected":     true, // Always true since we're in the server process
 	}
 
 	// Check if HTMX request

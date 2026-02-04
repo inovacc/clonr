@@ -18,18 +18,23 @@ import (
 	"github.com/inovacc/clonr/internal/model"
 	"github.com/inovacc/clonr/internal/process"
 	"github.com/inovacc/clonr/internal/server/grpc"
+	"github.com/inovacc/clonr/internal/server/web"
 	"github.com/inovacc/clonr/internal/store"
 	"github.com/spf13/cobra"
 )
 
 var actionsWorker *actionsdb.Worker
 var rotationScheduler *grpc.RotationScheduler
+var webServer *web.Server
 
 var (
 	serverPort        int
 	serverIdleTimeout time.Duration
 	serverMaxRuntime  time.Duration
 	procs             = process.NewProcess()
+	serverWebPort     int
+	serverNoWeb       bool
+	serverOpenBrowser bool
 )
 
 var serverCmd = &cobra.Command{
@@ -40,8 +45,15 @@ var serverCmd = &cobra.Command{
 
 var serverStartCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Start the gRPC server",
+	Short: "Start the gRPC and web servers",
 	Long: `Start the Clonr gRPC server on the configured port.
+
+By default, both gRPC and web servers are started:
+- gRPC server: port 50051 (configurable with --port)
+- Web server: port 8080 (configurable with --web-port)
+
+Use --no-web to disable the web server.
+Use --open-browser to auto-open the web UI in your browser.
 
 The server will shutdown when any of these conditions are met:
 - Interrupted with Ctrl+C or SIGTERM
@@ -85,13 +97,19 @@ func init() {
 	serverCmd.AddCommand(serverRestartCmd)
 	serverCmd.AddCommand(serverStatusCmd)
 
-	serverStartCmd.Flags().IntVarP(&serverPort, "port", "p", 50051, "Port to listen on")
+	serverStartCmd.Flags().IntVarP(&serverPort, "port", "p", 50051, "gRPC server port")
+	serverStartCmd.Flags().IntVar(&serverWebPort, "web-port", 8080, "Web server port")
+	serverStartCmd.Flags().BoolVar(&serverNoWeb, "no-web", false, "Disable web server")
+	serverStartCmd.Flags().BoolVar(&serverOpenBrowser, "open-browser", false, "Auto-open browser when web server starts")
 	serverStartCmd.Flags().DurationVar(&serverIdleTimeout, "idle-timeout", 5*time.Minute, "Shutdown after being idle for this duration (0 to disable)")
 	serverStartCmd.Flags().DurationVar(&serverMaxRuntime, "max-runtime", 1*time.Hour, "Maximum server runtime before auto-shutdown (0 to disable)")
 
 	serverStopCmd.Flags().DurationVar(&stopTimeout, "timeout", 30*time.Second, "Timeout waiting for server to stop")
 
-	serverRestartCmd.Flags().IntVarP(&serverPort, "port", "p", 50051, "Port to listen on")
+	serverRestartCmd.Flags().IntVarP(&serverPort, "port", "p", 50051, "gRPC server port")
+	serverRestartCmd.Flags().IntVar(&serverWebPort, "web-port", 8080, "Web server port")
+	serverRestartCmd.Flags().BoolVar(&serverNoWeb, "no-web", false, "Disable web server")
+	serverRestartCmd.Flags().BoolVar(&serverOpenBrowser, "open-browser", false, "Auto-open browser when web server starts")
 	serverRestartCmd.Flags().DurationVar(&serverIdleTimeout, "idle-timeout", 5*time.Minute, "Shutdown after being idle for this duration (0 to disable)")
 	serverRestartCmd.Flags().DurationVar(&serverMaxRuntime, "max-runtime", 1*time.Hour, "Maximum server runtime before auto-shutdown (0 to disable)")
 	serverRestartCmd.Flags().DurationVar(&restartTimeout, "timeout", 30*time.Second, "Timeout waiting for server to stop before restart")
@@ -158,6 +176,32 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 		}
 	}()
 
+	// Create cancellable context for web server
+	webCtx, webCancel := context.WithCancel(context.Background())
+	defer webCancel()
+
+	// Start web server if enabled
+	if !serverNoWeb {
+		webConfig := web.Config{
+			Port:        serverWebPort,
+			Host:        "127.0.0.1",
+			OpenBrowser: serverOpenBrowser,
+		}
+
+		var err error
+		webServer, err = web.New(webConfig, db)
+		if err != nil {
+			log.Printf("Warning: failed to create web server: %v", err)
+		} else {
+			go func() {
+				if err := webServer.Start(webCtx); err != nil {
+					log.Printf("Web server error: %v", err)
+				}
+			}()
+			log.Printf("Web server starting on http://127.0.0.1:%d", serverWebPort)
+		}
+	}
+
 	// Start GitHub Actions monitoring worker
 	if err := startActionsWorker(); err != nil {
 		log.Printf("Warning: failed to start actions worker: %v", err)
@@ -186,6 +230,10 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 
 	// Stop idle tracker
 	srvWithHealth.IdleTracker.Stop()
+
+	// Stop web server
+	webCancel()
+	stopWebServer()
 
 	// Stop rotation scheduler
 	stopRotationScheduler()
@@ -404,5 +452,18 @@ func startRotationScheduler(db store.Store) {
 func stopRotationScheduler() {
 	if rotationScheduler != nil {
 		rotationScheduler.Stop()
+	}
+}
+
+// stopWebServer stops the web server
+func stopWebServer() {
+	if webServer != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := webServer.Shutdown(ctx); err != nil {
+			log.Printf("Warning: failed to shutdown web server: %v", err)
+		} else {
+			log.Println("Web server stopped")
+		}
 	}
 }

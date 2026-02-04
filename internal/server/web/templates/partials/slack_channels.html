@@ -1,0 +1,36 @@
+{{define "slack_channels.html"}}
+{{if .error}}
+<div class="p-4 text-center text-red-500 dark:text-red-400 text-sm">
+    {{.error}}
+</div>
+{{else if .channels}}
+<ul class="space-y-1">
+    {{range .channels}}
+    <li>
+        <button
+            data-channel="{{.ID}}"
+            onclick="selectChannel('{{.ID}}', '{{.Name}}')"
+            class="w-full text-left px-3 py-2 text-sm rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between group">
+            <div class="flex items-center min-w-0">
+                {{if .IsPrivate}}
+                <svg class="h-4 w-4 mr-2 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                {{else}}
+                <span class="text-gray-400 dark:text-gray-500 mr-2 flex-shrink-0">#</span>
+                {{end}}
+                <span class="truncate">{{.Name}}</span>
+            </div>
+            {{if .NumMembers}}
+            <span class="ml-2 text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">{{.NumMembers}}</span>
+            {{end}}
+        </button>
+    </li>
+    {{end}}
+</ul>
+{{else}}
+<div class="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+    No channels found
+</div>
+{{end}}
+{{end}}

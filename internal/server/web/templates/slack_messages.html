@@ -1,0 +1,158 @@
+{{template "layout" .}}
+
+{{define "content"}}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 dark:text-white sm:text-3xl sm:truncate">
+                Slack Messages
+            </h2>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Browse and search messages from your Slack workspace
+            </p>
+        </div>
+        <div class="mt-4 flex md:mt-0 md:ml-4">
+            <a href="/slack" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Settings
+            </a>
+        </div>
+    </div>
+
+    {{if not .Connected}}
+    <!-- Not connected warning -->
+    <div class="rounded-md bg-yellow-50 dark:bg-yellow-900/50 p-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Slack Not Connected</h3>
+                <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                    <p>You need to connect Slack to view messages. <a href="/slack" class="font-medium underline">Connect Slack</a> first.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{else}}
+    <div class="flex flex-col lg:flex-row gap-6">
+        <!-- Channels sidebar -->
+        <div class="lg:w-72 flex-shrink-0">
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-sm font-medium text-gray-900 dark:text-white">Channels</h3>
+                </div>
+                <div class="p-2" id="channel-list" hx-get="/api/slack/channels" hx-trigger="load" hx-swap="innerHTML">
+                    <div class="flex items-center justify-center py-4">
+                        <svg class="animate-spin h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">Loading channels...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div class="mt-4 bg-white dark:bg-gray-800 shadow rounded-lg">
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-sm font-medium text-gray-900 dark:text-white">Search Messages</h3>
+                </div>
+                <div class="p-4">
+                    <form hx-get="/api/slack/search" hx-target="#message-list" hx-swap="innerHTML" hx-indicator="#search-indicator">
+                        <div class="flex space-x-2">
+                            <input type="text" name="q" placeholder="Search messages..."
+                                class="flex-1 shadow-sm block w-full text-sm py-2 px-3 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 focus:ring-indigo-500 focus:border-indigo-500">
+                            <button type="submit"
+                                class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+                    <div id="search-indicator" class="htmx-indicator mt-2 text-center">
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Searching...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages area -->
+        <div class="flex-1 min-w-0">
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-900 dark:text-white" id="channel-name">Messages</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400" id="channel-info">Select a channel to view messages</p>
+                    </div>
+                    <button id="refresh-btn" onclick="refreshMessages()" class="hidden inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+                <div id="message-list" class="divide-y divide-gray-200 dark:divide-gray-700 max-h-[600px] overflow-y-auto">
+                    <div class="p-8 text-center text-gray-500 dark:text-gray-400">
+                        <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        <p class="mt-2">Select a channel to view messages</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{end}}
+</div>
+
+<script>
+let currentChannel = null;
+let currentChannelName = '';
+
+function selectChannel(channelId, channelName) {
+    currentChannel = channelId;
+    currentChannelName = channelName;
+
+    // Update UI
+    document.getElementById('channel-name').textContent = '#' + channelName;
+    document.getElementById('channel-info').textContent = 'Loading messages...';
+    document.getElementById('refresh-btn').classList.remove('hidden');
+
+    // Highlight selected channel
+    document.querySelectorAll('[data-channel]').forEach(el => {
+        el.classList.remove('bg-indigo-50', 'dark:bg-indigo-900/50', 'text-indigo-600', 'dark:text-indigo-400');
+        el.classList.add('hover:bg-gray-50', 'dark:hover:bg-gray-700');
+    });
+    const selectedEl = document.querySelector(`[data-channel="${channelId}"]`);
+    if (selectedEl) {
+        selectedEl.classList.add('bg-indigo-50', 'dark:bg-indigo-900/50', 'text-indigo-600', 'dark:text-indigo-400');
+        selectedEl.classList.remove('hover:bg-gray-50', 'dark:hover:bg-gray-700');
+    }
+
+    // Fetch messages
+    htmx.ajax('GET', `/api/slack/messages?channel=${channelId}`, {target: '#message-list', swap: 'innerHTML'});
+}
+
+function refreshMessages() {
+    if (currentChannel) {
+        htmx.ajax('GET', `/api/slack/messages?channel=${currentChannel}`, {target: '#message-list', swap: 'innerHTML'});
+    }
+}
+
+// Update channel info after messages load
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.target.id === 'message-list' && currentChannel) {
+        const count = evt.detail.target.querySelectorAll('[data-message]').length;
+        document.getElementById('channel-info').textContent = count + ' messages';
+    }
+});
+</script>
+{{end}}

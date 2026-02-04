@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/inovacc/clonr/internal/client/grpc"
-	"github.com/inovacc/clonr/internal/core"
+	"github.com/inovacc/clonr/internal/service"
+	"github.com/inovacc/clonr/internal/store"
 )
 
 //go:embed templates/*.html templates/partials/*.html
@@ -41,26 +41,22 @@ func DefaultConfig() Config {
 
 // Server represents the web server
 type Server struct {
-	httpServer *http.Server
-	grpcClient *grpc.Client
-	pm         *core.ProfileManager
-	config     Config
-	templates  map[string]*template.Template
+	httpServer       *http.Server
+	config           Config
+	templates        map[string]*template.Template
+	sseHub           *SSEHub
+	profileService   *service.ProfileService
+	workspaceService *service.WorkspaceService
+	slackService     *service.SlackService
+	store            store.Store
 }
 
-// New creates a new web server
-func New(config Config) (*Server, error) {
-	// Connect to gRPC server
-	grpcClient, err := grpc.GetClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to gRPC server: %w", err)
-	}
-
-	// Create profile manager
-	pm, err := core.NewProfileManager()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create profile manager: %w", err)
-	}
+// New creates a new web server with direct database access
+func New(config Config, s store.Store) (*Server, error) {
+	// Create services with direct store access
+	profileSvc := service.NewProfileService(s)
+	workspaceSvc := service.NewWorkspaceService(s)
+	slackSvc := service.NewSlackService(profileSvc)
 
 	// Parse templates
 	tmpl, err := parseTemplates()
@@ -68,11 +64,18 @@ func New(config Config) (*Server, error) {
 		return nil, fmt.Errorf("failed to parse templates: %w", err)
 	}
 
+	// Create SSE hub
+	sseHub := NewSSEHub()
+	go sseHub.Run()
+
 	return &Server{
-		grpcClient: grpcClient,
-		pm:         pm,
-		config:     config,
-		templates:  tmpl,
+		config:           config,
+		templates:        tmpl,
+		sseHub:           sseHub,
+		profileService:   profileSvc,
+		workspaceService: workspaceSvc,
+		slackService:     slackSvc,
+		store:            s,
 	}, nil
 }
 
@@ -141,8 +144,10 @@ func parseTemplates() (map[string]*template.Template, error) {
 		"index.html",
 		"profiles.html",
 		"profile_add.html",
+		"profile_edit.html",
 		"workspaces.html",
 		"slack.html",
+		"slack_messages.html",
 	}
 
 	for _, page := range pageTemplates {
@@ -300,4 +305,9 @@ func (s *Server) renderPartial(w http.ResponseWriter, templateName string, data 
 		log.Printf("Template error: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
+}
+
+// Address returns the web server address
+func (s *Server) Address() string {
+	return "http://" + net.JoinHostPort(s.config.Host, fmt.Sprintf("%d", s.config.Port))
 }
