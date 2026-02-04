@@ -301,3 +301,137 @@ func (pm *ProfileManager) RefreshProfile(ctx context.Context, name string) error
 
 	return pm.client.SaveProfile(profile) //nolint:contextcheck // a client manages its own timeout
 }
+
+// AddNotifyChannel adds a notification channel to a profile.
+// Sensitive data in the config map is encrypted using the profile's encryption.
+func (pm *ProfileManager) AddNotifyChannel(profileName string, channel *model.NotifyChannel) error {
+	profile, err := pm.GetProfile(profileName)
+	if err != nil {
+		return err
+	}
+
+	// Encrypt sensitive config values
+	encryptedConfig := make(map[string]string)
+
+	for key, value := range channel.Config {
+		if isSensitiveKey(key) && value != "" {
+			encrypted, encErr := tpm.EncryptToken(value, profileName, string(channel.Type))
+			if encErr != nil {
+				return fmt.Errorf("failed to encrypt %s: %w", key, encErr)
+			}
+
+			encryptedConfig[key] = string(encrypted)
+		} else {
+			encryptedConfig[key] = value
+		}
+	}
+
+	channel.Config = encryptedConfig
+
+	// Check if channel with same ID exists, replace it
+	found := false
+
+	for i, ch := range profile.NotifyChannels {
+		if ch.ID == channel.ID {
+			profile.NotifyChannels[i] = *channel
+			found = true
+
+			break
+		}
+	}
+
+	if !found {
+		profile.NotifyChannels = append(profile.NotifyChannels, *channel)
+	}
+
+	return pm.client.SaveProfile(profile) //nolint:contextcheck // a client manages its own timeout
+}
+
+// RemoveNotifyChannel removes a notification channel from a profile.
+func (pm *ProfileManager) RemoveNotifyChannel(profileName, channelID string) error {
+	profile, err := pm.GetProfile(profileName)
+	if err != nil {
+		return err
+	}
+
+	newChannels := make([]model.NotifyChannel, 0, len(profile.NotifyChannels))
+
+	for _, ch := range profile.NotifyChannels {
+		if ch.ID != channelID {
+			newChannels = append(newChannels, ch)
+		}
+	}
+
+	profile.NotifyChannels = newChannels
+
+	return pm.client.SaveProfile(profile) //nolint:contextcheck // a client manages its own timeout
+}
+
+// GetNotifyChannel retrieves a notification channel from a profile.
+func (pm *ProfileManager) GetNotifyChannel(profileName, channelID string) (*model.NotifyChannel, error) {
+	profile, err := pm.GetProfile(profileName)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, ch := range profile.NotifyChannels {
+		if ch.ID == channelID {
+			return &ch, nil
+		}
+	}
+
+	return nil, fmt.Errorf("channel %s not found in profile %s", channelID, profileName)
+}
+
+// GetNotifyChannelByType retrieves the first notification channel of a given type from a profile.
+func (pm *ProfileManager) GetNotifyChannelByType(profileName string, channelType model.ChannelType) (*model.NotifyChannel, error) {
+	profile, err := pm.GetProfile(profileName)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, ch := range profile.NotifyChannels {
+		if ch.Type == channelType {
+			return &ch, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// DecryptChannelConfig decrypts sensitive values in a channel's config.
+func (pm *ProfileManager) DecryptChannelConfig(profileName string, channel *model.NotifyChannel) (map[string]string, error) {
+	decrypted := make(map[string]string)
+
+	for key, value := range channel.Config {
+		if isSensitiveKey(key) && value != "" {
+			plaintext, err := tpm.DecryptToken([]byte(value), profileName, string(channel.Type))
+			if err != nil {
+				// If decryption fails, the value might not be encrypted
+				decrypted[key] = value
+			} else {
+				decrypted[key] = plaintext
+			}
+		} else {
+			decrypted[key] = value
+		}
+	}
+
+	return decrypted, nil
+}
+
+// isSensitiveKey returns true if the config key contains sensitive data.
+func isSensitiveKey(key string) bool {
+	sensitiveKeys := []string{
+		"token", "secret", "password", "api_key", "webhook_url",
+		"bot_token", "client_secret", "hmac_secret",
+	}
+
+	for _, k := range sensitiveKeys {
+		if key == k {
+			return true
+		}
+	}
+
+	return false
+}

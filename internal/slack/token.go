@@ -9,6 +9,7 @@ import (
 	"github.com/inovacc/clonr/internal/auth"
 	"github.com/inovacc/clonr/internal/core"
 	"github.com/inovacc/clonr/internal/crypto/tpm"
+	"github.com/inovacc/clonr/internal/model"
 )
 
 const (
@@ -26,14 +27,15 @@ type slackConfig struct {
 }
 
 // ResolveSlackToken resolves a Slack token from various sources.
-// Priority: flagValue -> environment variables -> stored config -> config file.
+// Priority: flagValue -> env vars -> active profile -> global config -> config file.
 func ResolveSlackToken(flagValue string) (token, source string, err error) {
 	result, err := auth.NewResolver("Slack Bot Token").
 		WithFlagValue(flagValue).
 		WithEnvs(SlackTokenEnvVar, SlackBotTokenEnvVar).
+		WithProvider(profileTokenProvider()).
 		WithProvider(storedTokenProvider()).
 		WithProvider(configFileProvider()).
-		WithHelpMessage(fmt.Sprintf("Get a Slack Bot Token at: %s", SlackTokenURL)).
+		WithHelpMessage(fmt.Sprintf("Get a Slack Bot Token at: %s\n\nOr connect via OAuth:\n  clonr pm slack connect --client-id <id> --client-secret <secret>", SlackTokenURL)).
 		Resolve()
 	if err != nil {
 		return "", "", err
@@ -42,17 +44,51 @@ func ResolveSlackToken(flagValue string) (token, source string, err error) {
 	return result.Token, string(result.Source), nil
 }
 
-// storedTokenProvider provides the token from the stored Slack config.
+// profileTokenProvider provides the token from the active profile's Slack channel.
+func profileTokenProvider() auth.TokenProvider {
+	return func() (string, string, error) {
+		pm, err := core.NewProfileManager()
+		if err != nil {
+			return "", "", nil //nolint:nilerr // Skip if profile manager unavailable
+		}
+
+		profile, err := pm.GetActiveProfile()
+		if err != nil || profile == nil {
+			return "", "", nil
+		}
+
+		// Find Slack channel in profile
+		channel, err := pm.GetNotifyChannelByType(profile.Name, model.ChannelSlack)
+		if err != nil || channel == nil {
+			return "", "", nil
+		}
+
+		// Decrypt channel config
+		config, err := pm.DecryptChannelConfig(profile.Name, channel)
+		if err != nil {
+			return "", "", nil //nolint:nilerr // Skip if decryption fails
+		}
+
+		// Get bot_token from config
+		if token, ok := config["bot_token"]; ok && token != "" {
+			return token, fmt.Sprintf("profile:%s", profile.Name), nil
+		}
+
+		return "", "", nil
+	}
+}
+
+// storedTokenProvider provides the token from the stored Slack config (legacy).
 func storedTokenProvider() auth.TokenProvider {
 	return func() (string, string, error) {
 		manager, err := core.NewSlackManager()
 		if err != nil {
-			return "", "", err
+			return "", "", nil //nolint:nilerr // Skip if manager unavailable
 		}
 
 		config, err := manager.GetConfig()
 		if err != nil {
-			return "", "", err
+			return "", "", nil //nolint:nilerr // Skip if config unavailable
 		}
 
 		if config == nil || len(config.EncryptedBotToken) == 0 {
@@ -61,7 +97,7 @@ func storedTokenProvider() auth.TokenProvider {
 
 		token, err := tpm.DecryptToken(config.EncryptedBotToken, "__slack__", "slack.com")
 		if err != nil {
-			return "", "", err
+			return "", "", nil //nolint:nilerr // Skip if decryption fails
 		}
 
 		return token, "stored-config", nil

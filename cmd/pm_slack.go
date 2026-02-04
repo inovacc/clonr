@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/inovacc/clonr/internal/core"
+	"github.com/inovacc/clonr/internal/model"
 	"github.com/inovacc/clonr/internal/slack"
 	"github.com/spf13/cobra"
 )
@@ -239,8 +240,10 @@ func init() {
 	pmSlackConnectCmd.Flags().String("client-secret", "", "Slack App Client Secret")
 	pmSlackConnectCmd.Flags().Int("port", 8338, "Local callback server port")
 	pmSlackConnectCmd.Flags().String("scopes", "", "OAuth scopes (comma-separated)")
-	pmSlackConnectCmd.Flags().Bool("save", true, "Save token to clonr config")
+	pmSlackConnectCmd.Flags().Bool("save", true, "Save token to active profile")
 	pmSlackConnectCmd.Flags().StringP("channel", "c", "", "Default channel for notifications")
+	pmSlackConnectCmd.Flags().StringP("profile", "p", "", "Profile to save token to (default: active profile)")
+	pmSlackConnectCmd.Flags().String("name", "slack", "Name for the Slack channel configuration")
 }
 
 func runPMSlackChannels(cmd *cobra.Command, _ []string) error {
@@ -807,6 +810,8 @@ func runPMSlackConnect(cmd *cobra.Command, _ []string) error {
 	scopes, _ := cmd.Flags().GetString("scopes")
 	saveToken, _ := cmd.Flags().GetBool("save")
 	channel, _ := cmd.Flags().GetString("channel")
+	profileName, _ := cmd.Flags().GetString("profile")
+	channelName, _ := cmd.Flags().GetString("name")
 
 	// Try environment variables if flags not provided
 	if clientID == "" {
@@ -870,21 +875,56 @@ Also configure OAuth redirect URL:
 
 	// Save token if requested
 	if saveToken {
-		manager, err := core.NewSlackManager()
+		pm, err := core.NewProfileManager()
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, warnStyle.Render("Warning: Could not save token: %v\n"), err)
+			_, _ = fmt.Fprintf(os.Stderr, warnStyle.Render("Warning: Could not connect to server: %v\n"), err)
 			_, _ = fmt.Fprintf(os.Stdout, "\nManually save your token:\n")
 			_, _ = fmt.Fprintf(os.Stdout, "  export SLACK_TOKEN=%s\n", result.AccessToken)
 
 			return nil
 		}
 
+		// Get target profile
+		var profile *model.Profile
+
+		if profileName != "" {
+			profile, err = pm.GetProfile(profileName)
+			if err != nil {
+				return fmt.Errorf("failed to get profile %q: %w", profileName, err)
+			}
+		} else {
+			profile, err = pm.GetActiveProfile()
+			if err != nil {
+				return fmt.Errorf("no active profile; use --profile to specify one or create a profile first")
+			}
+		}
+
+		// Prepare default channel
 		targetChannel := channel
 		if targetChannel == "" {
 			targetChannel = "#general"
 		}
 
-		if err := manager.AddBot(result.AccessToken, targetChannel); err != nil {
+		// Create NotifyChannel for Slack
+		notifyChannel := &model.NotifyChannel{
+			ID:   channelName,
+			Type: model.ChannelSlack,
+			Name: fmt.Sprintf("Slack - %s", result.Team.Name),
+			Config: map[string]string{
+				"bot_token":       result.AccessToken,
+				"default_channel": targetChannel,
+				"workspace_id":    result.Team.ID,
+				"workspace_name":  result.Team.Name,
+				"bot_user_id":     result.BotUserID,
+				"app_id":          result.AppID,
+			},
+			Enabled:   true,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
+		// Save to profile (AddNotifyChannel encrypts sensitive fields)
+		if err := pm.AddNotifyChannel(profile.Name, notifyChannel); err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, warnStyle.Render("Warning: Could not save token: %v\n"), err)
 			_, _ = fmt.Fprintf(os.Stdout, "\nManually save your token:\n")
 			_, _ = fmt.Fprintf(os.Stdout, "  export SLACK_TOKEN=%s\n", result.AccessToken)
@@ -892,7 +932,7 @@ Also configure OAuth redirect URL:
 			return nil
 		}
 
-		_, _ = fmt.Fprintln(os.Stdout, okStyle.Render("Token saved to clonr configuration!"))
+		_, _ = fmt.Fprintln(os.Stdout, okStyle.Render(fmt.Sprintf("Token saved to profile %q!", profile.Name)))
 		_, _ = fmt.Fprintln(os.Stdout, "")
 		_, _ = fmt.Fprintln(os.Stdout, "You can now use Slack commands:")
 		_, _ = fmt.Fprintln(os.Stdout, "  clonr pm slack channels")
@@ -905,8 +945,8 @@ Also configure OAuth redirect URL:
 		_, _ = fmt.Fprintln(os.Stdout, "To use this token:")
 		_, _ = fmt.Fprintf(os.Stdout, "  export SLACK_TOKEN=%s\n", result.AccessToken)
 		_, _ = fmt.Fprintln(os.Stdout, "")
-		_, _ = fmt.Fprintln(os.Stdout, "Or add to clonr:")
-		_, _ = fmt.Fprintf(os.Stdout, "  clonr slack add --bot-token %s --channel #general\n", result.AccessToken)
+		_, _ = fmt.Fprintln(os.Stdout, "Or connect with OAuth to save to profile:")
+		_, _ = fmt.Fprintln(os.Stdout, "  clonr pm slack connect --client-id <id> --client-secret <secret> --save")
 	}
 
 	return nil
