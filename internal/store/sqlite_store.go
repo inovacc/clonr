@@ -408,3 +408,33 @@ func (w *SQLiteWrapper) EnableSlackNotifications() error {
 func (w *SQLiteWrapper) DisableSlackNotifications() error {
 	return w.store.DisableSlackNotifications()
 }
+
+// Slack account operations
+
+func (w *SQLiteWrapper) SaveSlackAccount(account *model.SlackAccount) error {
+	return w.store.SaveSlackAccount(account)
+}
+
+func (w *SQLiteWrapper) GetSlackAccount(name string) (*model.SlackAccount, error) {
+	return w.store.GetSlackAccount(name)
+}
+
+func (w *SQLiteWrapper) GetActiveSlackAccount() (*model.SlackAccount, error) {
+	return w.store.GetActiveSlackAccount()
+}
+
+func (w *SQLiteWrapper) SetActiveSlackAccount(name string) error {
+	return w.store.SetActiveSlackAccount(name)
+}
+
+func (w *SQLiteWrapper) ListSlackAccounts() ([]*model.SlackAccount, error) {
+	return w.store.ListSlackAccounts()
+}
+
+func (w *SQLiteWrapper) DeleteSlackAccount(name string) error {
+	return w.store.DeleteSlackAccount(name)
+}
+
+func (w *SQLiteWrapper) SlackAccountExists(name string) (bool, error) {
+	return w.store.SlackAccountExists(name)
+}

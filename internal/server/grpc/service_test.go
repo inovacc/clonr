@@ -346,6 +346,35 @@ func (m *mockStore) DisableSlackNotifications() error {
 	return nil
 }
 
+// Slack account operations
+func (m *mockStore) SaveSlackAccount(_ *model.SlackAccount) error {
+	return nil
+}
+
+func (m *mockStore) GetSlackAccount(_ string) (*model.SlackAccount, error) {
+	return nil, nil
+}
+
+func (m *mockStore) GetActiveSlackAccount() (*model.SlackAccount, error) {
+	return nil, nil
+}
+
+func (m *mockStore) SetActiveSlackAccount(_ string) error {
+	return nil
+}
+
+func (m *mockStore) ListSlackAccounts() ([]*model.SlackAccount, error) {
+	return nil, nil
+}
+
+func (m *mockStore) DeleteSlackAccount(_ string) error {
+	return nil
+}
+
+func (m *mockStore) SlackAccountExists(_ string) (bool, error) {
+	return false, nil
+}
+
 func TestNewService(t *testing.T) {
 	mock := &mockStore{}
 

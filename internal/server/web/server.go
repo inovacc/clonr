@@ -41,14 +41,15 @@ func DefaultConfig() Config {
 
 // Server represents the web server
 type Server struct {
-	httpServer       *http.Server
-	config           Config
-	templates        map[string]*template.Template
-	sseHub           *SSEHub
-	profileService   *service.ProfileService
-	workspaceService *service.WorkspaceService
-	slackService     *service.SlackService
-	store            store.Store
+	httpServer          *http.Server
+	config              Config
+	templates           map[string]*template.Template
+	sseHub              *SSEHub
+	profileService      *service.ProfileService
+	workspaceService    *service.WorkspaceService
+	slackService        *service.SlackService
+	slackAccountService *service.SlackAccountService
+	store               store.Store
 }
 
 // New creates a new web server with direct database access
@@ -56,7 +57,8 @@ func New(config Config, s store.Store) (*Server, error) {
 	// Create services with direct store access
 	profileSvc := service.NewProfileService(s)
 	workspaceSvc := service.NewWorkspaceService(s)
-	slackSvc := service.NewSlackService(profileSvc)
+	slackAccountSvc := service.NewSlackAccountService(s)
+	slackSvc := service.NewSlackService(slackAccountSvc)
 
 	// Parse templates
 	tmpl, err := parseTemplates()
@@ -69,13 +71,14 @@ func New(config Config, s store.Store) (*Server, error) {
 	go sseHub.Run()
 
 	return &Server{
-		config:           config,
-		templates:        tmpl,
-		sseHub:           sseHub,
-		profileService:   profileSvc,
-		workspaceService: workspaceSvc,
-		slackService:     slackSvc,
-		store:            s,
+		config:              config,
+		templates:           tmpl,
+		sseHub:              sseHub,
+		profileService:      profileSvc,
+		workspaceService:    workspaceSvc,
+		slackService:        slackSvc,
+		slackAccountService: slackAccountSvc,
+		store:               s,
 	}, nil
 }
 
@@ -148,6 +151,8 @@ func parseTemplates() (map[string]*template.Template, error) {
 		"workspaces.html",
 		"slack.html",
 		"slack_messages.html",
+		"slack_accounts.html",
+		"slack_account_add.html",
 	}
 
 	for _, page := range pageTemplates {

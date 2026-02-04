@@ -186,3 +186,19 @@ func sqlcSlackConfigToModel(row sqlc.SlackConfig) *model.SlackConfig {
 		UpdatedAt:           row.UpdatedAt,
 	}
 }
+
+// sqlcSlackAccountToModel converts a sqlc SlackAccount to a model.SlackAccount.
+func sqlcSlackAccountToModel(row sqlc.SlackAccount) *model.SlackAccount {
+	return &model.SlackAccount{
+		Name:              row.Name,
+		WorkspaceID:       derefString(row.WorkspaceID),
+		WorkspaceName:     derefString(row.WorkspaceName),
+		BotUserID:         derefString(row.BotUserID),
+		TeamID:            derefString(row.TeamID),
+		Default:           derefInt64ToBool(row.IsDefault),
+		EncryptedBotToken: row.EncryptedBotToken,
+		TokenStorage:      model.TokenStorage(derefString(row.TokenStorage)),
+		CreatedAt:         row.CreatedAt,
+		LastUsedAt:        derefTime(row.LastUsedAt),
+	}
+}

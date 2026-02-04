@@ -812,3 +812,122 @@ func (s *Store) DisableSlackNotifications() error {
 	ctx := newContext()
 	return s.queries.DisableSlackNotifications(ctx)
 }
+
+// ============================================================================
+// Slack Account Operations
+// ============================================================================
+
+func (s *Store) SaveSlackAccount(account *model.SlackAccount) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ctx := newContext()
+	tokenStorageStr := string(account.TokenStorage)
+
+	exists, _ := s.queries.SlackAccountExists(ctx, account.Name)
+	if exists == 1 {
+		return s.queries.UpdateSlackAccount(ctx, sqlc.UpdateSlackAccountParams{
+			WorkspaceID:       ptrString(account.WorkspaceID),
+			WorkspaceName:     ptrString(account.WorkspaceName),
+			BotUserID:         ptrString(account.BotUserID),
+			TeamID:            ptrString(account.TeamID),
+			EncryptedBotToken: account.EncryptedBotToken,
+			TokenStorage:      ptrString(tokenStorageStr),
+			Name:              account.Name,
+		})
+	}
+
+	isDefault := int64(0)
+	if account.Default {
+		isDefault = 1
+	}
+
+	_, err := s.queries.InsertSlackAccount(ctx, sqlc.InsertSlackAccountParams{
+		Name:              account.Name,
+		WorkspaceID:       ptrString(account.WorkspaceID),
+		WorkspaceName:     ptrString(account.WorkspaceName),
+		BotUserID:         ptrString(account.BotUserID),
+		TeamID:            ptrString(account.TeamID),
+		IsDefault:         ptrInt64(isDefault),
+		EncryptedBotToken: account.EncryptedBotToken,
+		TokenStorage:      ptrString(tokenStorageStr),
+	})
+	return err
+}
+
+func (s *Store) GetSlackAccount(name string) (*model.SlackAccount, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	ctx := newContext()
+	row, err := s.queries.GetSlackAccount(ctx, name)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return sqlcSlackAccountToModel(row), nil
+}
+
+func (s *Store) GetActiveSlackAccount() (*model.SlackAccount, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	ctx := newContext()
+	row, err := s.queries.GetActiveSlackAccount(ctx)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return sqlcSlackAccountToModel(row), nil
+}
+
+func (s *Store) SetActiveSlackAccount(name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ctx := newContext()
+	return s.queries.SetActiveSlackAccount(ctx, name)
+}
+
+func (s *Store) ListSlackAccounts() ([]*model.SlackAccount, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	ctx := newContext()
+	rows, err := s.queries.ListSlackAccounts(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	accounts := make([]*model.SlackAccount, 0, len(rows))
+	for _, row := range rows {
+		accounts = append(accounts, sqlcSlackAccountToModel(row))
+	}
+	return accounts, nil
+}
+
+func (s *Store) DeleteSlackAccount(name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ctx := newContext()
+	return s.queries.DeleteSlackAccount(ctx, name)
+}
+
+func (s *Store) SlackAccountExists(name string) (bool, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	ctx := newContext()
+	result, err := s.queries.SlackAccountExists(ctx, name)
+	if err != nil {
+		return false, err
+	}
+	return result == 1, nil
+}

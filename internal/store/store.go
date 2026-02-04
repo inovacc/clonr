@@ -114,6 +114,15 @@ type Store interface {
 	DeleteSlackConfig() error
 	EnableSlackNotifications() error
 	DisableSlackNotifications() error
+
+	// Slack account operations
+	SaveSlackAccount(account *model.SlackAccount) error
+	GetSlackAccount(name string) (*model.SlackAccount, error)
+	GetActiveSlackAccount() (*model.SlackAccount, error)
+	SetActiveSlackAccount(name string) error
+	ListSlackAccounts() ([]*model.SlackAccount, error)
+	DeleteSlackAccount(name string) error
+	SlackAccountExists(name string) (bool, error)
 }
 
 var (

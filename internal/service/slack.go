@@ -2,77 +2,67 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/inovacc/clonr/internal/model"
 	"github.com/inovacc/clonr/internal/slack"
 )
 
-// SlackService provides Slack operations with profile-based token retrieval.
+// SlackService provides Slack operations with account-based token retrieval.
 type SlackService struct {
-	profileService *ProfileService
+	accountService *SlackAccountService
 }
 
-// NewSlackService creates a new SlackService.
-func NewSlackService(profileService *ProfileService) *SlackService {
-	return &SlackService{profileService: profileService}
+// NewSlackService creates a new SlackService with Slack account support.
+func NewSlackService(accountService *SlackAccountService) *SlackService {
+	return &SlackService{accountService: accountService}
 }
 
-// GetSlackClient creates a Slack client from the active profile's token.
+// GetSlackClient creates a Slack client from the active Slack account's token.
 func (ss *SlackService) GetSlackClient() (*slack.Client, error) {
-	activeProfile, err := ss.profileService.GetActiveProfile()
+	account, err := ss.accountService.GetActiveAccount()
 	if err != nil {
-		return nil, fmt.Errorf("no active profile: %w", err)
+		if errors.Is(err, ErrNoActiveSlackAccount) {
+			return nil, fmt.Errorf("no active Slack account configured")
+		}
+
+		return nil, fmt.Errorf("failed to get active Slack account: %w", err)
 	}
 
-	channel, err := ss.profileService.GetNotifyChannelByType(activeProfile.Name, model.ChannelSlack)
+	token, err := ss.accountService.GetDecryptedToken(account.Name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get Slack channel: %w", err)
-	}
-
-	if channel == nil {
-		return nil, fmt.Errorf("slack not connected")
-	}
-
-	// Decrypt the channel config to get the plain text token
-	decryptedConfig, err := ss.profileService.DecryptChannelConfig(activeProfile.Name, channel)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt Slack config: %w", err)
-	}
-
-	token := decryptedConfig["bot_token"]
-	if token == "" {
-		return nil, fmt.Errorf("no Slack token found")
+		return nil, fmt.Errorf("failed to get Slack token: %w", err)
 	}
 
 	return slack.NewClient(token, slack.ClientOptions{}), nil
 }
 
-// IsConnected checks if Slack is connected for the active profile.
+// IsConnected checks if Slack is connected (has an active account).
 func (ss *SlackService) IsConnected() (bool, string, error) {
-	activeProfile, err := ss.profileService.GetActiveProfile()
+	account, err := ss.accountService.GetActiveAccount()
 	if err != nil {
+		if errors.Is(err, ErrNoActiveSlackAccount) {
+			return false, "", nil
+		}
+
 		return false, "", err
 	}
 
-	channel, _ := ss.profileService.GetNotifyChannelByType(activeProfile.Name, model.ChannelSlack)
-
-	return channel != nil, activeProfile.Name, nil
+	return true, account.Name, nil
 }
 
 // GetStatus returns Slack connection status.
-func (ss *SlackService) GetStatus() (connected bool, profileName string, channelName string, err error) {
-	activeProfile, err := ss.profileService.GetActiveProfile()
+func (ss *SlackService) GetStatus() (connected bool, accountName string, workspaceName string, err error) {
+	account, err := ss.accountService.GetActiveAccount()
 	if err != nil {
+		if errors.Is(err, ErrNoActiveSlackAccount) {
+			return false, "", "", nil
+		}
+
 		return false, "", "", err
 	}
 
-	channel, _ := ss.profileService.GetNotifyChannelByType(activeProfile.Name, model.ChannelSlack)
-	if channel == nil {
-		return false, activeProfile.Name, "", nil
-	}
-
-	return true, activeProfile.Name, channel.Name, nil
+	return true, account.Name, account.WorkspaceName, nil
 }
 
 // ListChannels returns list of Slack channels.

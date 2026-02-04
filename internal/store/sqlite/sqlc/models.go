@@ -109,6 +109,19 @@ type ServerEncryptionConfig struct {
 	ConfiguredAt time.Time `json:"configured_at"`
 }
 
+type SlackAccount struct {
+	Name              string     `json:"name"`
+	WorkspaceID       *string    `json:"workspace_id"`
+	WorkspaceName     *string    `json:"workspace_name"`
+	BotUserID         *string    `json:"bot_user_id"`
+	TeamID            *string    `json:"team_id"`
+	IsDefault         *int64     `json:"is_default"`
+	EncryptedBotToken []byte     `json:"encrypted_bot_token"`
+	TokenStorage      *string    `json:"token_storage"`
+	CreatedAt         time.Time  `json:"created_at"`
+	LastUsedAt        *time.Time `json:"last_used_at"`
+}
+
 type SlackConfig struct {
 	ID                  int64     `json:"id"`
 	Enabled             *int64    `json:"enabled"`
