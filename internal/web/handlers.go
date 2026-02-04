@@ -2,6 +2,7 @@ package web
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -219,7 +220,8 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 	// Check if profile exists
 	exists, err := s.grpcClient.ProfileExists(name) //nolint:contextcheck // client manages its own timeout
 	if err != nil {
-		s.jsonError(w, "Failed to check profile existence", http.StatusInternalServerError)
+		log.Printf("Failed to check profile existence for %q: %v", name, err)
+		s.jsonError(w, fmt.Sprintf("Failed to check profile existence: %v", err), http.StatusInternalServerError)
 		return
 	}
 	if exists {
@@ -230,11 +232,12 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 	// Check workspace exists
 	wsExists, err := s.grpcClient.WorkspaceExists(workspace) //nolint:contextcheck // client manages its own timeout
 	if err != nil {
-		s.jsonError(w, "Failed to check workspace existence", http.StatusInternalServerError)
+		log.Printf("Failed to check workspace existence for %q: %v", workspace, err)
+		s.jsonError(w, fmt.Sprintf("Failed to check workspace existence: %v", err), http.StatusInternalServerError)
 		return
 	}
 	if !wsExists {
-		s.jsonError(w, "Workspace not found", http.StatusBadRequest)
+		s.jsonError(w, fmt.Sprintf("Workspace %q not found. Create it first.", workspace), http.StatusBadRequest)
 		return
 	}
 
@@ -243,15 +246,22 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 		// Validate token
 		ctx := r.Context()
 		valid, username, err := validateGitHubToken(ctx, token, host)
-		if err != nil || !valid {
-			s.jsonError(w, "Invalid or expired token", http.StatusBadRequest)
+		if err != nil {
+			log.Printf("Token validation error for host %q: %v", host, err)
+			s.jsonError(w, fmt.Sprintf("Token validation failed: %v", err), http.StatusBadRequest)
 			return
 		}
+		if !valid {
+			s.jsonError(w, "Invalid or expired token. Please check your Personal Access Token.", http.StatusBadRequest)
+			return
+		}
+		log.Printf("Token validated successfully for user %q on host %q", username, host)
 
 		// Encrypt token
 		encryptedToken, err := tpm.EncryptToken(token, name, host)
 		if err != nil {
-			s.jsonError(w, "Failed to encrypt token", http.StatusInternalServerError)
+			log.Printf("Token encryption failed: %v", err)
+			s.jsonError(w, fmt.Sprintf("Failed to encrypt token: %v", err), http.StatusInternalServerError)
 			return
 		}
 
@@ -279,7 +289,8 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := s.grpcClient.SaveProfile(profile); err != nil { //nolint:contextcheck // client manages its own timeout
-			s.jsonError(w, "Failed to save profile", http.StatusInternalServerError)
+			log.Printf("Failed to save profile: %v", err)
+			s.jsonError(w, fmt.Sprintf("Failed to save profile: %v", err), http.StatusInternalServerError)
 			return
 		}
 

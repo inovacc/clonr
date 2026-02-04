@@ -103,9 +103,11 @@ func (s *Server) handleGitHubOAuthStart(w http.ResponseWriter, r *http.Request) 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
 
+		log.Printf("Starting OAuth flow for profile %q on host %q", name, host)
 		flow := core.NewOAuthFlow(host, model.DefaultScopes())
 
 		flow.OnDeviceCode(func(code, url string) {
+			log.Printf("OAuth device code received: %s, verify URL: %s", code, url)
 			oauthSessionMutex.Lock()
 			session.UserCode = code
 			session.VerifyURL = url
@@ -114,6 +116,7 @@ func (s *Server) handleGitHubOAuthStart(w http.ResponseWriter, r *http.Request) 
 
 		result, err := flow.Run(ctx)
 		if err != nil {
+			log.Printf("OAuth flow failed for profile %q: %v", name, err)
 			oauthSessionMutex.Lock()
 			session.Error = err.Error()
 			oauthSessionMutex.Unlock()
@@ -130,27 +133,58 @@ func (s *Server) handleGitHubOAuthStart(w http.ResponseWriter, r *http.Request) 
 		oauthSessionMutex.Unlock()
 	}()
 
-	// Wait a bit for device code to be available
-	time.Sleep(500 * time.Millisecond)
+	// Wait for device code (up to 3 seconds)
+	var sess *OAuthSession
+	for i := 0; i < 6; i++ {
+		time.Sleep(500 * time.Millisecond)
+		oauthSessionMutex.RLock()
+		currSess, exists := oauthSessions[name]
+		oauthSessionMutex.RUnlock()
 
-	oauthSessionMutex.RLock()
-	sess, exists := oauthSessions[name]
-	oauthSessionMutex.RUnlock()
+		if !exists {
+			continue
+		}
 
-	if !exists || sess.UserCode == "" {
-		// Still waiting, return polling response
+		sess = currSess
+
+		// If error occurred, return immediately
+		if sess.Error != "" {
+			s.jsonResponse(w, map[string]any{
+				"status": "error",
+				"error":  sess.Error,
+			})
+			return
+		}
+
+		// If device code available, return it
+		if sess.UserCode != "" {
+			s.jsonResponse(w, map[string]any{
+				"status":     "waiting",
+				"user_code":  sess.UserCode,
+				"verify_url": sess.VerifyURL,
+				"message":    "Enter the code in your browser",
+			})
+			return
+		}
+	}
+
+	// After 3 seconds without a device code, the flow likely fell back to browser mode
+	if sess == nil || sess.UserCode == "" {
+		// Return an error suggesting PAT as alternative
 		s.jsonResponse(w, map[string]any{
-			"status":  "pending",
-			"message": "Starting OAuth flow...",
+			"status": "error",
+			"error":  "OAuth device flow not available. This may happen if gh CLI is not installed or GitHub doesn't support device flow for this configuration. Please use a Personal Access Token (PAT) instead.",
 		})
+		// Clean up the session
+		oauthSessionMutex.Lock()
+		delete(oauthSessions, name)
+		oauthSessionMutex.Unlock()
 		return
 	}
 
 	s.jsonResponse(w, map[string]any{
-		"status":    "waiting",
-		"user_code": sess.UserCode,
-		"verify_url": sess.VerifyURL,
-		"message":   "Enter the code in your browser",
+		"status":  "pending",
+		"message": "Starting OAuth flow...",
 	})
 }
 
