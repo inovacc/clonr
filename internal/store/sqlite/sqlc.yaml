@@ -20,7 +20,9 @@ sql:
           - column: "*.last_checked"
             go_type: "time.Time"
           - column: "*.last_used_at"
-            go_type: "time.Time"
+            go_type:
+              type: "time.Time"
+              pointer: true
           - column: "*.expires_at"
             go_type: "time.Time"
           - column: "*.synced_at"

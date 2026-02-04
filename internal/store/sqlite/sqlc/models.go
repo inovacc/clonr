@@ -21,14 +21,14 @@ type Config struct {
 }
 
 type DockerProfile struct {
-	ID             int64     `json:"id"`
-	Name           string    `json:"name"`
-	Registry       *string   `json:"registry"`
-	Username       string    `json:"username"`
-	EncryptedToken []byte    `json:"encrypted_token"`
-	TokenStorage   *string   `json:"token_storage"`
-	CreatedAt      time.Time `json:"created_at"`
-	LastUsedAt     time.Time `json:"last_used_at"`
+	ID             int64      `json:"id"`
+	Name           string     `json:"name"`
+	Registry       *string    `json:"registry"`
+	Username       string     `json:"username"`
+	EncryptedToken []byte     `json:"encrypted_token"`
+	TokenStorage   *string    `json:"token_storage"`
+	CreatedAt      time.Time  `json:"created_at"`
+	LastUsedAt     *time.Time `json:"last_used_at"`
 }
 
 type PendingRegistration struct {
@@ -43,18 +43,18 @@ type PendingRegistration struct {
 }
 
 type Profile struct {
-	ID             int64     `json:"id"`
-	Name           string    `json:"name"`
-	Host           *string   `json:"host"`
-	Username       *string   `json:"username"`
-	TokenStorage   *string   `json:"token_storage"`
-	Scopes         *string   `json:"scopes"`
-	IsDefault      *int64    `json:"is_default"`
-	EncryptedToken []byte    `json:"encrypted_token"`
-	Workspace      *string   `json:"workspace"`
-	NotifyChannels *string   `json:"notify_channels"`
-	CreatedAt      time.Time `json:"created_at"`
-	LastUsedAt     time.Time `json:"last_used_at"`
+	ID             int64      `json:"id"`
+	Name           string     `json:"name"`
+	Host           *string    `json:"host"`
+	Username       *string    `json:"username"`
+	TokenStorage   *string    `json:"token_storage"`
+	Scopes         *string    `json:"scopes"`
+	IsDefault      *int64     `json:"is_default"`
+	EncryptedToken []byte     `json:"encrypted_token"`
+	Workspace      *string    `json:"workspace"`
+	NotifyChannels *string    `json:"notify_channels"`
+	CreatedAt      time.Time  `json:"created_at"`
+	LastUsedAt     *time.Time `json:"last_used_at"`
 }
 
 type RegisteredClient struct {

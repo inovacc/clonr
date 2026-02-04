@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/inovacc/clonr/internal/model"
 	"github.com/inovacc/clonr/internal/standalone"
@@ -25,6 +26,13 @@ func derefInt64(i *int64) int64 {
 
 func derefInt64ToBool(i *int64) bool {
 	return i != nil && *i == 1
+}
+
+func derefTime(t *time.Time) time.Time {
+	if t == nil {
+		return time.Time{}
+	}
+	return *t
 }
 
 // sqlcRepoToModel converts a sqlc Repository to a model.Repository.
@@ -65,7 +73,7 @@ func sqlcProfileToModel(row sqlc.Profile) *model.Profile {
 		Workspace:      derefString(row.Workspace),
 		NotifyChannels: notifyChannels,
 		CreatedAt:      row.CreatedAt,
-		LastUsedAt:     row.LastUsedAt,
+		LastUsedAt:     derefTime(row.LastUsedAt),
 	}
 }
 
@@ -153,7 +161,7 @@ func sqlcDockerProfileToModel(row sqlc.DockerProfile) *model.DockerProfile {
 		EncryptedToken: row.EncryptedToken,
 		TokenStorage:   model.TokenStorage(derefString(row.TokenStorage)),
 		CreatedAt:      row.CreatedAt,
-		LastUsedAt:     row.LastUsedAt,
+		LastUsedAt:     derefTime(row.LastUsedAt),
 	}
 }
 
