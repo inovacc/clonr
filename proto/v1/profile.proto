@@ -18,6 +18,18 @@ message Profile {
   google.protobuf.Timestamp created_at = 8;
   google.protobuf.Timestamp last_used_at = 9;
   string workspace = 10;  // Associated workspace name
+  repeated NotifyChannel notify_channels = 11;  // Notification channels (Slack, etc.)
+}
+
+// NotifyChannel represents a notification channel configuration
+message NotifyChannel {
+  string id = 1;
+  string name = 2;
+  string type = 3;  // slack, webhook, email, etc.
+  bool enabled = 4;
+  map<string, string> config = 5;  // Channel-specific configuration (encrypted)
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
 }
 
 // SaveProfile RPC messages

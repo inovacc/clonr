@@ -88,6 +88,12 @@ func ModelToProtoProfile(profile *model.Profile) *v1.Profile {
 		return nil
 	}
 
+	// Convert notify channels
+	var protoChannels []*v1.NotifyChannel
+	for _, ch := range profile.NotifyChannels {
+		protoChannels = append(protoChannels, ModelToProtoNotifyChannel(&ch))
+	}
+
 	return &v1.Profile{
 		Name:           profile.Name,
 		Host:           profile.Host,
@@ -99,6 +105,7 @@ func ModelToProtoProfile(profile *model.Profile) *v1.Profile {
 		CreatedAt:      timestamppb.New(profile.CreatedAt),
 		LastUsedAt:     timestamppb.New(profile.LastUsedAt),
 		Workspace:      profile.Workspace,
+		NotifyChannels: protoChannels,
 	}
 }
 
@@ -106,6 +113,12 @@ func ModelToProtoProfile(profile *model.Profile) *v1.Profile {
 func ProtoToModelProfile(protoProfile *v1.Profile) *model.Profile {
 	if protoProfile == nil {
 		return nil
+	}
+
+	// Convert notify channels
+	var channels []model.NotifyChannel
+	for _, ch := range protoProfile.GetNotifyChannels() {
+		channels = append(channels, *ProtoToModelNotifyChannel(ch))
 	}
 
 	return &model.Profile{
@@ -119,6 +132,43 @@ func ProtoToModelProfile(protoProfile *v1.Profile) *model.Profile {
 		CreatedAt:      protoProfile.GetCreatedAt().AsTime(),
 		LastUsedAt:     protoProfile.GetLastUsedAt().AsTime(),
 		Workspace:      protoProfile.GetWorkspace(),
+		NotifyChannels: channels,
+	}
+}
+
+// NotifyChannel conversions
+
+// ModelToProtoNotifyChannel converts a model.NotifyChannel to a proto NotifyChannel
+func ModelToProtoNotifyChannel(ch *model.NotifyChannel) *v1.NotifyChannel {
+	if ch == nil {
+		return nil
+	}
+
+	return &v1.NotifyChannel{
+		Id:        ch.ID,
+		Name:      ch.Name,
+		Type:      string(ch.Type),
+		Enabled:   ch.Enabled,
+		Config:    ch.Config,
+		CreatedAt: timestamppb.New(ch.CreatedAt),
+		UpdatedAt: timestamppb.New(ch.UpdatedAt),
+	}
+}
+
+// ProtoToModelNotifyChannel converts a proto NotifyChannel to a model.NotifyChannel
+func ProtoToModelNotifyChannel(ch *v1.NotifyChannel) *model.NotifyChannel {
+	if ch == nil {
+		return nil
+	}
+
+	return &model.NotifyChannel{
+		ID:        ch.GetId(),
+		Name:      ch.GetName(),
+		Type:      model.ChannelType(ch.GetType()),
+		Enabled:   ch.GetEnabled(),
+		Config:    ch.GetConfig(),
+		CreatedAt: ch.GetCreatedAt().AsTime(),
+		UpdatedAt: ch.GetUpdatedAt().AsTime(),
 	}
 }
 
