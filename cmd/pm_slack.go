@@ -164,6 +164,33 @@ Examples:
 	RunE: runPMSlackAuth,
 }
 
+var pmSlackConnectCmd = &cobra.Command{
+	Use:   "connect",
+	Short: "Connect to Slack via OAuth",
+	Long: `Authenticate with Slack using OAuth flow.
+
+This command opens your browser to authorize clonr with your Slack workspace.
+After authorization, the bot token is automatically saved.
+
+Prerequisites:
+  1. Create a Slack App at https://api.slack.com/apps
+  2. Add OAuth redirect URL: http://localhost:8338/slack/callback
+  3. Add required Bot Token Scopes:
+     - channels:read, channels:history
+     - groups:read, groups:history
+     - search:read, users:read
+  4. Install the app to your workspace
+
+The Client ID and Client Secret can be provided via:
+  - --client-id and --client-secret flags
+  - SLACK_CLIENT_ID and SLACK_CLIENT_SECRET environment variables
+
+Examples:
+  clonr pm slack connect --client-id <id> --client-secret <secret>
+  SLACK_CLIENT_ID=xxx SLACK_CLIENT_SECRET=yyy clonr pm slack connect`,
+	RunE: runPMSlackConnect,
+}
+
 func init() {
 	pmCmd.AddCommand(pmSlackCmd)
 	pmSlackCmd.AddCommand(pmSlackChannelsCmd)
@@ -172,6 +199,7 @@ func init() {
 	pmSlackCmd.AddCommand(pmSlackThreadCmd)
 	pmSlackCmd.AddCommand(pmSlackUsersCmd)
 	pmSlackCmd.AddCommand(pmSlackAuthCmd)
+	pmSlackCmd.AddCommand(pmSlackConnectCmd)
 
 	// Channels flags
 	addPMCommonFlags(pmSlackChannelsCmd)
@@ -205,6 +233,14 @@ func init() {
 	// Users flags
 	addPMCommonFlags(pmSlackUsersCmd)
 	pmSlackUsersCmd.Flags().Int("limit", 100, "Maximum number of users to return")
+
+	// Connect flags
+	pmSlackConnectCmd.Flags().String("client-id", "", "Slack App Client ID")
+	pmSlackConnectCmd.Flags().String("client-secret", "", "Slack App Client Secret")
+	pmSlackConnectCmd.Flags().Int("port", 8338, "Local callback server port")
+	pmSlackConnectCmd.Flags().String("scopes", "", "OAuth scopes (comma-separated)")
+	pmSlackConnectCmd.Flags().Bool("save", true, "Save token to clonr config")
+	pmSlackConnectCmd.Flags().StringP("channel", "c", "", "Default channel for notifications")
 }
 
 func runPMSlackChannels(cmd *cobra.Command, _ []string) error {
@@ -757,6 +793,121 @@ func runPMSlackAuth(_ *cobra.Command, _ []string) error {
 	_, _ = fmt.Fprintln(os.Stdout, "")
 	_, _ = fmt.Fprintln(os.Stdout, "Or create ~/.config/clonr/slack.json:")
 	_, _ = fmt.Fprintln(os.Stdout, `  {"token": "xoxb-..."}`)
+	_, _ = fmt.Fprintln(os.Stdout, "")
+	_, _ = fmt.Fprintln(os.Stdout, "Or use OAuth flow:")
+	_, _ = fmt.Fprintln(os.Stdout, "  clonr pm slack connect --client-id <id> --client-secret <secret>")
+
+	return nil
+}
+
+func runPMSlackConnect(cmd *cobra.Command, _ []string) error {
+	clientID, _ := cmd.Flags().GetString("client-id")
+	clientSecret, _ := cmd.Flags().GetString("client-secret")
+	port, _ := cmd.Flags().GetInt("port")
+	scopes, _ := cmd.Flags().GetString("scopes")
+	saveToken, _ := cmd.Flags().GetBool("save")
+	channel, _ := cmd.Flags().GetString("channel")
+
+	// Try environment variables if flags not provided
+	if clientID == "" {
+		clientID = os.Getenv("SLACK_CLIENT_ID")
+	}
+
+	if clientSecret == "" {
+		clientSecret = os.Getenv("SLACK_CLIENT_SECRET")
+	}
+
+	if clientID == "" || clientSecret == "" {
+		return fmt.Errorf(`slack client ID and client secret are required
+
+Provide them via flags:
+  clonr pm slack connect --client-id <id> --client-secret <secret>
+
+Or via environment variables:
+  export SLACK_CLIENT_ID=<your-client-id>
+  export SLACK_CLIENT_SECRET=<your-client-secret>
+
+To get these credentials:
+  1. Go to https://api.slack.com/apps
+  2. Create a new app or select an existing one
+  3. Go to 'Basic Information' > 'App Credentials'
+  4. Copy the Client ID and Client Secret
+
+Also configure OAuth redirect URL:
+  1. Go to 'OAuth & Permissions'
+  2. Add redirect URL: http://localhost:%d/slack/callback`, port)
+	}
+
+	config := slack.OAuthConfig{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		Port:         port,
+		Scopes:       scopes,
+	}
+
+	_, _ = fmt.Fprintln(os.Stdout, "")
+	_, _ = fmt.Fprintln(os.Stdout, okStyle.Render("Starting Slack OAuth flow..."))
+	_, _ = fmt.Fprintln(os.Stdout, "")
+	_, _ = fmt.Fprintln(os.Stdout, "A browser window will open for authorization.")
+	_, _ = fmt.Fprintln(os.Stdout, dimStyle.Render("Waiting for authorization (timeout: 5 minutes)..."))
+	_, _ = fmt.Fprintln(os.Stdout, "")
+
+	result, err := slack.RunOAuthFlow(cmd.Context(), config, core.OpenBrowser)
+	if err != nil {
+		return fmt.Errorf("OAuth flow failed: %w", err)
+	}
+
+	_, _ = fmt.Fprintln(os.Stdout, "")
+	_, _ = fmt.Fprintln(os.Stdout, okStyle.Render("Authorization successful!"))
+	_, _ = fmt.Fprintln(os.Stdout, "")
+
+	// Display connection info
+	_, _ = fmt.Fprintf(os.Stdout, "  Workspace:  %s (%s)\n", result.Team.Name, result.Team.ID)
+	_, _ = fmt.Fprintf(os.Stdout, "  Bot User:   %s\n", result.BotUserID)
+	_, _ = fmt.Fprintf(os.Stdout, "  App ID:     %s\n", result.AppID)
+	_, _ = fmt.Fprintf(os.Stdout, "  Scopes:     %s\n", result.Scope)
+	_, _ = fmt.Fprintln(os.Stdout, "")
+
+	// Save token if requested
+	if saveToken {
+		manager, err := core.NewSlackManager()
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, warnStyle.Render("Warning: Could not save token: %v\n"), err)
+			_, _ = fmt.Fprintf(os.Stdout, "\nManually save your token:\n")
+			_, _ = fmt.Fprintf(os.Stdout, "  export SLACK_TOKEN=%s\n", result.AccessToken)
+
+			return nil
+		}
+
+		targetChannel := channel
+		if targetChannel == "" {
+			targetChannel = "#general"
+		}
+
+		if err := manager.AddBot(result.AccessToken, targetChannel); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, warnStyle.Render("Warning: Could not save token: %v\n"), err)
+			_, _ = fmt.Fprintf(os.Stdout, "\nManually save your token:\n")
+			_, _ = fmt.Fprintf(os.Stdout, "  export SLACK_TOKEN=%s\n", result.AccessToken)
+
+			return nil
+		}
+
+		_, _ = fmt.Fprintln(os.Stdout, okStyle.Render("Token saved to clonr configuration!"))
+		_, _ = fmt.Fprintln(os.Stdout, "")
+		_, _ = fmt.Fprintln(os.Stdout, "You can now use Slack commands:")
+		_, _ = fmt.Fprintln(os.Stdout, "  clonr pm slack channels")
+		_, _ = fmt.Fprintln(os.Stdout, "  clonr pm slack messages --channel general")
+		_, _ = fmt.Fprintln(os.Stdout, "  clonr pm slack search \"keyword\"")
+	} else {
+		_, _ = fmt.Fprintf(os.Stdout, "Your bot token (save it securely):\n")
+		_, _ = fmt.Fprintf(os.Stdout, "  %s\n", result.AccessToken)
+		_, _ = fmt.Fprintln(os.Stdout, "")
+		_, _ = fmt.Fprintln(os.Stdout, "To use this token:")
+		_, _ = fmt.Fprintf(os.Stdout, "  export SLACK_TOKEN=%s\n", result.AccessToken)
+		_, _ = fmt.Fprintln(os.Stdout, "")
+		_, _ = fmt.Fprintln(os.Stdout, "Or add to clonr:")
+		_, _ = fmt.Fprintf(os.Stdout, "  clonr slack add --bot-token %s --channel #general\n", result.AccessToken)
+	}
 
 	return nil
 }
