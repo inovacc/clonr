@@ -8,7 +8,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/inovacc/clonr/internal/cli"
-	"github.com/inovacc/clonr/internal/client/grpc"
 	"github.com/inovacc/clonr/internal/core"
 	"github.com/inovacc/clonr/internal/model"
 	"github.com/spf13/cobra"
@@ -55,7 +54,7 @@ func runGitClone(cmd *cobra.Command, args []string) error {
 		Workspace: workspace,
 	}
 
-	client, err := grpc.GetClient()
+	client, err := getClient()
 	if err != nil {
 		return err
 	}
@@ -187,7 +186,7 @@ func runGitClone(cmd *cobra.Command, args []string) error {
 	return core.SaveClonedRepoFromResult(result)
 }
 
-func createGitDefaultWorkspace(client *grpc.Client) error {
+func createGitDefaultWorkspace(client ClientInterface) error {
 	cfg, err := client.GetConfig()
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
@@ -211,7 +210,7 @@ func createGitDefaultWorkspace(client *grpc.Client) error {
 	return nil
 }
 
-func createGitWorkspaceFromSelection(client *grpc.Client, ws *model.Workspace) error {
+func createGitWorkspaceFromSelection(client ClientInterface, ws *model.Workspace) error {
 	path := ws.Path
 	if len(path) > 0 && path[0] == '~' {
 		home, err := os.UserHomeDir()
