@@ -25,22 +25,22 @@ const (
 
 // ArchiveManifest contains metadata about the archived repositories.
 type ArchiveManifest struct {
-	Version      int                 `json:"version"`
-	CreatedAt    time.Time           `json:"created_at"`
-	InstanceID   string              `json:"instance_id,omitempty"`
-	Repositories []ArchivedRepo      `json:"repositories"`
-	TotalSize    int64               `json:"total_size"`
-	Checksum     string              `json:"checksum"` // SHA256 of unencrypted zip
-	Compression  string              `json:"compression"`
-	Encryption   string              `json:"encryption"`
+	Version      int            `json:"version"`
+	CreatedAt    time.Time      `json:"created_at"`
+	InstanceID   string         `json:"instance_id,omitempty"`
+	Repositories []ArchivedRepo `json:"repositories"`
+	TotalSize    int64          `json:"total_size"`
+	Checksum     string         `json:"checksum"` // SHA256 of unencrypted zip
+	Compression  string         `json:"compression"`
+	Encryption   string         `json:"encryption"`
 }
 
 // ArchivedRepo represents a repository in the archive.
 type ArchivedRepo struct {
 	Name        string    `json:"name"`
 	URL         string    `json:"url,omitempty"`
-	Path        string    `json:"path"`          // Original path
-	ArchivePath string    `json:"archive_path"`  // Path inside archive
+	Path        string    `json:"path"`         // Original path
+	ArchivePath string    `json:"archive_path"` // Path inside archive
 	Size        int64     `json:"size"`
 	FileCount   int       `json:"file_count"`
 	LastCommit  string    `json:"last_commit,omitempty"`
@@ -49,11 +49,11 @@ type ArchivedRepo struct {
 
 // ArchiveOptions configures the archive creation process.
 type ArchiveOptions struct {
-	Password       string   // Encryption password
-	IncludeGitDir  bool     // Include .git directory (default: true)
-	ExcludePatterns []string // Glob patterns to exclude
-	CompressionLevel int    // 0-9, where 0 is store only, 9 is best compression
-	InstanceID     string   // Optional instance ID for manifest
+	Password         string   // Encryption password
+	IncludeGitDir    bool     // Include .git directory (default: true)
+	ExcludePatterns  []string // Glob patterns to exclude
+	CompressionLevel int      // 0-9, where 0 is store only, 9 is best compression
+	InstanceID       string   // Optional instance ID for manifest
 }
 
 // DefaultArchiveOptions returns sensible defaults for archiving.

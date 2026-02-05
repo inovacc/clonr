@@ -70,17 +70,17 @@ type EventConfig struct {
 
 // Supported event types for notifications.
 const (
-	EventClone     = "clone"
-	EventPush      = "push"
-	EventPull      = "pull"
-	EventCommit    = "commit"
-	EventPRCreate  = "pr-create"
-	EventPRMerge   = "pr-merge"
-	EventCIPass    = "ci-pass"
-	EventCIFail    = "ci-fail"
-	EventRelease   = "release"
-	EventSync      = "sync"
-	EventError     = "error"
+	EventClone    = "clone"
+	EventPush     = "push"
+	EventPull     = "pull"
+	EventCommit   = "commit"
+	EventPRCreate = "pr-create"
+	EventPRMerge  = "pr-merge"
+	EventCIPass   = "ci-pass"
+	EventCIFail   = "ci-fail"
+	EventRelease  = "release"
+	EventSync     = "sync"
+	EventError    = "error"
 )
 
 // Notification priorities.

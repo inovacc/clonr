@@ -23,12 +23,12 @@ func TestCreateAndExtractArchive(t *testing.T) {
 
 	// Create test files
 	files := map[string]string{
-		"README.md":          "# Test Repository\n",
-		"src/main.go":        "package main\n\nfunc main() {}\n",
-		"src/util.go":        "package main\n\nfunc util() {}\n",
-		".git/config":        "[core]\n\trepositoryformatversion = 0\n",
-		".git/HEAD":          "ref: refs/heads/main\n",
-		".gitignore":         "*.log\n",
+		"README.md":   "# Test Repository\n",
+		"src/main.go": "package main\n\nfunc main() {}\n",
+		"src/util.go": "package main\n\nfunc util() {}\n",
+		".git/config": "[core]\n\trepositoryformatversion = 0\n",
+		".git/HEAD":   "ref: refs/heads/main\n",
+		".gitignore":  "*.log\n",
 	}
 
 	for name, content := range files {

@@ -202,35 +202,35 @@ type User struct {
 
 // UserProfile represents a user's profile.
 type UserProfile struct {
-	AvatarHash        string `json:"avatar_hash"`
-	StatusText        string `json:"status_text"`
-	StatusEmoji       string `json:"status_emoji"`
-	RealName          string `json:"real_name"`
-	DisplayName       string `json:"display_name"`
-	RealNameNorm      string `json:"real_name_normalized"`
-	DisplayNameNorm   string `json:"display_name_normalized"`
-	Email             string `json:"email"`
-	Image24           string `json:"image_24"`
-	Image32           string `json:"image_32"`
-	Image48           string `json:"image_48"`
-	Image72           string `json:"image_72"`
-	Image192          string `json:"image_192"`
-	Image512          string `json:"image_512"`
-	Image1024         string `json:"image_1024"`
-	ImageOriginal     string `json:"image_original"`
-	FirstName         string `json:"first_name"`
-	LastName          string `json:"last_name"`
-	Title             string `json:"title"`
-	Phone             string `json:"phone"`
-	Skype             string `json:"skype"`
-	StatusExpiration  int64  `json:"status_expiration"`
-	Team              string `json:"team"`
-	StatusTextCanon   string `json:"status_text_canonical"`
-	StatusEmojiDisp   string `json:"status_emoji_display_info,omitempty"`
-	IsCustomImage     bool   `json:"is_custom_image,omitempty"`
-	PronounCode       string `json:"pronouns,omitempty"`
-	HuddleState       string `json:"huddle_state,omitempty"`
-	HuddleStateExpTS  int64  `json:"huddle_state_expiration_ts,omitempty"`
+	AvatarHash       string `json:"avatar_hash"`
+	StatusText       string `json:"status_text"`
+	StatusEmoji      string `json:"status_emoji"`
+	RealName         string `json:"real_name"`
+	DisplayName      string `json:"display_name"`
+	RealNameNorm     string `json:"real_name_normalized"`
+	DisplayNameNorm  string `json:"display_name_normalized"`
+	Email            string `json:"email"`
+	Image24          string `json:"image_24"`
+	Image32          string `json:"image_32"`
+	Image48          string `json:"image_48"`
+	Image72          string `json:"image_72"`
+	Image192         string `json:"image_192"`
+	Image512         string `json:"image_512"`
+	Image1024        string `json:"image_1024"`
+	ImageOriginal    string `json:"image_original"`
+	FirstName        string `json:"first_name"`
+	LastName         string `json:"last_name"`
+	Title            string `json:"title"`
+	Phone            string `json:"phone"`
+	Skype            string `json:"skype"`
+	StatusExpiration int64  `json:"status_expiration"`
+	Team             string `json:"team"`
+	StatusTextCanon  string `json:"status_text_canonical"`
+	StatusEmojiDisp  string `json:"status_emoji_display_info,omitempty"`
+	IsCustomImage    bool   `json:"is_custom_image,omitempty"`
+	PronounCode      string `json:"pronouns,omitempty"`
+	HuddleState      string `json:"huddle_state,omitempty"`
+	HuddleStateExpTS int64  `json:"huddle_state_expiration_ts,omitempty"`
 }
 
 // SearchResult represents search results.

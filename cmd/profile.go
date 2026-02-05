@@ -448,15 +448,15 @@ Examples:
 
 // ProfileStatusOutput represents the JSON output for profile status
 type ProfileStatusOutput struct {
-	Name       string    `json:"name"`
-	Host       string    `json:"host"`
-	User       string    `json:"user"`
-	Storage    string    `json:"storage"`
-	Scopes     []string  `json:"scopes"`
-	Workspace  string    `json:"workspace,omitempty"`
-	Default    bool      `json:"default"`
-	CreatedAt  time.Time `json:"created_at"`
-	LastUsedAt time.Time `json:"last_used_at,omitempty"`
+	Name       string                 `json:"name"`
+	Host       string                 `json:"host"`
+	User       string                 `json:"user"`
+	Storage    string                 `json:"storage"`
+	Scopes     []string               `json:"scopes"`
+	Workspace  string                 `json:"workspace,omitempty"`
+	Default    bool                   `json:"default"`
+	CreatedAt  time.Time              `json:"created_at"`
+	LastUsedAt time.Time              `json:"last_used_at,omitempty"`
 	Encryption *ProfileEncryptionInfo `json:"encryption,omitempty"`
 }
 

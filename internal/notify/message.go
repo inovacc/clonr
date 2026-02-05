@@ -29,11 +29,11 @@ type SlackMessage struct {
 
 // Block represents a Slack Block Kit block.
 type Block struct {
-	Type     string      `json:"type"`
-	Text     *TextObject `json:"text,omitempty"`
-	Elements []Element   `json:"elements,omitempty"`
-	Fields   []TextObject `json:"fields,omitempty"`
-	Accessory *Element    `json:"accessory,omitempty"`
+	Type      string       `json:"type"`
+	Text      *TextObject  `json:"text,omitempty"`
+	Elements  []Element    `json:"elements,omitempty"`
+	Fields    []TextObject `json:"fields,omitempty"`
+	Accessory *Element     `json:"accessory,omitempty"`
 }
 
 // TextObject represents text content in a block.

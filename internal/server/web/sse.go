@@ -171,12 +171,12 @@ func (s *Server) BroadcastEvent(eventType string, message string, data any) {
 
 // Event type constants
 const (
-	EventProfileCreated    = "profile:created"
-	EventProfileUpdated    = "profile:updated"
-	EventProfileDeleted    = "profile:deleted"
-	EventProfileActivated  = "profile:activated"
-	EventWorkspaceCreated  = "workspace:created"
-	EventWorkspaceDeleted  = "workspace:deleted"
+	EventProfileCreated        = "profile:created"
+	EventProfileUpdated        = "profile:updated"
+	EventProfileDeleted        = "profile:deleted"
+	EventProfileActivated      = "profile:activated"
+	EventWorkspaceCreated      = "workspace:created"
+	EventWorkspaceDeleted      = "workspace:deleted"
 	EventSlackConnected        = "slack:connected"
 	EventSlackDisconnected     = "slack:disconnected"
 	EventSlackAccountCreated   = "slack:account:created"

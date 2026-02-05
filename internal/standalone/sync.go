@@ -36,11 +36,11 @@ type SyncedData struct {
 
 // ServerEncryptionConfig holds the server's encryption configuration.
 type ServerEncryptionConfig struct {
-	Enabled       bool      `json:"enabled"`
-	KeyHash       []byte    `json:"key_hash"`        // Argon2 hash for verification
-	Salt          []byte    `json:"salt"`            // Salt for key derivation
-	KeyHint       string    `json:"key_hint"`        // First 4 chars of derived key hash
-	ConfiguredAt  time.Time `json:"configured_at"`
+	Enabled      bool      `json:"enabled"`
+	KeyHash      []byte    `json:"key_hash"` // Argon2 hash for verification
+	Salt         []byte    `json:"salt"`     // Salt for key derivation
+	KeyHint      string    `json:"key_hint"` // First 4 chars of derived key hash
+	ConfiguredAt time.Time `json:"configured_at"`
 }
 
 // EncryptForSync encrypts data for transmission/storage using the standalone key.

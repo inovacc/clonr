@@ -36,23 +36,23 @@ func NewOutlookClient(accessToken string, opts OutlookClientOptions) *OutlookCli
 
 // MailMessage represents an Outlook email message.
 type MailMessage struct {
-	ID                 string         `json:"id"`
-	Subject            string         `json:"subject"`
-	BodyPreview        string         `json:"bodyPreview"`
-	Body               *MailBody      `json:"body"`
-	From               *EmailAddress  `json:"from"`
-	ToRecipients       []Recipient    `json:"toRecipients"`
-	CcRecipients       []Recipient    `json:"ccRecipients"`
-	ReceivedDateTime   time.Time      `json:"receivedDateTime"`
-	SentDateTime       time.Time      `json:"sentDateTime"`
-	HasAttachments     bool           `json:"hasAttachments"`
-	IsRead             bool           `json:"isRead"`
-	IsDraft            bool           `json:"isDraft"`
-	Importance         string         `json:"importance"`
-	WebLink            string         `json:"webLink"`
-	ParentFolderID     string         `json:"parentFolderId"`
-	ConversationID     string         `json:"conversationId"`
-	Flag               *FollowUpFlag  `json:"flag"`
+	ID               string        `json:"id"`
+	Subject          string        `json:"subject"`
+	BodyPreview      string        `json:"bodyPreview"`
+	Body             *MailBody     `json:"body"`
+	From             *EmailAddress `json:"from"`
+	ToRecipients     []Recipient   `json:"toRecipients"`
+	CcRecipients     []Recipient   `json:"ccRecipients"`
+	ReceivedDateTime time.Time     `json:"receivedDateTime"`
+	SentDateTime     time.Time     `json:"sentDateTime"`
+	HasAttachments   bool          `json:"hasAttachments"`
+	IsRead           bool          `json:"isRead"`
+	IsDraft          bool          `json:"isDraft"`
+	Importance       string        `json:"importance"`
+	WebLink          string        `json:"webLink"`
+	ParentFolderID   string        `json:"parentFolderId"`
+	ConversationID   string        `json:"conversationId"`
+	Flag             *FollowUpFlag `json:"flag"`
 }
 
 // MailBody represents the body of an email.
@@ -106,12 +106,12 @@ type ListFoldersResponse struct {
 
 // ListMailMessagesOptions configures message listing.
 type ListMailMessagesOptions struct {
-	Top       int
-	Skip      int
-	Filter    string
-	Select    []string
-	OrderBy   string
-	FolderID  string // defaults to "inbox"
+	Top      int
+	Skip     int
+	Filter   string
+	Select   []string
+	OrderBy  string
+	FolderID string // defaults to "inbox"
 }
 
 // GetMailFolders lists all mail folders.

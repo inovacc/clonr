@@ -35,21 +35,21 @@ type NATType string
 
 const (
 	NATTypeUnknown           NATType = "unknown"
-	NATTypeNone              NATType = "none"              // Direct public IP
-	NATTypeFullCone          NATType = "full_cone"         // Endpoint-independent mapping
-	NATTypeRestrictedCone    NATType = "restricted_cone"   // Address-restricted
-	NATTypePortRestricted    NATType = "port_restricted"   // Port-restricted
-	NATTypeSymmetric         NATType = "symmetric"         // Different mapping per destination
+	NATTypeNone              NATType = "none"            // Direct public IP
+	NATTypeFullCone          NATType = "full_cone"       // Endpoint-independent mapping
+	NATTypeRestrictedCone    NATType = "restricted_cone" // Address-restricted
+	NATTypePortRestricted    NATType = "port_restricted" // Port-restricted
+	NATTypeSymmetric         NATType = "symmetric"       // Different mapping per destination
 	NATTypeSymmetricFirewall NATType = "symmetric_firewall"
 )
 
 // STUNClient provides STUN-based network discovery
 type STUNClient struct {
-	servers []string
-	timeout time.Duration
-	mu      sync.RWMutex
-	cache   *STUNResult
-	cacheAt time.Time
+	servers  []string
+	timeout  time.Duration
+	mu       sync.RWMutex
+	cache    *STUNResult
+	cacheAt  time.Time
 	cacheTTL time.Duration
 }
 

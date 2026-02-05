@@ -761,14 +761,14 @@ type LogOptions struct {
 
 // Commit represents a git commit
 type Commit struct {
-	SHA       string
-	ShortSHA  string
-	Author    string
-	Email     string
-	Date      string
-	Subject   string
-	Body      string
-	Refs      string
+	SHA      string
+	ShortSHA string
+	Author   string
+	Email    string
+	Date     string
+	Subject  string
+	Body     string
+	Refs     string
 }
 
 // Log returns the commit log
@@ -899,11 +899,11 @@ func (c *Client) Diff(ctx context.Context, opts DiffOptions) (string, error) {
 
 // BranchInfo contains detailed branch information
 type BranchInfo struct {
-	Name      string
-	Current   bool
-	Upstream  string
+	Name       string
+	Current    bool
+	Upstream   string
 	LastCommit string
-	Gone      bool // Upstream is gone
+	Gone       bool // Upstream is gone
 }
 
 // ListBranchesDetailed lists branches with detailed information
@@ -1046,16 +1046,16 @@ func (c *Client) RemoveRemote(ctx context.Context, name string) error {
 
 // StatusInfo contains detailed status information
 type StatusInfo struct {
-	Branch        string
-	Upstream      string
-	Ahead         int
-	Behind        int
-	Staged        []FileStatus
-	Unstaged      []FileStatus
-	Untracked     []string
-	HasChanges    bool
-	HasUntracked  bool
-	HasConflicts  bool
+	Branch       string
+	Upstream     string
+	Ahead        int
+	Behind       int
+	Staged       []FileStatus
+	Unstaged     []FileStatus
+	Untracked    []string
+	HasChanges   bool
+	HasUntracked bool
+	HasConflicts bool
 }
 
 // FileStatus represents the status of a single file

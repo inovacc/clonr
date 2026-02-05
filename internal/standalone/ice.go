@@ -14,13 +14,13 @@ import (
 
 // ICEConfig contains configuration for ICE connectivity
 type ICEConfig struct {
-	STUNServers    []string
-	TURNServers    []TURNServer
-	LocalUfrag     string
-	LocalPwd       string
-	IsControlling  bool
-	Timeout        time.Duration
-	NetworkTypes   []ice.NetworkType
+	STUNServers   []string
+	TURNServers   []TURNServer
+	LocalUfrag    string
+	LocalPwd      string
+	IsControlling bool
+	Timeout       time.Duration
+	NetworkTypes  []ice.NetworkType
 }
 
 // TURNServer represents a TURN server configuration
@@ -32,15 +32,15 @@ type TURNServer struct {
 
 // ICECandidate represents an ICE candidate for connectivity
 type ICECandidate struct {
-	Type       string `json:"type"`       // "host", "srflx", "relay"
-	Foundation string `json:"foundation"`
-	Component  int    `json:"component"`
-	Protocol   string `json:"protocol"`   // "udp", "tcp"
-	Priority   uint32 `json:"priority"`
-	IP         string `json:"ip"`
-	Port       int    `json:"port"`
-	RelatedIP  string `json:"related_ip,omitempty"`
-	RelatedPort int   `json:"related_port,omitempty"`
+	Type        string `json:"type"` // "host", "srflx", "relay"
+	Foundation  string `json:"foundation"`
+	Component   int    `json:"component"`
+	Protocol    string `json:"protocol"` // "udp", "tcp"
+	Priority    uint32 `json:"priority"`
+	IP          string `json:"ip"`
+	Port        int    `json:"port"`
+	RelatedIP   string `json:"related_ip,omitempty"`
+	RelatedPort int    `json:"related_port,omitempty"`
 }
 
 // ICECredentials contains the local ICE credentials to share with peer
@@ -52,11 +52,11 @@ type ICECredentials struct {
 
 // ICEAgent manages ICE connectivity for a standalone instance
 type ICEAgent struct {
-	agent      *ice.Agent
-	config     ICEConfig
-	conn       net.Conn
-	mu         sync.RWMutex
-	candidates []ICECandidate
+	agent       *ice.Agent
+	config      ICEConfig
+	conn        net.Conn
+	mu          sync.RWMutex
+	candidates  []ICECandidate
 	onCandidate func(ICECandidate)
 	connected   chan struct{}
 }

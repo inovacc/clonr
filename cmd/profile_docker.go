@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	dockerProfileListJSON   bool
+	dockerProfileListJSON    bool
 	dockerProfileRemoveForce bool
 	dockerProfileAddRegistry string
 	dockerProfileAddUsername string

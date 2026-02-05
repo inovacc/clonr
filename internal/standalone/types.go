@@ -29,12 +29,12 @@ type StandaloneKey struct {
 // StandaloneConfig represents the source instance's standalone mode configuration.
 type StandaloneConfig struct {
 	Enabled      bool      `json:"enabled"`
-	IsServer     bool      `json:"is_server"`       // True if this instance is a server (accepts connections)
+	IsServer     bool      `json:"is_server"` // True if this instance is a server (accepts connections)
 	InstanceID   string    `json:"instance_id"`
 	Port         int       `json:"port"`
-	APIKeyHash   []byte    `json:"api_key_hash"`    // Argon2 hash for verification
-	RefreshToken []byte    `json:"refresh_token"`   // Encrypted refresh token
-	Salt         []byte    `json:"salt"`            // Salt for key derivation
+	APIKeyHash   []byte    `json:"api_key_hash"`  // Argon2 hash for verification
+	RefreshToken []byte    `json:"refresh_token"` // Encrypted refresh token
+	Salt         []byte    `json:"salt"`          // Salt for key derivation
 	CreatedAt    time.Time `json:"created_at"`
 	ExpiresAt    time.Time `json:"expires_at"`
 	Capabilities []string  `json:"capabilities"`

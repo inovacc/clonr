@@ -22,50 +22,50 @@ type DB struct {
 // WorkflowRun represents a GitHub Actions workflow run
 type WorkflowRun struct {
 	ID           int64     `json:"id"`
-	RunID        int64     `json:"run_id"`         // GitHub run ID
+	RunID        int64     `json:"run_id"` // GitHub run ID
 	RepoOwner    string    `json:"repo_owner"`
 	RepoName     string    `json:"repo_name"`
 	WorkflowID   int64     `json:"workflow_id"`
 	WorkflowName string    `json:"workflow_name"`
 	HeadBranch   string    `json:"head_branch"`
 	HeadSHA      string    `json:"head_sha"`
-	Event        string    `json:"event"`          // "push", "pull_request", etc.
-	Status       string    `json:"status"`         // "queued", "in_progress", "completed"
-	Conclusion   string    `json:"conclusion"`     // "success", "failure", "cancelled", etc.
+	Event        string    `json:"event"`      // "push", "pull_request", etc.
+	Status       string    `json:"status"`     // "queued", "in_progress", "completed"
+	Conclusion   string    `json:"conclusion"` // "success", "failure", "cancelled", etc.
 	HTMLURL      string    `json:"html_url"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 	StartedAt    time.Time `json:"started_at,omitempty"`
 	CompletedAt  time.Time `json:"completed_at,omitempty"`
-	PushID       int64     `json:"push_id"`        // Local reference to the push that triggered this
+	PushID       int64     `json:"push_id"` // Local reference to the push that triggered this
 }
 
 // WorkflowJob represents a job within a workflow run
 type WorkflowJob struct {
 	ID          int64     `json:"id"`
-	JobID       int64     `json:"job_id"`          // GitHub job ID
-	RunID       int64     `json:"run_id"`          // Parent workflow run ID
+	JobID       int64     `json:"job_id"` // GitHub job ID
+	RunID       int64     `json:"run_id"` // Parent workflow run ID
 	Name        string    `json:"name"`
 	Status      string    `json:"status"`
 	Conclusion  string    `json:"conclusion"`
 	StartedAt   time.Time `json:"started_at,omitempty"`
 	CompletedAt time.Time `json:"completed_at,omitempty"`
-	Steps       int       `json:"steps"`           // Number of steps
+	Steps       int       `json:"steps"` // Number of steps
 	StepsPassed int       `json:"steps_passed"`
 	StepsFailed int       `json:"steps_failed"`
 }
 
 // PushRecord represents a push made via clonr
 type PushRecord struct {
-	ID         int64     `json:"id"`
-	RepoOwner  string    `json:"repo_owner"`
-	RepoName   string    `json:"repo_name"`
-	Branch     string    `json:"branch"`
-	CommitSHA  string    `json:"commit_sha"`
-	Remote     string    `json:"remote"`
-	PushedAt   time.Time `json:"pushed_at"`
-	Monitored  bool      `json:"monitored"`        // Whether actions are being monitored
-	LastCheck  time.Time `json:"last_check"`
+	ID        int64     `json:"id"`
+	RepoOwner string    `json:"repo_owner"`
+	RepoName  string    `json:"repo_name"`
+	Branch    string    `json:"branch"`
+	CommitSHA string    `json:"commit_sha"`
+	Remote    string    `json:"remote"`
+	PushedAt  time.Time `json:"pushed_at"`
+	Monitored bool      `json:"monitored"` // Whether actions are being monitored
+	LastCheck time.Time `json:"last_check"`
 }
 
 // QueueItem represents an item in the monitoring queue
@@ -75,7 +75,7 @@ type QueueItem struct {
 	RepoOwner  string    `json:"repo_owner"`
 	RepoName   string    `json:"repo_name"`
 	CommitSHA  string    `json:"commit_sha"`
-	Status     string    `json:"status"`           // "pending", "checking", "completed", "failed"
+	Status     string    `json:"status"` // "pending", "checking", "completed", "failed"
 	RetryCount int       `json:"retry_count"`
 	NextCheck  time.Time `json:"next_check"`
 	CreatedAt  time.Time `json:"created_at"`

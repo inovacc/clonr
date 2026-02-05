@@ -28,12 +28,12 @@ type MockClient struct {
 	GetConfigErr          error
 
 	// Call tracking
-	SetActiveProfileCalled   bool
-	SetActiveProfileName     string
-	GetProfileCalled         bool
-	GetProfileName           string
-	SaveWorkspaceCalled      bool
-	SavedWorkspace           *model.Workspace
+	SetActiveProfileCalled bool
+	SetActiveProfileName   string
+	GetProfileCalled       bool
+	GetProfileName         string
+	SaveWorkspaceCalled    bool
+	SavedWorkspace         *model.Workspace
 }
 
 // NewMockClient creates a new MockClient with default values.
