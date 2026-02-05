@@ -10,6 +10,7 @@ const (
 	ChannelTeams   ChannelType = "teams"
 	ChannelDiscord ChannelType = "discord"
 	ChannelEmail   ChannelType = "email"
+	ChannelGmail   ChannelType = "gmail"
 	ChannelWebhook ChannelType = "webhook"
 )
 
@@ -30,6 +31,7 @@ type NotifyChannel struct {
 	// For Teams: webhook_url, connector_token
 	// For Discord: webhook_url, bot_token, default_channel
 	// For Email: provider, host, port, username, password, api_key, from, to
+	// For Gmail: access_token, refresh_token, email, client_id, client_secret
 	// For Webhook: url, method, headers, hmac_secret, template
 	Config map[string]string `json:"config"`
 

@@ -434,6 +434,7 @@ func isSensitiveKey(key string) bool {
 	sensitiveKeys := []string{
 		"token", "secret", "password", "api_key", "webhook_url",
 		"bot_token", "client_secret", "hmac_secret", "refresh_token",
+		"access_token",
 	}
 
 	for _, k := range sensitiveKeys {

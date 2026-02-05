@@ -93,7 +93,7 @@ var aiCategoryMap = map[string]string{
 	"pm": "Project Management",
 
 	// Notifications
-	"slack": "Notifications",
+	"slack": "Notifications", "gmail": "Notifications",
 
 	// Configuration
 	"configure": "Configuration", "config": "Configuration",
@@ -116,7 +116,7 @@ var aiCategoryDescriptions = map[string]string{
 	"GitHub Integration":    "GitHub API integration for issues, PRs, actions, and releases",
 	"Organization":          "Manage and mirror organization repositories",
 	"Project Management":    "Integrate with project management tools (Jira, ZenHub)",
-	"Notifications":         "Slack, Teams, Discord notifications and messaging",
+	"Notifications":         "Slack, Teams, Discord, Gmail notifications and messaging",
 	"Configuration":         "Configure clonr settings and profiles",
 	"Infrastructure":        "Server mode, services, and repository mirroring",
 	"Tooling":               "Development and introspection tools",
