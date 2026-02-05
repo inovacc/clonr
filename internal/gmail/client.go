@@ -227,6 +227,74 @@ func (c *Client) GetMessageHTMLBody(msg *Message) string {
 	return extractBody(msg.Payload, "text/html")
 }
 
+// Attachment represents an email attachment.
+type Attachment struct {
+	ID       string `json:"id"`
+	Filename string `json:"filename"`
+	MimeType string `json:"mimeType"`
+	Size     int    `json:"size"`
+}
+
+// AttachmentData contains the actual attachment content.
+type AttachmentData struct {
+	Size int    `json:"size"`
+	Data string `json:"data"` // Base64 URL-encoded
+}
+
+// GetMessageAttachments extracts attachment information from a message.
+func (c *Client) GetMessageAttachments(msg *Message) []Attachment {
+	if msg.Payload == nil {
+		return nil
+	}
+
+	return extractAttachments(msg.Payload)
+}
+
+// extractAttachments recursively extracts attachments from message parts.
+func extractAttachments(payload *MessagePayload) []Attachment {
+	var attachments []Attachment
+
+	// Check if this part is an attachment
+	if payload.Filename != "" && payload.Body != nil && payload.Body.AttachmentID != "" {
+		attachments = append(attachments, Attachment{
+			ID:       payload.Body.AttachmentID,
+			Filename: payload.Filename,
+			MimeType: payload.MimeType,
+			Size:     payload.Body.Size,
+		})
+	}
+
+	// Recurse into parts
+	for _, part := range payload.Parts {
+		attachments = append(attachments, extractAttachments(&part)...)
+	}
+
+	return attachments
+}
+
+// GetAttachment downloads an attachment by its ID.
+func (c *Client) GetAttachment(ctx context.Context, messageID, attachmentID string) ([]byte, error) {
+	var data AttachmentData
+
+	endpoint := fmt.Sprintf("users/me/messages/%s/attachments/%s", messageID, attachmentID)
+	if err := c.get(ctx, endpoint, nil, &data); err != nil {
+		return nil, err
+	}
+
+	// Decode base64 URL-encoded data
+	decoded, err := base64.URLEncoding.DecodeString(data.Data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode attachment: %w", err)
+	}
+
+	return decoded, nil
+}
+
+// HasAttachments checks if a message has attachments.
+func (c *Client) HasAttachments(msg *Message) bool {
+	return len(c.GetMessageAttachments(msg)) > 0
+}
+
 // extractBody recursively extracts body content of a specific MIME type.
 func extractBody(payload *MessagePayload, mimeType string) string {
 	if payload.MimeType == mimeType && payload.Body != nil && payload.Body.Data != "" {

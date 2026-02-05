@@ -20,6 +20,8 @@ func init() {
 	pmGmailCmd.AddCommand(pmGmailMessagesCmd)
 	pmGmailCmd.AddCommand(pmGmailReadCmd)
 	pmGmailCmd.AddCommand(pmGmailSearchCmd)
+	pmGmailCmd.AddCommand(pmGmailAttachmentsCmd)
+	pmGmailCmd.AddCommand(pmGmailDownloadCmd)
 
 	// Messages flags
 	pmGmailMessagesCmd.Flags().IntP("limit", "n", 10, "Maximum number of messages to list")
@@ -33,6 +35,12 @@ func init() {
 	// Read flags
 	pmGmailReadCmd.Flags().Bool("html", false, "Show HTML body instead of plain text")
 	pmGmailReadCmd.Flags().Bool("json", false, "Output as JSON")
+
+	// Attachments flags
+	pmGmailAttachmentsCmd.Flags().Bool("json", false, "Output as JSON")
+
+	// Download flags
+	pmGmailDownloadCmd.Flags().StringP("output", "o", "", "Output directory (default: current directory)")
 }
 
 var pmGmailCmd = &cobra.Command{
@@ -41,11 +49,13 @@ var pmGmailCmd = &cobra.Command{
 	Long: `Gmail operations for the active profile.
 
 Available Commands:
-  profile    Show Gmail account profile
-  labels     List Gmail labels
-  messages   List recent messages
-  read       Read a specific message
-  search     Search messages
+  profile      Show Gmail account profile
+  labels       List Gmail labels
+  messages     List recent messages
+  read         Read a specific message
+  search       Search messages
+  attachments  List attachments in a message
+  download     Download an attachment
 
 Examples:
   clonr pm gmail profile
@@ -105,6 +115,31 @@ Examples:
   clonr pm gmail search "subject:invoice after:2024/01/01"`,
 	Args: cobra.ExactArgs(1),
 	RunE: runPmGmailSearch,
+}
+
+var pmGmailAttachmentsCmd = &cobra.Command{
+	Use:   "attachments <message-id>",
+	Short: "List attachments in a message",
+	Long: `List all attachments in a Gmail message.
+
+Examples:
+  clonr pm gmail attachments 19c2d20451b4bb54`,
+	Args: cobra.ExactArgs(1),
+	RunE: runPmGmailAttachments,
+}
+
+var pmGmailDownloadCmd = &cobra.Command{
+	Use:   "download <message-id> <attachment-id>",
+	Short: "Download an attachment from a message",
+	Long: `Download an attachment from a Gmail message.
+
+Use 'clonr pm gmail attachments <message-id>' to get attachment IDs.
+
+Examples:
+  clonr pm gmail download 19c2d20451b4bb54 ANGjdJ8abc123
+  clonr pm gmail download 19c2d20451b4bb54 ANGjdJ8abc123 -o ~/Downloads`,
+	Args: cobra.ExactArgs(2),
+	RunE: runPmGmailDownload,
 }
 
 func getGmailClient() (*gmail.Client, error) {
@@ -316,13 +351,30 @@ func runPmGmailRead(cmd *cobra.Command, args []string) error {
 		return outputJSON(detail)
 	}
 
+	attachments := client.GetMessageAttachments(msg)
+
 	printBoxHeader("MESSAGE")
 	printBoxLine("ID", msg.ID)
 	printBoxLine("From", msg.Headers["from"])
 	printBoxLine("To", msg.Headers["to"])
 	printBoxLine("Subject", msg.Headers["subject"])
 	printBoxLine("Date", msg.Headers["date"])
+
+	if len(attachments) > 0 {
+		printBoxLine("Attachments", fmt.Sprintf("%d file(s)", len(attachments)))
+	}
+
 	printBoxFooter()
+
+	// Show attachments if any
+	if len(attachments) > 0 {
+		_, _ = fmt.Fprintln(os.Stdout, "")
+		_, _ = fmt.Fprintln(os.Stdout, "Attachments:")
+
+		for _, att := range attachments {
+			_, _ = fmt.Fprintf(os.Stdout, "  - %s (%s)\n", att.Filename, formatAttachmentSize(att.Size))
+		}
+	}
 
 	_, _ = fmt.Fprintln(os.Stdout, "")
 
@@ -434,4 +486,115 @@ func formatEmailDate(dateStr string) string {
 	}
 
 	return dateStr
+}
+
+func runPmGmailAttachments(cmd *cobra.Command, args []string) error {
+	messageID := args[0]
+	jsonOutput, _ := cmd.Flags().GetBool("json")
+
+	client, err := getGmailClient()
+	if err != nil {
+		return err
+	}
+
+	msg, err := client.GetMessage(context.Background(), messageID, "full")
+	if err != nil {
+		return fmt.Errorf("failed to get message: %w", err)
+	}
+
+	attachments := client.GetMessageAttachments(msg)
+
+	if len(attachments) == 0 {
+		_, _ = fmt.Fprintln(os.Stdout, "No attachments found in this message.")
+		return nil
+	}
+
+	if jsonOutput {
+		return outputJSON(attachments)
+	}
+
+	_, _ = fmt.Fprintln(os.Stdout, "")
+	_, _ = fmt.Fprintf(os.Stdout, "Attachments (%d):\n", len(attachments))
+	_, _ = fmt.Fprintln(os.Stdout, "")
+
+	for i, att := range attachments {
+		_, _ = fmt.Fprintf(os.Stdout, "  %d. %s\n", i+1, att.Filename)
+		_, _ = fmt.Fprintf(os.Stdout, "     ID:   %s\n", dimStyle.Render(att.ID))
+		_, _ = fmt.Fprintf(os.Stdout, "     Type: %s\n", att.MimeType)
+		_, _ = fmt.Fprintf(os.Stdout, "     Size: %s\n", formatAttachmentSize(att.Size))
+		_, _ = fmt.Fprintln(os.Stdout, "")
+	}
+
+	_, _ = fmt.Fprintln(os.Stdout, "To download: clonr pm gmail download", messageID, "<attachment-id>")
+
+	return nil
+}
+
+func runPmGmailDownload(cmd *cobra.Command, args []string) error {
+	messageID := args[0]
+	attachmentID := args[1]
+	outputDir, _ := cmd.Flags().GetString("output")
+
+	client, err := getGmailClient()
+	if err != nil {
+		return err
+	}
+
+	// First get the message to find the attachment filename
+	msg, err := client.GetMessage(context.Background(), messageID, "full")
+	if err != nil {
+		return fmt.Errorf("failed to get message: %w", err)
+	}
+
+	attachments := client.GetMessageAttachments(msg)
+
+	var filename string
+
+	for _, att := range attachments {
+		if att.ID == attachmentID {
+			filename = att.Filename
+
+			break
+		}
+	}
+
+	if filename == "" {
+		return fmt.Errorf("attachment not found: %s", attachmentID)
+	}
+
+	_, _ = fmt.Fprintf(os.Stdout, "Downloading %s...\n", filename)
+
+	// Download the attachment
+	data, err := client.GetAttachment(context.Background(), messageID, attachmentID)
+	if err != nil {
+		return fmt.Errorf("failed to download attachment: %w", err)
+	}
+
+	// Determine output path
+	outputPath := filename
+	if outputDir != "" {
+		outputPath = outputDir + "/" + filename
+	}
+
+	// Write to file
+	if err := os.WriteFile(outputPath, data, 0600); err != nil {
+		return fmt.Errorf("failed to save attachment: %w", err)
+	}
+
+	_, _ = fmt.Fprintln(os.Stdout, okStyle.Render(fmt.Sprintf("Saved: %s (%s)", outputPath, formatAttachmentSize(len(data)))))
+
+	return nil
+}
+
+// formatAttachmentSize formats attachment size for display
+func formatAttachmentSize(size int) string {
+	if size < 1024 {
+		return fmt.Sprintf("%d B", size)
+	}
+
+	if size < 1024*1024 {
+		return fmt.Sprintf("%.1f KB", float64(size)/1024)
+	}
+
+	return fmt.Sprintf("%.1f MB", float64(size)/(1024*1024))
 }
