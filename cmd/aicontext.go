@@ -101,9 +101,7 @@ var aiCategoryMap = map[string]string{
 	"gmail":   "Service Integrations",
 	"teams":   "Service Integrations",
 	"outlook": "Service Integrations",
-
-	// Notifications (Outbound)
-	"slack": "Notifications",
+	"slack":   "Service Integrations",
 
 	// Configuration
 	"configure": "Configuration", "config": "Configuration",
@@ -128,8 +126,7 @@ var aiCategoryDescriptions = map[string]string{
 	"GitHub Integration":    "GitHub API integration for issues, PRs, actions, and releases",
 	"Organization":          "Manage and mirror organization repositories",
 	"Project Management":    "Integrate with project management tools (Jira, ZenHub, Slack reading)",
-	"Service Integrations":  "Email and messaging services: Gmail (with Drive/Calendar), Microsoft Teams, Outlook",
-	"Notifications":         "Outbound notifications to Slack (webhooks and bots)",
+	"Service Integrations":  "Email and messaging services: Gmail (with Drive/Calendar), Microsoft Teams, Outlook, Slack (channels, messages, notifications)",
 	"Configuration":         "Configure clonr settings, profiles, and Docker registry auth",
 	"Infrastructure":        "Server mode, system services, standalone sync, and repository mirroring",
 	"Tooling":               "Development tools, data export/import, workspaces, and introspection",
@@ -252,7 +249,7 @@ func buildAIOverview() AIOverview {
 			"Microsoft Teams integration (teams, channels, messages, chats)",
 			"Microsoft Outlook integration (folders, messages, search)",
 			"Jira and ZenHub project management integration",
-			"Slack notifications (outbound) and message reading (inbound)",
+			"Slack integration (channels, messages, search, notifications)",
 			"Profile-based configuration with secure token storage",
 			"Server mode with gRPC API and web UI",
 			"Instance synchronization with standalone mode",
@@ -265,7 +262,7 @@ func buildAIArchitecture() AIArchitecture {
 	return AIArchitecture{
 		Description: "Unified client-server architecture with Cobra CLI, gRPC server, and web UI. Single binary provides both client commands and persistent server functionality.",
 		Structure: map[string]string{
-			"cmd/":             "Cobra CLI command definitions (gmail.go, teams.go, outlook.go, etc.)",
+			"cmd/":             "Cobra CLI command definitions (gmail.go, teams.go, outlook.go, slack.go, etc.)",
 			"internal/core/":   "Business logic (profile management, auth, encryption)",
 			"internal/gmail/":  "Gmail API client with OAuth, calendar, and Drive support",
 			"internal/microsoft/": "Microsoft Graph API client (Teams, Outlook)",
