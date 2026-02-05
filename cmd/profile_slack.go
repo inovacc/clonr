@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -237,7 +238,7 @@ func addSlackWithToken(pm *core.ProfileManager, profile *model.Profile, token, c
 	// Create a temporary client to validate the token
 	client := slack.NewClient(token, slack.ClientOptions{})
 
-	authResult, err := client.AuthTest(nil)
+	authResult, err := client.AuthTest(context.Background())
 	if err != nil {
 		return fmt.Errorf("invalid bot token: %w", err)
 	}
@@ -415,7 +416,7 @@ func runProfileSlackStatus(cmd *cobra.Command, _ []string) error {
 	if token != "" {
 		client := slack.NewClient(token, slack.ClientOptions{})
 
-		if _, err := client.AuthTest(nil); err != nil {
+		if _, err := client.AuthTest(context.Background()); err != nil {
 			_, _ = fmt.Fprintln(os.Stdout, warnStyle.Render(fmt.Sprintf("Connection failed: %v", err)))
 		} else {
 			_, _ = fmt.Fprintln(os.Stdout, okStyle.Render("Connection OK"))

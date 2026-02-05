@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
@@ -320,7 +321,8 @@ func (pm *ProfileManager) AddNotifyChannel(profileName string, channel *model.No
 				return fmt.Errorf("failed to encrypt %s: %w", key, encErr)
 			}
 
-			encryptedConfig[key] = string(encrypted)
+			// Base64 encode to ensure valid UTF-8 for gRPC transport
+			encryptedConfig[key] = base64.StdEncoding.EncodeToString(encrypted)
 		} else {
 			encryptedConfig[key] = value
 		}
@@ -405,7 +407,14 @@ func (pm *ProfileManager) DecryptChannelConfig(profileName string, channel *mode
 
 	for key, value := range channel.Config {
 		if isSensitiveKey(key) && value != "" {
-			plaintext, err := tpm.DecryptToken([]byte(value), profileName, string(channel.Type))
+			// Decode base64 first
+			encryptedBytes, err := base64.StdEncoding.DecodeString(value)
+			if err != nil {
+				// Not base64 encoded, try raw bytes (backwards compatibility)
+				encryptedBytes = []byte(value)
+			}
+
+			plaintext, err := tpm.DecryptToken(encryptedBytes, profileName, string(channel.Type))
 			if err != nil {
 				// If decryption fails, the value might not be encrypted
 				decrypted[key] = value
