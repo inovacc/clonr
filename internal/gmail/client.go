@@ -406,9 +406,11 @@ func extractCalendarData(payload *MessagePayload) []string {
 
 // parseICS parses ICS calendar data into CalendarEvent structs.
 func parseICS(icsData string) []CalendarEvent {
-	var events []CalendarEvent
-	var currentEvent *CalendarEvent
-	var method string
+	var (
+		events       []CalendarEvent
+		currentEvent *CalendarEvent
+		method       string
+	)
 
 	lines := strings.Split(icsData, "\n")
 
@@ -421,8 +423,8 @@ func parseICS(icsData string) []CalendarEvent {
 			line += strings.TrimSpace(lines[i])
 		}
 
-		if strings.HasPrefix(line, "METHOD:") {
-			method = strings.TrimPrefix(line, "METHOD:")
+		if after, ok := strings.CutPrefix(line, "METHOD:"); ok {
+			method = after
 		} else if line == "BEGIN:VEVENT" {
 			currentEvent = &CalendarEvent{Method: method}
 		} else if line == "END:VEVENT" && currentEvent != nil {
@@ -439,18 +441,18 @@ func parseICS(icsData string) []CalendarEvent {
 // parseICSLine parses a single ICS line into the event.
 func parseICSLine(line string, event *CalendarEvent) {
 	// Handle properties with parameters (e.g., DTSTART;TZID=America/New_York:20240101T090000)
-	colonIdx := strings.Index(line, ":")
-	if colonIdx == -1 {
+	before, after, ok := strings.Cut(line, ":")
+	if !ok {
 		return
 	}
 
-	propPart := line[:colonIdx]
-	value := line[colonIdx+1:]
+	propPart := before
+	value := after
 
 	// Extract property name (before semicolon if parameters exist)
 	propName := propPart
-	if semiIdx := strings.Index(propPart, ";"); semiIdx != -1 {
-		propName = propPart[:semiIdx]
+	if before, _, ok := strings.Cut(propPart, ";"); ok {
+		propName = before
 	}
 
 	switch propName {
@@ -470,16 +472,16 @@ func parseICSLine(line string, event *CalendarEvent) {
 		event.End, _ = parseICSDateTime(value, propPart)
 	case "ORGANIZER":
 		// Format: ORGANIZER;CN=Name:mailto:email@example.com
-		if strings.HasPrefix(value, "mailto:") {
-			event.Organizer = strings.TrimPrefix(value, "mailto:")
+		if after, ok := strings.CutPrefix(value, "mailto:"); ok {
+			event.Organizer = after
 		} else {
 			event.Organizer = value
 		}
 	case "ATTENDEE":
 		// Format: ATTENDEE;CN=Name:mailto:email@example.com
 		email := value
-		if strings.HasPrefix(value, "mailto:") {
-			email = strings.TrimPrefix(value, "mailto:")
+		if after, ok := strings.CutPrefix(value, "mailto:"); ok {
+			email = after
 		}
 
 		event.Attendees = append(event.Attendees, email)
@@ -525,6 +527,7 @@ func (c *Client) GetDriveLinks(msg *Message) []DriveLink {
 	}
 
 	var links []DriveLink
+
 	seen := make(map[string]bool)
 
 	// Extract from HTML and plain text bodies
@@ -612,12 +615,12 @@ func extractFileID(url string) (string, string) {
 	}
 
 	rest := url[len(prefix):]
-	if slashIdx := strings.Index(rest, "/"); slashIdx != -1 {
-		return rest[:slashIdx], ""
+	if before, _, ok := strings.Cut(rest, "/"); ok {
+		return before, ""
 	}
 
-	if qIdx := strings.Index(rest, "?"); qIdx != -1 {
-		return rest[:qIdx], ""
+	if before, _, ok := strings.Cut(rest, "?"); ok {
+		return before, ""
 	}
 
 	return rest, ""
@@ -631,8 +634,8 @@ func extractOpenID(url string) (string, string) {
 	}
 
 	rest := url[len(prefix):]
-	if ampIdx := strings.Index(rest, "&"); ampIdx != -1 {
-		return rest[:ampIdx], ""
+	if before, _, ok := strings.Cut(rest, "&"); ok {
+		return before, ""
 	}
 
 	return rest, ""
@@ -647,12 +650,12 @@ func extractDocID(url string) (string, string) {
 	}
 
 	rest := parts[1]
-	if slashIdx := strings.Index(rest, "/"); slashIdx != -1 {
-		return rest[:slashIdx], ""
+	if before, _, ok := strings.Cut(rest, "/"); ok {
+		return before, ""
 	}
 
-	if qIdx := strings.Index(rest, "?"); qIdx != -1 {
-		return rest[:qIdx], ""
+	if before, _, ok := strings.Cut(rest, "?"); ok {
+		return before, ""
 	}
 
 	return rest, ""
@@ -666,8 +669,8 @@ func extractFolderID(url string) (string, string) {
 	}
 
 	rest := url[len(prefix):]
-	if qIdx := strings.Index(rest, "?"); qIdx != -1 {
-		return rest[:qIdx], ""
+	if before, _, ok := strings.Cut(rest, "?"); ok {
+		return before, ""
 	}
 
 	return rest, ""

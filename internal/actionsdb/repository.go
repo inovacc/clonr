@@ -36,6 +36,7 @@ func (db *DB) SavePushRecord(record *PushRecord) error {
 // GetPushRecord retrieves a push record by ID
 func (db *DB) GetPushRecord(id int64) (*PushRecord, error) {
 	record := &PushRecord{}
+
 	err := db.QueryRow(`
 		SELECT id, repo_owner, repo_name, branch, commit_sha, remote, pushed_at, monitored, last_check
 		FROM push_records WHERE id = ?
@@ -44,15 +45,18 @@ func (db *DB) GetPushRecord(id int64) (*PushRecord, error) {
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get push record: %w", err)
 	}
+
 	return record, nil
 }
 
 // GetPushRecordBySHA retrieves a push record by commit SHA
 func (db *DB) GetPushRecordBySHA(owner, repo, sha string) (*PushRecord, error) {
 	record := &PushRecord{}
+
 	err := db.QueryRow(`
 		SELECT id, repo_owner, repo_name, branch, commit_sha, remote, pushed_at, monitored, last_check
 		FROM push_records WHERE repo_owner = ? AND repo_name = ? AND commit_sha = ?
@@ -61,9 +65,11 @@ func (db *DB) GetPushRecordBySHA(owner, repo, sha string) (*PushRecord, error) {
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get push record: %w", err)
 	}
+
 	return record, nil
 }
 
@@ -73,13 +79,15 @@ func (db *DB) ListPushRecords(owner, repo string, limit int) ([]PushRecord, erro
 		SELECT id, repo_owner, repo_name, branch, commit_sha, remote, pushed_at, monitored, last_check
 		FROM push_records
 	`
-	args := []interface{}{}
+	args := []any{}
 
 	if owner != "" && repo != "" {
 		query += " WHERE repo_owner = ? AND repo_name = ?"
+
 		args = append(args, owner, repo)
 	} else if owner != "" {
 		query += " WHERE repo_owner = ?"
+
 		args = append(args, owner)
 	}
 
@@ -87,6 +95,7 @@ func (db *DB) ListPushRecords(owner, repo string, limit int) ([]PushRecord, erro
 
 	if limit > 0 {
 		query += " LIMIT ?"
+
 		args = append(args, limit)
 	}
 
@@ -94,15 +103,18 @@ func (db *DB) ListPushRecords(owner, repo string, limit int) ([]PushRecord, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to list push records: %w", err)
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	var records []PushRecord
+
 	for rows.Next() {
 		var r PushRecord
 		if err := rows.Scan(&r.ID, &r.RepoOwner, &r.RepoName, &r.Branch,
 			&r.CommitSHA, &r.Remote, &r.PushedAt, &r.Monitored, &r.LastCheck); err != nil {
 			return nil, fmt.Errorf("failed to scan push record: %w", err)
 		}
+
 		records = append(records, r)
 	}
 
@@ -142,7 +154,9 @@ func (db *DB) SaveWorkflowRun(run *WorkflowRun) error {
 // GetWorkflowRun retrieves a workflow run by GitHub run ID
 func (db *DB) GetWorkflowRun(runID int64) (*WorkflowRun, error) {
 	run := &WorkflowRun{}
+
 	var startedAt, completedAt sql.NullTime
+
 	err := db.QueryRow(`
 		SELECT id, run_id, repo_owner, repo_name, workflow_id, workflow_name,
 			head_branch, head_sha, event, status, conclusion, html_url, created_at, updated_at,
@@ -155,6 +169,7 @@ func (db *DB) GetWorkflowRun(runID int64) (*WorkflowRun, error) {
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get workflow run: %w", err)
 	}
@@ -162,6 +177,7 @@ func (db *DB) GetWorkflowRun(runID int64) (*WorkflowRun, error) {
 	if startedAt.Valid {
 		run.StartedAt = startedAt.Time
 	}
+
 	if completedAt.Valid {
 		run.CompletedAt = completedAt.Time
 	}
@@ -181,24 +197,32 @@ func (db *DB) ListWorkflowRunsByPush(pushID int64) ([]WorkflowRun, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list workflow runs: %w", err)
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	var runs []WorkflowRun
+
 	for rows.Next() {
-		var r WorkflowRun
-		var startedAt, completedAt sql.NullTime
+		var (
+			r                      WorkflowRun
+			startedAt, completedAt sql.NullTime
+		)
+
 		if err := rows.Scan(&r.ID, &r.RunID, &r.RepoOwner, &r.RepoName, &r.WorkflowID,
 			&r.WorkflowName, &r.HeadBranch, &r.HeadSHA, &r.Event, &r.Status,
 			&r.Conclusion, &r.HTMLURL, &r.CreatedAt, &r.UpdatedAt,
 			&startedAt, &completedAt, &r.PushID); err != nil {
 			return nil, fmt.Errorf("failed to scan workflow run: %w", err)
 		}
+
 		if startedAt.Valid {
 			r.StartedAt = startedAt.Time
 		}
+
 		if completedAt.Valid {
 			r.CompletedAt = completedAt.Time
 		}
+
 		runs = append(runs, r)
 	}
 
@@ -217,24 +241,32 @@ func (db *DB) ListWorkflowRunsBySHA(owner, repo, sha string) ([]WorkflowRun, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to list workflow runs: %w", err)
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	var runs []WorkflowRun
+
 	for rows.Next() {
-		var r WorkflowRun
-		var startedAt, completedAt sql.NullTime
+		var (
+			r                      WorkflowRun
+			startedAt, completedAt sql.NullTime
+		)
+
 		if err := rows.Scan(&r.ID, &r.RunID, &r.RepoOwner, &r.RepoName, &r.WorkflowID,
 			&r.WorkflowName, &r.HeadBranch, &r.HeadSHA, &r.Event, &r.Status,
 			&r.Conclusion, &r.HTMLURL, &r.CreatedAt, &r.UpdatedAt,
 			&startedAt, &completedAt, &r.PushID); err != nil {
 			return nil, fmt.Errorf("failed to scan workflow run: %w", err)
 		}
+
 		if startedAt.Valid {
 			r.StartedAt = startedAt.Time
 		}
+
 		if completedAt.Valid {
 			r.CompletedAt = completedAt.Time
 		}
+
 		runs = append(runs, r)
 	}
 
@@ -281,22 +313,30 @@ func (db *DB) ListJobsByRun(runID int64) ([]WorkflowJob, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list workflow jobs: %w", err)
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	var jobs []WorkflowJob
+
 	for rows.Next() {
-		var j WorkflowJob
-		var startedAt, completedAt sql.NullTime
+		var (
+			j                      WorkflowJob
+			startedAt, completedAt sql.NullTime
+		)
+
 		if err := rows.Scan(&j.ID, &j.JobID, &j.RunID, &j.Name, &j.Status, &j.Conclusion,
 			&startedAt, &completedAt, &j.Steps, &j.StepsPassed, &j.StepsFailed); err != nil {
 			return nil, fmt.Errorf("failed to scan workflow job: %w", err)
 		}
+
 		if startedAt.Valid {
 			j.StartedAt = startedAt.Time
 		}
+
 		if completedAt.Valid {
 			j.CompletedAt = completedAt.Time
 		}
+
 		jobs = append(jobs, j)
 	}
 
@@ -309,6 +349,7 @@ func (db *DB) EnqueueItem(item *QueueItem) error {
 	if item.CreatedAt.IsZero() {
 		item.CreatedAt = now
 	}
+
 	item.UpdatedAt = now
 
 	result, err := db.Exec(`
@@ -332,6 +373,7 @@ func (db *DB) EnqueueItem(item *QueueItem) error {
 // DequeueItems retrieves items ready for processing
 func (db *DB) DequeueItems(limit int) ([]QueueItem, error) {
 	now := time.Now()
+
 	rows, err := db.Query(`
 		SELECT id, push_id, repo_owner, repo_name, commit_sha, status,
 			retry_count, next_check, created_at, updated_at, error
@@ -343,19 +385,26 @@ func (db *DB) DequeueItems(limit int) ([]QueueItem, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to dequeue items: %w", err)
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	var items []QueueItem
+
 	for rows.Next() {
-		var i QueueItem
-		var errStr sql.NullString
+		var (
+			i      QueueItem
+			errStr sql.NullString
+		)
+
 		if err := rows.Scan(&i.ID, &i.PushID, &i.RepoOwner, &i.RepoName, &i.CommitSHA,
 			&i.Status, &i.RetryCount, &i.NextCheck, &i.CreatedAt, &i.UpdatedAt, &errStr); err != nil {
 			return nil, fmt.Errorf("failed to scan queue item: %w", err)
 		}
+
 		if errStr.Valid {
 			i.Error = errStr.String
 		}
+
 		items = append(items, i)
 	}
 
@@ -365,6 +414,7 @@ func (db *DB) DequeueItems(limit int) ([]QueueItem, error) {
 // UpdateQueueItem updates a queue item
 func (db *DB) UpdateQueueItem(item *QueueItem) error {
 	item.UpdatedAt = time.Now()
+
 	_, err := db.Exec(`
 		UPDATE queue_items SET
 			status = ?,
@@ -377,6 +427,7 @@ func (db *DB) UpdateQueueItem(item *QueueItem) error {
 	if err != nil {
 		return fmt.Errorf("failed to update queue item: %w", err)
 	}
+
 	return nil
 }
 
@@ -386,6 +437,7 @@ func (db *DB) DeleteQueueItem(id int64) error {
 	if err != nil {
 		return fmt.Errorf("failed to delete queue item: %w", err)
 	}
+
 	return nil
 }
 
@@ -397,14 +449,19 @@ func (db *DB) GetQueueStats() (pending, checking, completed, failed int, err err
 	if err != nil {
 		return 0, 0, 0, 0, fmt.Errorf("failed to get queue stats: %w", err)
 	}
+
 	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
-		var status string
-		var count int
+		var (
+			status string
+			count  int
+		)
+
 		if err := rows.Scan(&status, &count); err != nil {
 			return 0, 0, 0, 0, err
 		}
+
 		switch status {
 		case "pending":
 			pending = count
@@ -431,6 +488,7 @@ func (db *DB) CleanupOldRecords(olderThan time.Duration) (int64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("failed to cleanup queue items: %w", err)
 	}
+
 	deleted, _ := result.RowsAffected()
 
 	// We keep push records and workflow runs for history

@@ -46,6 +46,7 @@ func initKeystore() (*sealbox.Keystore, error) {
 			machineKey := getMachineKey()
 			opts = append(opts, sealbox.WithPasswordRoot(machineKey))
 		}
+
 		opts = append(opts, sealbox.WithAutoSave())
 
 		globalKeystore, keystoreErr = sealbox.Open(keystorePath, opts...)
@@ -141,8 +142,10 @@ func CloseKeystore() error {
 	if globalKeystore != nil {
 		err := globalKeystore.Close()
 		globalKeystore = nil
+
 		return err
 	}
+
 	return nil
 }
 

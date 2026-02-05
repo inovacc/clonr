@@ -77,8 +77,10 @@ func ValidateKeyRotationDays(days int) int {
 	if days < MinKeyRotationDays {
 		return MinKeyRotationDays
 	}
+
 	if days > MaxKeyRotationDays {
 		return MaxKeyRotationDays
 	}
+
 	return days
 }

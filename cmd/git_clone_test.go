@@ -21,6 +21,7 @@ func TestRunGitClone_ClientError(t *testing.T) {
 	if err == nil {
 		t.Error("expected error when client fails")
 	}
+
 	if err.Error() != "connection failed" {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -31,11 +32,13 @@ func TestRunGitClone_WithProfile(t *testing.T) {
 	mock.Profiles = []model.Profile{
 		{Name: "work", Host: "github.com", Workspace: "/tmp/work"},
 	}
+
 	cleanup := withMockClient(mock)
 	defer cleanup()
 
 	gitCloneCmd.Flags().Set("no-tui", "true")
 	gitCloneCmd.Flags().Set("profile", "work")
+
 	defer func() {
 		gitCloneCmd.Flags().Set("no-tui", "false")
 		gitCloneCmd.Flags().Set("profile", "")
@@ -48,9 +51,11 @@ func TestRunGitClone_WithProfile(t *testing.T) {
 	if !mock.SetActiveProfileCalled {
 		t.Error("SetActiveProfile should have been called")
 	}
+
 	if mock.SetActiveProfileName != "work" {
 		t.Errorf("SetActiveProfile called with %q, want %q", mock.SetActiveProfileName, "work")
 	}
+
 	if !mock.GetProfileCalled {
 		t.Error("GetProfile should have been called")
 	}
@@ -59,11 +64,13 @@ func TestRunGitClone_WithProfile(t *testing.T) {
 func TestRunGitClone_SetProfileError(t *testing.T) {
 	mock := NewMockClient()
 	mock.SetActiveProfileErr = errors.New("profile not found")
+
 	cleanup := withMockClient(mock)
 	defer cleanup()
 
 	gitCloneCmd.Flags().Set("no-tui", "true")
 	gitCloneCmd.Flags().Set("profile", "nonexistent")
+
 	defer func() {
 		gitCloneCmd.Flags().Set("no-tui", "false")
 		gitCloneCmd.Flags().Set("profile", "")
@@ -78,11 +85,13 @@ func TestRunGitClone_SetProfileError(t *testing.T) {
 func TestRunGitClone_GetProfileError(t *testing.T) {
 	mock := NewMockClient()
 	mock.GetProfileErr = errors.New("failed to get profile")
+
 	cleanup := withMockClient(mock)
 	defer cleanup()
 
 	gitCloneCmd.Flags().Set("no-tui", "true")
 	gitCloneCmd.Flags().Set("profile", "work")
+
 	defer func() {
 		gitCloneCmd.Flags().Set("no-tui", "false")
 		gitCloneCmd.Flags().Set("profile", "")
@@ -97,6 +106,7 @@ func TestRunGitClone_GetProfileError(t *testing.T) {
 func TestRunGitClone_ListProfilesError(t *testing.T) {
 	mock := NewMockClient()
 	mock.ListProfilesErr = errors.New("failed to list profiles")
+
 	cleanup := withMockClient(mock)
 	defer cleanup()
 
@@ -111,6 +121,7 @@ func TestRunGitClone_ListProfilesError(t *testing.T) {
 func TestRunGitClone_ListWorkspacesError(t *testing.T) {
 	mock := NewMockClient()
 	mock.ListWorkspacesErr = errors.New("failed to list workspaces")
+
 	cleanup := withMockClient(mock)
 	defer cleanup()
 
@@ -227,6 +238,7 @@ func TestCreateGitWorkspaceFromSelection_WithTildePath(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
+
 	defer os.RemoveAll(testDir)
 
 	if mock.SavedWorkspace == nil {

@@ -58,6 +58,7 @@ func runStandaloneClients(_ *cobra.Command, _ []string) error {
 		_, _ = fmt.Fprintln(os.Stdout, "No registered clients")
 		_, _ = fmt.Fprintln(os.Stdout)
 		_, _ = fmt.Fprintln(os.Stdout, "Clients can connect using: clonr standalone connect <key>")
+
 		return nil
 	}
 
@@ -65,6 +66,7 @@ func runStandaloneClients(_ *cobra.Command, _ []string) error {
 	var displayClients = clients
 	if !clientsShowAll {
 		displayClients = nil
+
 		for _, c := range clients {
 			if c.Status != "suspended" && c.Status != "revoked" {
 				displayClients = append(displayClients, c)
@@ -76,6 +78,7 @@ func runStandaloneClients(_ *cobra.Command, _ []string) error {
 
 	for _, client := range displayClients {
 		statusIcon := "●"
+
 		switch client.Status {
 		case "active":
 			statusIcon = "●" // Green in terminal with color support
@@ -95,10 +98,12 @@ func runStandaloneClients(_ *cobra.Command, _ []string) error {
 			client.MachineInfo.Arch)
 		_, _ = fmt.Fprintf(os.Stdout, "    Registered: %s\n", client.RegisteredAt.Format("2006-01-02 15:04:05"))
 		_, _ = fmt.Fprintf(os.Stdout, "    Last Seen: %s\n", client.LastSeenAt.Format("2006-01-02 15:04:05"))
+
 		_, _ = fmt.Fprintf(os.Stdout, "    Sync Count: %d\n", client.SyncCount)
 		if client.LastIP != "" {
 			_, _ = fmt.Fprintf(os.Stdout, "    Last IP: %s\n", client.LastIP)
 		}
+
 		_, _ = fmt.Fprintln(os.Stdout)
 	}
 
@@ -110,6 +115,7 @@ func runStandaloneClients(_ *cobra.Command, _ []string) error {
 			_, _ = fmt.Fprintf(os.Stdout, "  - %s (%s) - awaiting key entry\n",
 				p.ClientName, p.ClientID[:8])
 		}
+
 		_, _ = fmt.Fprintln(os.Stdout)
 		_, _ = fmt.Fprintln(os.Stdout, "To accept a pending client: clonr standalone accept")
 	}

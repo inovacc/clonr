@@ -183,18 +183,22 @@ func TestHandshakeFlow(t *testing.T) {
 	if reg.ClientID == "" {
 		t.Error("ClientID is empty")
 	}
+
 	if reg.ClientName != "test-client" {
 		t.Errorf("ClientName = %s, want test-client", reg.ClientName)
 	}
+
 	if reg.State != HandshakeStateInitiated {
 		t.Errorf("State = %s, want %s", reg.State, HandshakeStateInitiated)
 	}
 
 	// Set challenge
 	clientHandshake.SetChallenge("test-challenge-token")
+
 	if reg.State != HandshakeStateChallenged {
 		t.Errorf("State after challenge = %s, want %s", reg.State, HandshakeStateChallenged)
 	}
+
 	if reg.ChallengeToken != "test-challenge-token" {
 		t.Errorf("ChallengeToken = %s, want test-challenge-token", reg.ChallengeToken)
 	}
@@ -204,9 +208,11 @@ func TestHandshakeFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
 	}
+
 	if displayKey == "" {
 		t.Error("DisplayKey is empty")
 	}
+
 	if reg.State != HandshakeStateKeyGenerated {
 		t.Errorf("State after key generation = %s, want %s", reg.State, HandshakeStateKeyGenerated)
 	}
@@ -224,9 +230,11 @@ func TestHandshakeFlow(t *testing.T) {
 
 	// Complete handshake
 	clientHandshake.Complete()
+
 	if reg.State != HandshakeStateCompleted {
 		t.Errorf("State after completion = %s, want %s", reg.State, HandshakeStateCompleted)
 	}
+
 	if reg.CompletedAt.IsZero() {
 		t.Error("CompletedAt is zero")
 	}
@@ -249,9 +257,11 @@ func TestServerHandshakeFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("InitiateHandshake() error = %v", err)
 	}
+
 	if challenge == "" {
 		t.Error("Challenge is empty")
 	}
+
 	if len(challenge) != 64 {
 		t.Errorf("Challenge length = %d, want 64", len(challenge))
 	}
@@ -261,6 +271,7 @@ func TestServerHandshakeFlow(t *testing.T) {
 	if pending == nil {
 		t.Fatal("GetPendingClient() returned nil")
 	}
+
 	if pending.State != HandshakeStateChallenged {
 		t.Errorf("Pending state = %s, want %s", pending.State, HandshakeStateChallenged)
 	}
@@ -283,18 +294,23 @@ func TestServerHandshakeFlow(t *testing.T) {
 	if registered.ClientID != clientReg.ClientID {
 		t.Errorf("RegisteredClient.ClientID = %s, want %s", registered.ClientID, clientReg.ClientID)
 	}
+
 	if registered.ClientName != "test-client" {
 		t.Errorf("RegisteredClient.ClientName = %s, want test-client", registered.ClientName)
 	}
+
 	if registered.Status != "active" {
 		t.Errorf("RegisteredClient.Status = %s, want active", registered.Status)
 	}
+
 	if registered.KeyHint == "" {
 		t.Error("RegisteredClient.KeyHint is empty")
 	}
+
 	if len(registered.EncryptionKeyHash) == 0 {
 		t.Error("RegisteredClient.EncryptionKeyHash is empty")
 	}
+
 	if len(registered.EncryptionSalt) == 0 {
 		t.Error("RegisteredClient.EncryptionSalt is empty")
 	}
@@ -428,18 +444,23 @@ func TestHandshakeStates(t *testing.T) {
 	if HandshakeStateInitiated != "initiated" {
 		t.Errorf("HandshakeStateInitiated = %s, want initiated", HandshakeStateInitiated)
 	}
+
 	if HandshakeStateChallenged != "challenged" {
 		t.Errorf("HandshakeStateChallenged = %s, want challenged", HandshakeStateChallenged)
 	}
+
 	if HandshakeStateKeyGenerated != "key_generated" {
 		t.Errorf("HandshakeStateKeyGenerated = %s, want key_generated", HandshakeStateKeyGenerated)
 	}
+
 	if HandshakeStateKeyPending != "key_pending" {
 		t.Errorf("HandshakeStateKeyPending = %s, want key_pending", HandshakeStateKeyPending)
 	}
+
 	if HandshakeStateCompleted != "completed" {
 		t.Errorf("HandshakeStateCompleted = %s, want completed", HandshakeStateCompleted)
 	}
+
 	if HandshakeStateRejected != "rejected" {
 		t.Errorf("HandshakeStateRejected = %s, want rejected", HandshakeStateRejected)
 	}

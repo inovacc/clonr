@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/inovacc/clonr/internal/client/grpc"
@@ -346,7 +347,7 @@ func (pm *ProfileManager) AddNotifyChannel(profileName string, channel *model.No
 		profile.NotifyChannels = append(profile.NotifyChannels, *channel)
 	}
 
-	return pm.client.SaveProfile(profile) //nolint:contextcheck // a client manages its own timeout
+	return pm.client.SaveProfile(profile)
 }
 
 // RemoveNotifyChannel removes a notification channel from a profile.
@@ -366,7 +367,7 @@ func (pm *ProfileManager) RemoveNotifyChannel(profileName, channelID string) err
 
 	profile.NotifyChannels = newChannels
 
-	return pm.client.SaveProfile(profile) //nolint:contextcheck // a client manages its own timeout
+	return pm.client.SaveProfile(profile)
 }
 
 // GetNotifyChannel retrieves a notification channel from a profile.
@@ -437,11 +438,5 @@ func isSensitiveKey(key string) bool {
 		"access_token",
 	}
 
-	for _, k := range sensitiveKeys {
-		if key == k {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(sensitiveKeys, key)
 }

@@ -115,6 +115,7 @@ func (e *Event) WithBranch(branch string) *Event {
 func (e *Event) WithCommit(sha, message string) *Event {
 	e.Commit = sha
 	e.CommitMessage = message
+
 	return e
 }
 
@@ -146,6 +147,7 @@ func (e *Event) WithWorkspace(workspace string) *Event {
 func (e *Event) WithError(err string) *Event {
 	e.Error = err
 	e.Success = false
+
 	return e
 }
 
@@ -154,6 +156,8 @@ func (e *Event) WithExtra(key, value string) *Event {
 	if e.Extra == nil {
 		e.Extra = make(map[string]string)
 	}
+
 	e.Extra[key] = value
+
 	return e
 }

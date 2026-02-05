@@ -54,8 +54,10 @@ func (r *Resolver) WithFlag(flagValue *string) *Resolver {
 		if flagValue != nil && *flagValue != "" {
 			return *flagValue, "flag", nil
 		}
+
 		return "", "", nil
 	})
+
 	return r
 }
 
@@ -65,8 +67,10 @@ func (r *Resolver) WithFlagValue(value string) *Resolver {
 		if value != "" {
 			return value, "flag", nil
 		}
+
 		return "", "", nil
 	})
+
 	return r
 }
 
@@ -76,8 +80,10 @@ func (r *Resolver) WithEnv(envVar string) *Resolver {
 		if token := os.Getenv(envVar); token != "" {
 			return token, envVar, nil
 		}
+
 		return "", "", nil
 	})
+
 	return r
 }
 
@@ -86,6 +92,7 @@ func (r *Resolver) WithEnvs(envVars ...string) *Resolver {
 	for _, envVar := range envVars {
 		r.WithEnv(envVar)
 	}
+
 	return r
 }
 
@@ -109,6 +116,7 @@ func (r *Resolver) Resolve() (*Result, error) {
 		if err != nil {
 			return nil, fmt.Errorf("token provider error: %w", err)
 		}
+
 		if token != "" {
 			return &Result{
 				Token:  token,
@@ -122,6 +130,7 @@ func (r *Resolver) Resolve() (*Result, error) {
 	if r.helpMessage != "" {
 		return nil, fmt.Errorf("%s token required\n\n%s", r.serviceName, r.helpMessage)
 	}
+
 	return nil, fmt.Errorf("%s token required", r.serviceName)
 }
 
@@ -131,6 +140,7 @@ func (r *Resolver) MustResolve() *Result {
 	if err != nil {
 		panic(err)
 	}
+
 	return result
 }
 
@@ -157,6 +167,7 @@ func EnvOrDefault(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
+
 	return defaultValue
 }
 
@@ -171,6 +182,7 @@ func EnvOrFile(envVar, filePath string) (string, error) {
 		if os.IsNotExist(err) {
 			return "", nil
 		}
+
 		return "", fmt.Errorf("failed to read file %s: %w", filePath, err)
 	}
 

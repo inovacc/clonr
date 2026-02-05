@@ -27,6 +27,7 @@ func NewDispatcher(async bool) *Dispatcher {
 func (d *Dispatcher) Register(sender Sender) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+
 	d.senders = append(d.senders, sender)
 }
 
@@ -41,6 +42,7 @@ func (d *Dispatcher) Unregister(name string) {
 			filtered = append(filtered, s)
 		}
 	}
+
 	d.senders = filtered
 }
 
@@ -87,6 +89,7 @@ func (d *Dispatcher) sendWithRecover(ctx context.Context, sender Sender, event *
 func (d *Dispatcher) HasSenders() bool {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
+
 	return len(d.senders) > 0
 }
 
@@ -97,6 +100,7 @@ func (d *Dispatcher) Senders() []Sender {
 
 	result := make([]Sender, len(d.senders))
 	copy(result, d.senders)
+
 	return result
 }
 
@@ -111,6 +115,7 @@ func GetDispatcher() *Dispatcher {
 	defaultDispatcherOnce.Do(func() {
 		defaultDispatcher = NewDispatcher(true) // async by default
 	})
+
 	return defaultDispatcher
 }
 

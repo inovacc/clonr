@@ -252,6 +252,7 @@ func enqueueForActionsMonitoring(ctx context.Context, remote string) error {
 	if err != nil {
 		return err
 	}
+
 	defer func() { _ = db.Close() }()
 
 	// Create push record and enqueue
@@ -283,6 +284,7 @@ func enqueueForActionsMonitoring(ctx context.Context, remote string) error {
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout, dimStyle.Render("  📊 Enqueued for GitHub Actions monitoring"))
+
 	return nil
 }
 
@@ -291,20 +293,24 @@ func getRemoteURL(repoPath, remote string) (string, error) {
 	if remote == "" {
 		remote = "origin"
 	}
+
 	cmd := exec.Command("git", "-C", repoPath, "remote", "get-url", remote)
+
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
+
 	return strings.TrimSpace(string(output)), nil
 }
 
 // parseGitHubURL parses owner and repo from a GitHub URL
 func parseGitHubURL(url string) (owner, repo string, err error) {
 	// Handle SSH URLs: git@github.com:owner/repo.git
-	if strings.HasPrefix(url, "git@github.com:") {
-		path := strings.TrimPrefix(url, "git@github.com:")
+	if after, ok := strings.CutPrefix(url, "git@github.com:"); ok {
+		path := after
 		path = strings.TrimSuffix(path, ".git")
+
 		parts := strings.Split(path, "/")
 		if len(parts) >= 2 {
 			return parts[0], parts[1], nil
@@ -313,9 +319,10 @@ func parseGitHubURL(url string) (owner, repo string, err error) {
 
 	// Handle HTTPS URLs: https://github.com/owner/repo.git
 	if strings.Contains(url, "github.com/") {
-		idx := strings.Index(url, "github.com/")
-		path := url[idx+len("github.com/"):]
+		_, after, _ := strings.Cut(url, "github.com/")
+		path := after
 		path = strings.TrimSuffix(path, ".git")
+
 		parts := strings.Split(path, "/")
 		if len(parts) >= 2 {
 			return parts[0], parts[1], nil
@@ -328,19 +335,23 @@ func parseGitHubURL(url string) (owner, repo string, err error) {
 // getCurrentBranch gets the current branch name
 func getCurrentBranch(repoPath string) (string, error) {
 	cmd := exec.Command("git", "-C", repoPath, "rev-parse", "--abbrev-ref", "HEAD")
+
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
+
 	return strings.TrimSpace(string(output)), nil
 }
 
 // getHeadCommitSHA gets the HEAD commit SHA
 func getHeadCommitSHA(repoPath string) (string, error) {
 	cmd := exec.Command("git", "-C", repoPath, "rev-parse", "HEAD")
+
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
+
 	return strings.TrimSpace(string(output)), nil
 }

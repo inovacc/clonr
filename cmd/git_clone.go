@@ -92,6 +92,7 @@ func runGitClone(cmd *cobra.Command, args []string) error {
 			}
 
 			p := tea.NewProgram(m)
+
 			finalModel, err := p.Run()
 			if err != nil {
 				return err
@@ -134,6 +135,7 @@ func runGitClone(cmd *cobra.Command, args []string) error {
 			}
 
 			p := tea.NewProgram(m)
+
 			finalModel, err := p.Run()
 			if err != nil {
 				return err
@@ -152,6 +154,7 @@ func runGitClone(cmd *cobra.Command, args []string) error {
 				if err := createGitWorkspaceFromSelection(client, selected); err != nil {
 					return err
 				}
+
 				opts.Workspace = selected.Name
 			default:
 				opts.Workspace = selected.Name
@@ -226,6 +229,7 @@ func createGitWorkspaceFromSelection(client ClientInterface, ws *model.Workspace
 		if err != nil {
 			return fmt.Errorf("failed to get home directory: %w", err)
 		}
+
 		path = filepath.Join(home, path[1:])
 	}
 

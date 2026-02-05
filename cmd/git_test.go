@@ -26,6 +26,7 @@ func TestGitCmd(t *testing.T) {
 		}
 
 		expectedSubcommands := []string{"status", "commit", "push", "pull", "log", "diff", "branch", "clone"}
+
 		subcommandMap := make(map[string]bool)
 		for _, cmd := range subcommands {
 			subcommandMap[cmd.Use] = true
@@ -33,12 +34,14 @@ func TestGitCmd(t *testing.T) {
 
 		for _, expected := range expectedSubcommands {
 			found := false
+
 			for _, cmd := range subcommands {
 				if cmd.Name() == expected {
 					found = true
 					break
 				}
 			}
+
 			if !found {
 				t.Errorf("missing subcommand %q", expected)
 			}
@@ -75,6 +78,7 @@ func TestGitStatusCmd(t *testing.T) {
 				t.Errorf("missing flag %q", f.name)
 				continue
 			}
+
 			if f.shorthand != "" && flag.Shorthand != f.shorthand {
 				t.Errorf("flag %q shorthand = %q, want %q", f.name, flag.Shorthand, f.shorthand)
 			}
@@ -110,6 +114,7 @@ func TestGitCommitCmd(t *testing.T) {
 				t.Errorf("missing flag %q", f.name)
 				continue
 			}
+
 			if f.shorthand != "" && flag.Shorthand != f.shorthand {
 				t.Errorf("flag %q shorthand = %q, want %q", f.name, flag.Shorthand, f.shorthand)
 			}
@@ -121,6 +126,7 @@ func TestGitCommitCmd(t *testing.T) {
 		if annotations == nil {
 			t.Skip("no annotations on message flag")
 		}
+
 		if _, ok := annotations[cobra.BashCompOneRequiredFlag]; !ok {
 			t.Log("message flag should be marked as required")
 		}
@@ -158,6 +164,7 @@ func TestGitPushCmd(t *testing.T) {
 				t.Errorf("missing flag %q", f.name)
 				continue
 			}
+
 			if f.shorthand != "" && flag.Shorthand != f.shorthand {
 				t.Errorf("flag %q shorthand = %q, want %q", f.name, flag.Shorthand, f.shorthand)
 			}
@@ -214,6 +221,7 @@ func TestGitLogCmd(t *testing.T) {
 				t.Errorf("missing flag %q", f.name)
 				continue
 			}
+
 			if f.shorthand != "" && flag.Shorthand != f.shorthand {
 				t.Errorf("flag %q shorthand = %q, want %q", f.name, flag.Shorthand, f.shorthand)
 			}
@@ -225,6 +233,7 @@ func TestGitLogCmd(t *testing.T) {
 		if flag == nil {
 			t.Fatal("limit flag not found")
 		}
+
 		if flag.DefValue != "10" {
 			t.Errorf("limit default = %q, want %q", flag.DefValue, "10")
 		}
@@ -288,6 +297,7 @@ func TestGitBranchCmd(t *testing.T) {
 				t.Errorf("missing flag %q", f.name)
 				continue
 			}
+
 			if f.shorthand != "" && flag.Shorthand != f.shorthand {
 				t.Errorf("flag %q shorthand = %q, want %q", f.name, flag.Shorthand, f.shorthand)
 			}
@@ -326,6 +336,7 @@ func TestGitCloneCmd(t *testing.T) {
 				t.Errorf("missing flag %q", f.name)
 				continue
 			}
+
 			if f.shorthand != "" && flag.Shorthand != f.shorthand {
 				t.Errorf("flag %q shorthand = %q, want %q", f.name, flag.Shorthand, f.shorthand)
 			}

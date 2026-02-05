@@ -22,6 +22,7 @@ func ptrString(s string) *string {
 	if s == "" {
 		return nil
 	}
+
 	return &s
 }
 
@@ -80,9 +81,11 @@ func GetDB() *Store {
 		dbPath := getDefaultDBPath()
 		instance, initErr = New(dbPath)
 	})
+
 	if initErr != nil {
 		panic(fmt.Sprintf("failed to initialize SQLite store: %v", initErr))
 	}
+
 	return instance
 }
 
@@ -92,6 +95,7 @@ func getDefaultDBPath() string {
 	if err != nil {
 		configDir = "."
 	}
+
 	return filepath.Join(configDir, "clonr", "clonr.db")
 }
 
@@ -125,6 +129,7 @@ func (s *Store) SaveRepoWithWorkspace(u *url.URL, path, workspace string) error 
 		Workspace: ptrString(workspace),
 		Favorite:  ptrInt64(0),
 	})
+
 	return err
 }
 
@@ -133,10 +138,12 @@ func (s *Store) RepoExistsByURL(u *url.URL) (bool, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	result, err := s.queries.RepoExistsByURL(ctx, u.String())
 	if err != nil {
 		return false, err
 	}
+
 	return result == 1, nil
 }
 
@@ -145,10 +152,12 @@ func (s *Store) RepoExistsByPath(path string) (bool, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	result, err := s.queries.RepoExistsByPath(ctx, path)
 	if err != nil {
 		return false, err
 	}
+
 	return result == 1, nil
 }
 
@@ -157,9 +166,11 @@ func (s *Store) InsertRepoIfNotExists(u *url.URL, path string) error {
 	if err != nil {
 		return err
 	}
+
 	if exists {
 		return nil
 	}
+
 	return s.SaveRepo(u, path)
 }
 
@@ -168,6 +179,7 @@ func (s *Store) GetAllRepos() ([]*model.Repository, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	rows, err := s.queries.GetAllRepos(ctx)
 	if err != nil {
 		return nil, err
@@ -177,6 +189,7 @@ func (s *Store) GetAllRepos() ([]*model.Repository, error) {
 	for _, row := range rows {
 		repos = append(repos, sqlcRepoToModel(row))
 	}
+
 	return repos, nil
 }
 
@@ -185,6 +198,7 @@ func (s *Store) GetRepos(workspace string, favoritesOnly bool) ([]*model.Reposit
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	favInt := int64(0)
 	if favoritesOnly {
 		favInt = 1
@@ -203,6 +217,7 @@ func (s *Store) GetRepos(workspace string, favoritesOnly bool) ([]*model.Reposit
 	for _, row := range rows {
 		repos = append(repos, sqlcRepoToModel(row))
 	}
+
 	return repos, nil
 }
 
@@ -211,6 +226,7 @@ func (s *Store) GetReposByWorkspace(workspace string) ([]*model.Repository, erro
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	rows, err := s.queries.GetReposByWorkspace(ctx, ptrString(workspace))
 	if err != nil {
 		return nil, err
@@ -220,6 +236,7 @@ func (s *Store) GetReposByWorkspace(workspace string) ([]*model.Repository, erro
 	for _, row := range rows {
 		repos = append(repos, sqlcRepoToModel(row))
 	}
+
 	return repos, nil
 }
 
@@ -228,10 +245,12 @@ func (s *Store) SetFavoriteByURL(urlStr string, fav bool) error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	favInt := int64(0)
 	if fav {
 		favInt = 1
 	}
+
 	return s.queries.UpdateRepoFavorite(ctx, sqlc.UpdateRepoFavoriteParams{
 		Favorite: ptrInt64(favInt),
 		Url:      urlStr,
@@ -243,6 +262,7 @@ func (s *Store) UpdateRepoTimestamp(urlStr string) error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.UpdateRepoTimestamp(ctx, urlStr)
 }
 
@@ -251,6 +271,7 @@ func (s *Store) UpdateRepoWorkspace(urlStr, workspace string) error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.UpdateRepoWorkspace(ctx, sqlc.UpdateRepoWorkspaceParams{
 		Workspace: ptrString(workspace),
 		Url:       urlStr,
@@ -262,6 +283,7 @@ func (s *Store) RemoveRepoByURL(u *url.URL) error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.DeleteRepoByURL(ctx, u.String())
 }
 
@@ -274,6 +296,7 @@ func (s *Store) GetConfig() (*model.Config, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	row, err := s.queries.GetConfig(ctx)
 	if err != nil {
 		return nil, err
@@ -306,6 +329,7 @@ func (s *Store) SaveConfig(cfg *model.Config) error {
 	if err != nil {
 		customEditorsJSON = []byte("[]")
 	}
+
 	customEditorsStr := string(customEditorsJSON)
 
 	return s.queries.UpdateConfig(ctx, sqlc.UpdateConfigParams{
@@ -364,6 +388,7 @@ func (s *Store) SaveProfile(profile *model.Profile) error {
 		Workspace:      ptrString(profile.Workspace),
 		NotifyChannels: &notifyStr,
 	})
+
 	return err
 }
 
@@ -372,11 +397,13 @@ func (s *Store) GetProfile(name string) (*model.Profile, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	row, err := s.queries.GetProfile(ctx, name)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("profile %q not found", name)
 		}
+
 		return nil, err
 	}
 
@@ -388,11 +415,13 @@ func (s *Store) GetActiveProfile() (*model.Profile, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	row, err := s.queries.GetActiveProfile(ctx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("no active profile")
 		}
+
 		return nil, err
 	}
 
@@ -404,6 +433,7 @@ func (s *Store) SetActiveProfile(name string) error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.SetActiveProfile(ctx, name)
 }
 
@@ -412,6 +442,7 @@ func (s *Store) ListProfiles() ([]*model.Profile, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	rows, err := s.queries.ListProfiles(ctx)
 	if err != nil {
 		return nil, err
@@ -421,6 +452,7 @@ func (s *Store) ListProfiles() ([]*model.Profile, error) {
 	for _, row := range rows {
 		profiles = append(profiles, sqlcProfileToModel(row))
 	}
+
 	return profiles, nil
 }
 
@@ -429,6 +461,7 @@ func (s *Store) DeleteProfile(name string) error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.DeleteProfile(ctx, name)
 }
 
@@ -437,10 +470,12 @@ func (s *Store) ProfileExists(name string) (bool, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	result, err := s.queries.ProfileExists(ctx, name)
 	if err != nil {
 		return false, err
 	}
+
 	return result == 1, nil
 }
 
@@ -474,6 +509,7 @@ func (s *Store) SaveWorkspace(workspace *model.Workspace) error {
 		Path:        ptrString(workspace.Path),
 		IsActive:    ptrInt64(isActive),
 	})
+
 	return err
 }
 
@@ -482,11 +518,13 @@ func (s *Store) GetWorkspace(name string) (*model.Workspace, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	row, err := s.queries.GetWorkspace(ctx, name)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("workspace %q not found", name)
 		}
+
 		return nil, err
 	}
 
@@ -498,11 +536,13 @@ func (s *Store) GetActiveWorkspace() (*model.Workspace, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	row, err := s.queries.GetActiveWorkspace(ctx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("no active workspace")
 		}
+
 		return nil, err
 	}
 
@@ -514,6 +554,7 @@ func (s *Store) SetActiveWorkspace(name string) error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.SetActiveWorkspace(ctx, name)
 }
 
@@ -522,6 +563,7 @@ func (s *Store) ListWorkspaces() ([]*model.Workspace, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	rows, err := s.queries.ListWorkspaces(ctx)
 	if err != nil {
 		return nil, err
@@ -531,6 +573,7 @@ func (s *Store) ListWorkspaces() ([]*model.Workspace, error) {
 	for _, row := range rows {
 		workspaces = append(workspaces, sqlcWorkspaceToModel(row))
 	}
+
 	return workspaces, nil
 }
 
@@ -539,6 +582,7 @@ func (s *Store) DeleteWorkspace(name string) error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.DeleteWorkspace(ctx, name)
 }
 
@@ -547,10 +591,12 @@ func (s *Store) WorkspaceExists(name string) (bool, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	result, err := s.queries.WorkspaceExists(ctx, name)
 	if err != nil {
 		return false, err
 	}
+
 	return result == 1, nil
 }
 
@@ -583,6 +629,7 @@ func (s *Store) SaveDockerProfile(profile *model.DockerProfile) error {
 		EncryptedToken: profile.EncryptedToken,
 		TokenStorage:   ptrString(tokenStorageStr),
 	})
+
 	return err
 }
 
@@ -591,11 +638,13 @@ func (s *Store) GetDockerProfile(name string) (*model.DockerProfile, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	row, err := s.queries.GetDockerProfile(ctx, name)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
+
 		return nil, err
 	}
 
@@ -607,6 +656,7 @@ func (s *Store) ListDockerProfiles() ([]*model.DockerProfile, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	rows, err := s.queries.ListDockerProfiles(ctx)
 	if err != nil {
 		return nil, err
@@ -616,6 +666,7 @@ func (s *Store) ListDockerProfiles() ([]*model.DockerProfile, error) {
 	for _, row := range rows {
 		profiles = append(profiles, sqlcDockerProfileToModel(row))
 	}
+
 	return profiles, nil
 }
 
@@ -624,6 +675,7 @@ func (s *Store) DeleteDockerProfile(name string) error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.DeleteDockerProfile(ctx, name)
 }
 
@@ -632,10 +684,12 @@ func (s *Store) DockerProfileExists(name string) (bool, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	result, err := s.queries.DockerProfileExists(ctx, name)
 	if err != nil {
 		return false, err
 	}
+
 	return result == 1, nil
 }
 
@@ -659,11 +713,13 @@ func (s *Store) GetSealedKey() (*SealedKeyData, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	row, err := s.queries.GetSealedKey(ctx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
+
 		return nil, err
 	}
 
@@ -690,12 +746,14 @@ func (s *Store) SaveSealedKey(data *SealedKeyData) error {
 	ctx := newContext()
 
 	var metadataJSON string
+
 	if data.Metadata != nil {
 		b, _ := json.Marshal(data.Metadata)
 		metadataJSON = string(b)
 	}
 
 	version := int64(data.Version)
+
 	return s.queries.InsertSealedKey(ctx, sqlc.InsertSealedKeyParams{
 		SealedData: data.SealedData,
 		Version:    &version,
@@ -709,6 +767,7 @@ func (s *Store) DeleteSealedKey() error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.DeleteSealedKey(ctx)
 }
 
@@ -717,10 +776,12 @@ func (s *Store) HasSealedKey() (bool, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	result, err := s.queries.SealedKeyExists(ctx)
 	if err != nil {
 		return false, err
 	}
+
 	return result == 1, nil
 }
 
@@ -733,11 +794,13 @@ func (s *Store) GetSlackConfig() (*model.SlackConfig, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	row, err := s.queries.GetSlackConfig(ctx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
+
 		return nil, err
 	}
 
@@ -757,6 +820,7 @@ func (s *Store) SaveSlackConfig(config *model.SlackConfig) error {
 	if config.Enabled {
 		enabled = 1
 	}
+
 	botEnabled := int64(0)
 	if config.BotEnabled {
 		botEnabled = 1
@@ -786,6 +850,7 @@ func (s *Store) SaveSlackConfig(config *model.SlackConfig) error {
 		BotEnabled:          ptrInt64(botEnabled),
 		Events:              &eventsStr,
 	})
+
 	return err
 }
 
@@ -794,6 +859,7 @@ func (s *Store) DeleteSlackConfig() error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.DeleteSlackConfig(ctx)
 }
 
@@ -802,6 +868,7 @@ func (s *Store) EnableSlackNotifications() error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.EnableSlackNotifications(ctx)
 }
 
@@ -810,6 +877,7 @@ func (s *Store) DisableSlackNotifications() error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.DisableSlackNotifications(ctx)
 }
 
@@ -852,6 +920,7 @@ func (s *Store) SaveSlackAccount(account *model.SlackAccount) error {
 		EncryptedBotToken: account.EncryptedBotToken,
 		TokenStorage:      ptrString(tokenStorageStr),
 	})
+
 	return err
 }
 
@@ -860,11 +929,13 @@ func (s *Store) GetSlackAccount(name string) (*model.SlackAccount, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	row, err := s.queries.GetSlackAccount(ctx, name)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
+
 		return nil, err
 	}
 
@@ -876,11 +947,13 @@ func (s *Store) GetActiveSlackAccount() (*model.SlackAccount, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	row, err := s.queries.GetActiveSlackAccount(ctx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
+
 		return nil, err
 	}
 
@@ -892,6 +965,7 @@ func (s *Store) SetActiveSlackAccount(name string) error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.SetActiveSlackAccount(ctx, name)
 }
 
@@ -900,6 +974,7 @@ func (s *Store) ListSlackAccounts() ([]*model.SlackAccount, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	rows, err := s.queries.ListSlackAccounts(ctx)
 	if err != nil {
 		return nil, err
@@ -909,6 +984,7 @@ func (s *Store) ListSlackAccounts() ([]*model.SlackAccount, error) {
 	for _, row := range rows {
 		accounts = append(accounts, sqlcSlackAccountToModel(row))
 	}
+
 	return accounts, nil
 }
 
@@ -917,6 +993,7 @@ func (s *Store) DeleteSlackAccount(name string) error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.DeleteSlackAccount(ctx, name)
 }
 
@@ -925,9 +1002,11 @@ func (s *Store) SlackAccountExists(name string) (bool, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	result, err := s.queries.SlackAccountExists(ctx, name)
 	if err != nil {
 		return false, err
 	}
+
 	return result == 1, nil
 }

@@ -17,6 +17,7 @@ func TestCreateAndExtractArchive(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(repoDir, "src"), 0755); err != nil {
 		t.Fatalf("Failed to create test dir: %v", err)
 	}
+
 	if err := os.MkdirAll(filepath.Join(repoDir, ".git"), 0755); err != nil {
 		t.Fatalf("Failed to create .git dir: %v", err)
 	}
@@ -52,9 +53,11 @@ func TestCreateAndExtractArchive(t *testing.T) {
 		if manifest.Version != ArchiveVersion {
 			t.Errorf("manifest.Version = %d, want %d", manifest.Version, ArchiveVersion)
 		}
+
 		if len(manifest.Repositories) != 1 {
 			t.Errorf("manifest.Repositories length = %d, want 1", len(manifest.Repositories))
 		}
+
 		if manifest.Checksum == "" {
 			t.Error("manifest.Checksum is empty")
 		}
@@ -94,11 +97,13 @@ func TestCreateAndExtractArchive(t *testing.T) {
 		// Verify extracted files
 		for name, expectedContent := range files {
 			path := filepath.Join(outputDir, "test-repo", name)
+
 			content, err := os.ReadFile(path)
 			if err != nil {
 				t.Errorf("Failed to read extracted %s: %v", name, err)
 				continue
 			}
+
 			if string(content) != expectedContent {
 				t.Errorf("Extracted %s content mismatch", name)
 			}
@@ -122,9 +127,11 @@ func TestCreateArchiveNoGit(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(repoDir, ".git", "objects"), 0755); err != nil {
 		t.Fatalf("Failed to create dirs: %v", err)
 	}
+
 	if err := os.WriteFile(filepath.Join(repoDir, "file.txt"), []byte("content"), 0644); err != nil {
 		t.Fatalf("Failed to create file: %v", err)
 	}
+
 	if err := os.WriteFile(filepath.Join(repoDir, ".git", "config"), []byte("config"), 0644); err != nil {
 		t.Fatalf("Failed to create .git/config: %v", err)
 	}
@@ -140,6 +147,7 @@ func TestCreateArchiveNoGit(t *testing.T) {
 
 	// Extract and verify .git is not included
 	outputDir := filepath.Join(tempDir, "output")
+
 	_, err = ExtractRepoArchive(archivePath, outputDir, "testpassword")
 	if err != nil {
 		t.Fatalf("ExtractRepoArchive() error = %v", err)
@@ -192,6 +200,7 @@ func TestArchiveConstants(t *testing.T) {
 	if ArchiveMagic != "CLONR-REPO" {
 		t.Errorf("ArchiveMagic = %s, want CLONR-REPO", ArchiveMagic)
 	}
+
 	if ArchiveExtension != ".clonr" {
 		t.Errorf("ArchiveExtension = %s, want .clonr", ArchiveExtension)
 	}
@@ -203,9 +212,11 @@ func TestDefaultArchiveOptions(t *testing.T) {
 	if !opts.IncludeGitDir {
 		t.Error("IncludeGitDir should be true by default")
 	}
+
 	if opts.CompressionLevel != 6 {
 		t.Errorf("CompressionLevel = %d, want 6", opts.CompressionLevel)
 	}
+
 	if len(opts.ExcludePatterns) == 0 {
 		t.Error("ExcludePatterns should not be empty")
 	}
@@ -219,6 +230,7 @@ func TestArchiveEmptyPassword(t *testing.T) {
 	if err := os.MkdirAll(repoDir, 0755); err != nil {
 		t.Fatalf("Failed to create dir: %v", err)
 	}
+
 	if err := os.WriteFile(filepath.Join(repoDir, "file.txt"), []byte("test"), 0644); err != nil {
 		t.Fatalf("Failed to create file: %v", err)
 	}

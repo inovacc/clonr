@@ -59,11 +59,14 @@ func runGitLog(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return err
 		}
+
 		if output == "" {
 			_, _ = fmt.Fprintln(os.Stdout, "No commits found")
 			return nil
 		}
+
 		_, _ = fmt.Fprintln(os.Stdout, output)
+
 		return nil
 	}
 
@@ -89,6 +92,7 @@ func runGitLog(cmd *cobra.Command, _ []string) error {
 	if jsonOutput {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(commits)
 	}
 
@@ -102,6 +106,7 @@ func runGitLog(cmd *cobra.Command, _ []string) error {
 			dimStyle.Render(commit.Author),
 			dimStyle.Render(commit.Email),
 		)
+
 		_, _ = fmt.Fprintf(os.Stdout, "  %s\n",
 			dimStyle.Render(commit.Date),
 		)

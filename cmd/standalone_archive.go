@@ -109,6 +109,7 @@ func runStandaloneArchive(_ *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("invalid path %s: %w", path, err)
 		}
+
 		if !info.IsDir() {
 			return fmt.Errorf("%s is not a directory", path)
 		}
@@ -153,6 +154,7 @@ func runStandaloneArchive(_ *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintf(os.Stderr, "Creating archive with %d repositories...\n", len(repoPaths))
 
 	startTime := time.Now()
+
 	manifest, err := standalone.CreateRepoArchive(outputPath, repoPaths, opts)
 	if err != nil {
 		return fmt.Errorf("failed to create archive: %w", err)
@@ -176,6 +178,7 @@ func runStandaloneArchive(_ *cobra.Command, args []string) error {
 	}
 
 	_, _ = fmt.Fprintln(os.Stderr)
+
 	_, _ = fmt.Fprintln(os.Stderr, "Archived repositories:")
 	for _, repo := range manifest.Repositories {
 		_, _ = fmt.Fprintf(os.Stderr, "  - %s (%d files, %s)\n", repo.Name, repo.FileCount, formatBytes(repo.Size))
@@ -192,9 +195,11 @@ func readArchivePassword(prompt string) (string, error) {
 	if term.IsTerminal(fd) {
 		password, err := term.ReadPassword(fd)
 		_, _ = fmt.Fprintln(os.Stderr)
+
 		if err != nil {
 			return "", err
 		}
+
 		return string(password), nil
 	}
 
@@ -203,5 +208,6 @@ func readArchivePassword(prompt string) (string, error) {
 	if scanner.Scan() {
 		return scanner.Text(), nil
 	}
+
 	return "", fmt.Errorf("failed to read password")
 }

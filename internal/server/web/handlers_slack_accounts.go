@@ -24,6 +24,7 @@ func (s *Server) handleSlackAccountsPage(w http.ResponseWriter, _ *http.Request)
 	accounts, err := s.slackAccountService.ListAccounts()
 	if err != nil {
 		log.Printf("Failed to list Slack accounts: %v", err)
+
 		accounts = []*model.SlackAccount{}
 	}
 
@@ -62,7 +63,7 @@ func (s *Server) handleListSlackAccounts(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Check if HTMX request
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		s.renderPartial(w, "slack_account_list.html", accounts)
 		return
 	}
@@ -101,8 +102,10 @@ func (s *Server) handleCreateSlackAccount(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		log.Printf("Failed to check Slack account existence for %q: %v", name, err)
 		s.jsonError(w, fmt.Sprintf("Failed to check account existence: %v", err), http.StatusInternalServerError)
+
 		return
 	}
+
 	if exists {
 		s.jsonError(w, "Account with this name already exists", http.StatusConflict)
 		return
@@ -113,10 +116,12 @@ func (s *Server) handleCreateSlackAccount(w http.ResponseWriter, r *http.Request
 	defer cancel()
 
 	testClient := slack.NewClient(token, slack.ClientOptions{})
+
 	authInfo, err := testClient.AuthTest(ctx)
 	if err != nil {
 		log.Printf("Slack token validation failed: %v", err)
 		s.jsonError(w, fmt.Sprintf("Token validation failed: %v", err), http.StatusBadRequest)
+
 		return
 	}
 
@@ -134,6 +139,7 @@ func (s *Server) handleCreateSlackAccount(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		log.Printf("Failed to create Slack account: %v", err)
 		s.jsonError(w, fmt.Sprintf("Failed to create account: %v", err), http.StatusInternalServerError)
+
 		return
 	}
 
@@ -144,9 +150,10 @@ func (s *Server) handleCreateSlackAccount(w http.ResponseWriter, r *http.Request
 	})
 
 	// Return success
-	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/slack/accounts")
+	if r.Header.Get("Hx-Request") == "true" {
+		w.Header().Set("Hx-Redirect", "/slack/accounts")
 		w.WriteHeader(http.StatusOK)
+
 		return
 	}
 
@@ -168,6 +175,7 @@ func (s *Server) handleDeleteSlackAccount(w http.ResponseWriter, r *http.Request
 	if err := s.slackAccountService.DeleteAccount(name); err != nil {
 		log.Printf("Failed to delete Slack account %q: %v", name, err)
 		s.jsonError(w, "Failed to delete account", http.StatusInternalServerError)
+
 		return
 	}
 
@@ -177,7 +185,7 @@ func (s *Server) handleDeleteSlackAccount(w http.ResponseWriter, r *http.Request
 	})
 
 	// Check if HTMX request
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		// Return empty response to remove the row
 		w.WriteHeader(http.StatusOK)
 		return
@@ -200,6 +208,7 @@ func (s *Server) handleSetActiveSlackAccount(w http.ResponseWriter, r *http.Requ
 	if err := s.slackAccountService.SetActiveAccount(name); err != nil {
 		log.Printf("Failed to set active Slack account %q: %v", name, err)
 		s.jsonError(w, "Failed to set active account", http.StatusInternalServerError)
+
 		return
 	}
 
@@ -209,9 +218,10 @@ func (s *Server) handleSetActiveSlackAccount(w http.ResponseWriter, r *http.Requ
 	})
 
 	// Check if HTMX request - refresh the account list
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		accounts, _ := s.slackAccountService.ListAccounts()
 		s.renderPartial(w, "slack_account_list.html", accounts)
+
 		return
 	}
 

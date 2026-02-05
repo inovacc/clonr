@@ -16,6 +16,7 @@ func LoadJSON[T any](path string) (*T, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
+
 		return nil, fmt.Errorf("failed to read file %s: %w", path, err)
 	}
 
@@ -50,6 +51,7 @@ func MustLoadJSON[T any](path string) *T {
 	if err != nil {
 		panic(fmt.Sprintf("failed to load JSON from %s: %v", path, err))
 	}
+
 	return result
 }
 
@@ -60,6 +62,7 @@ func ParseJSON[T any](data []byte) (*T, error) {
 	if err := json.Unmarshal(data, &result); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)
 	}
+
 	return &result, nil
 }
 

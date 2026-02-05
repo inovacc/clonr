@@ -16,6 +16,7 @@ const SchemaVersion = 1
 // DB represents the GitHub Actions monitoring database
 type DB struct {
 	*sql.DB
+
 	path string
 }
 
@@ -89,6 +90,7 @@ func DefaultDBPath() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to get config directory: %w", err)
 	}
+
 	return filepath.Join(configDir, "clonr", "actions.db"), nil
 }
 
@@ -144,6 +146,7 @@ func (db *DB) migrate() error {
 
 	// Get current version
 	var currentVersion int
+
 	err = db.QueryRow("SELECT COALESCE(MAX(version), 0) FROM schema_migrations").Scan(&currentVersion)
 	if err != nil {
 		return fmt.Errorf("failed to get current version: %w", err)
@@ -240,6 +243,7 @@ func (db *DB) migrate() error {
 			if _, err := db.Exec(m.sql); err != nil {
 				return fmt.Errorf("failed to apply migration %d: %w", m.version, err)
 			}
+
 			if _, err := db.Exec("INSERT INTO schema_migrations (version) VALUES (?)", m.version); err != nil {
 				return fmt.Errorf("failed to record migration %d: %w", m.version, err)
 			}

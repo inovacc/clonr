@@ -77,6 +77,7 @@ func extractGHFlags(cmd *cobra.Command) GHFlags {
 func outputJSON(data any) error {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
+
 	return enc.Encode(data)
 }
 
@@ -87,6 +88,7 @@ func newGHLogger(jsonOutput bool) *slog.Logger {
 	if jsonOutput {
 		return slog.New(slog.NewJSONHandler(os.Stderr, opts))
 	}
+
 	return slog.New(slog.NewTextHandler(os.Stderr, opts))
 }
 
@@ -118,30 +120,35 @@ func formatAge(t time.Time) string {
 		if mins == 1 {
 			return "1 minute ago"
 		}
+
 		return fmt.Sprintf("%d minutes ago", mins)
 	case d < 24*time.Hour:
 		hours := int(d.Hours())
 		if hours == 1 {
 			return "1 hour ago"
 		}
+
 		return fmt.Sprintf("%d hours ago", hours)
 	case d < 30*24*time.Hour:
 		days := int(d.Hours() / 24)
 		if days == 1 {
 			return "1 day ago"
 		}
+
 		return fmt.Sprintf("%d days ago", days)
 	case d < 365*24*time.Hour:
 		months := int(d.Hours() / 24 / 30)
 		if months == 1 {
 			return "1 month ago"
 		}
+
 		return fmt.Sprintf("%d months ago", months)
 	default:
 		years := int(d.Hours() / 24 / 365)
 		if years == 1 {
 			return "1 year ago"
 		}
+
 		return fmt.Sprintf("%d years ago", years)
 	}
 }
@@ -152,13 +159,17 @@ func formatShortDuration(d time.Duration) string {
 	if d < time.Minute {
 		return fmt.Sprintf("%ds", int(d.Seconds()))
 	}
+
 	if d < time.Hour {
 		mins := int(d.Minutes())
 		secs := int(d.Seconds()) % 60
+
 		return fmt.Sprintf("%dm %ds", mins, secs)
 	}
+
 	hours := int(d.Hours())
 	mins := int(d.Minutes()) % 60
+
 	return fmt.Sprintf("%dh %dm", hours, mins)
 }
 
@@ -187,5 +198,6 @@ func truncateStr(s string, maxLen int) string {
 	if len(s) <= maxLen {
 		return s + strings.Repeat(" ", maxLen-len(s))
 	}
+
 	return s[:maxLen-3] + "..."
 }

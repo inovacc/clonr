@@ -49,7 +49,9 @@ func runGitStatus(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return err
 		}
+
 		_, _ = fmt.Fprint(os.Stdout, output)
+
 		return nil
 	}
 
@@ -58,11 +60,14 @@ func runGitStatus(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return err
 		}
+
 		if output == "" {
 			_, _ = fmt.Fprintln(os.Stdout, "nothing to commit, working tree clean")
 			return nil
 		}
+
 		_, _ = fmt.Fprint(os.Stdout, output)
+
 		return nil
 	}
 
@@ -103,10 +108,12 @@ func runGitStatus(cmd *cobra.Command, _ []string) error {
 	lines := strings.Split(strings.TrimSpace(output), "\n")
 
 	var staged, unstaged, untracked []string
+
 	for _, line := range lines {
 		if len(line) < 3 {
 			continue
 		}
+
 		indexStatus := line[0]
 		workTreeStatus := line[1]
 		path := strings.TrimSpace(line[3:])
@@ -123,28 +130,34 @@ func runGitStatus(cmd *cobra.Command, _ []string) error {
 
 	if len(staged) > 0 {
 		_, _ = fmt.Fprintln(os.Stdout, "Changes to be committed:")
+
 		_, _ = fmt.Fprintln(os.Stdout, "  (use \"git restore --staged <file>...\" to unstage)")
 		for _, s := range staged {
 			_, _ = fmt.Fprintln(os.Stdout, okStyle.Render(s))
 		}
+
 		_, _ = fmt.Fprintln(os.Stdout, "")
 	}
 
 	if len(unstaged) > 0 {
 		_, _ = fmt.Fprintln(os.Stdout, "Changes not staged for commit:")
+
 		_, _ = fmt.Fprintln(os.Stdout, "  (use \"git add <file>...\" to update what will be committed)")
 		for _, s := range unstaged {
 			_, _ = fmt.Fprintln(os.Stdout, errStyle.Render(s))
 		}
+
 		_, _ = fmt.Fprintln(os.Stdout, "")
 	}
 
 	if len(untracked) > 0 {
 		_, _ = fmt.Fprintln(os.Stdout, "Untracked files:")
+
 		_, _ = fmt.Fprintln(os.Stdout, "  (use \"git add <file>...\" to include in what will be committed)")
 		for _, s := range untracked {
 			_, _ = fmt.Fprintln(os.Stdout, errStyle.Render(s))
 		}
+
 		_, _ = fmt.Fprintln(os.Stdout, "")
 	}
 

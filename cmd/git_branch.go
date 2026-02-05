@@ -54,11 +54,14 @@ func runGitBranch(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			return fmt.Errorf("branch name required for deletion")
 		}
+
 		name := args[0]
 		if err := client.DeleteBranch(ctx, name, forceDel); err != nil {
 			return err
 		}
+
 		_, _ = fmt.Fprintf(os.Stdout, okStyle.Render("Deleted branch '%s'\n"), name)
+
 		return nil
 	}
 
@@ -69,9 +72,12 @@ func runGitBranch(cmd *cobra.Command, args []string) error {
 			if git.IsAlreadyExists(err) {
 				return fmt.Errorf("branch '%s' already exists", name)
 			}
+
 			return err
 		}
+
 		_, _ = fmt.Fprintf(os.Stdout, okStyle.Render("Created and switched to branch '%s'\n"), name)
+
 		return nil
 	}
 
@@ -89,6 +95,7 @@ func runGitBranch(cmd *cobra.Command, args []string) error {
 	if jsonOutput {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(branches)
 	}
 
@@ -106,6 +113,7 @@ func runGitBranch(cmd *cobra.Command, args []string) error {
 		}
 
 		var info string
+
 		if b.Upstream != "" {
 			if b.Gone {
 				info = errStyle.Render(" [gone]")

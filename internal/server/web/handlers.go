@@ -46,6 +46,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, _ *http.Request) {
 	profiles, err := s.profileService.ListProfiles()
 	if err != nil {
 		log.Printf("Failed to list profiles: %v", err)
+
 		profiles = []model.Profile{}
 	}
 
@@ -54,6 +55,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, _ *http.Request) {
 	workspaces, err := s.workspaceService.ListWorkspaces()
 	if err != nil {
 		log.Printf("Failed to list workspaces: %v", err)
+
 		workspaces = []model.Workspace{}
 	}
 
@@ -74,6 +76,7 @@ func (s *Server) handleProfilesPage(w http.ResponseWriter, _ *http.Request) {
 	profiles, err := s.profileService.ListProfiles()
 	if err != nil {
 		log.Printf("Failed to list profiles: %v", err)
+
 		profiles = []model.Profile{}
 	}
 
@@ -95,6 +98,7 @@ func (s *Server) handleProfileAddPage(w http.ResponseWriter, _ *http.Request) {
 	workspaces, err := s.workspaceService.ListWorkspaces()
 	if err != nil {
 		log.Printf("Failed to list workspaces: %v", err)
+
 		workspaces = []model.Workspace{}
 	}
 
@@ -120,12 +124,14 @@ func (s *Server) handleProfileEditPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil || profile == nil {
 		log.Printf("Profile not found: %s", name)
 		http.Redirect(w, r, "/profiles", http.StatusFound)
+
 		return
 	}
 
 	workspaces, err := s.workspaceService.ListWorkspaces()
 	if err != nil {
 		log.Printf("Failed to list workspaces: %v", err)
+
 		workspaces = []model.Workspace{}
 	}
 
@@ -147,6 +153,7 @@ func (s *Server) handleWorkspacesPage(w http.ResponseWriter, _ *http.Request) {
 	workspaces, err := s.workspaceService.ListWorkspaces()
 	if err != nil {
 		log.Printf("Failed to list workspaces: %v", err)
+
 		workspaces = []model.Workspace{}
 	}
 
@@ -183,7 +190,7 @@ func (s *Server) handleListProfiles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if HTMX request
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		s.renderPartial(w, "profile_list.html", profiles)
 		return
 	}
@@ -217,7 +224,7 @@ func (s *Server) handleGetActiveProfile(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Check if HTMX request
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		s.renderPartial(w, "profile_row.html", profile)
 		return
 	}
@@ -256,8 +263,10 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Failed to check profile existence for %q: %v", name, err)
 		s.jsonError(w, fmt.Sprintf("Failed to check profile existence: %v", err), http.StatusInternalServerError)
+
 		return
 	}
+
 	if exists {
 		s.jsonError(w, "Profile already exists", http.StatusConflict)
 		return
@@ -268,8 +277,10 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Failed to check workspace existence for %q: %v", workspace, err)
 		s.jsonError(w, fmt.Sprintf("Failed to check workspace existence: %v", err), http.StatusInternalServerError)
+
 		return
 	}
+
 	if !wsExists {
 		s.jsonError(w, fmt.Sprintf("Workspace %q not found. Create it first.", workspace), http.StatusBadRequest)
 		return
@@ -279,16 +290,20 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 	if token != "" {
 		// Validate token
 		ctx := r.Context()
+
 		valid, username, err := validateGitHubToken(ctx, token, host)
 		if err != nil {
 			log.Printf("Token validation error for host %q: %v", host, err)
 			s.jsonError(w, fmt.Sprintf("Token validation failed: %v", err), http.StatusBadRequest)
+
 			return
 		}
+
 		if !valid {
 			s.jsonError(w, "Invalid or expired token. Please check your Personal Access Token.", http.StatusBadRequest)
 			return
 		}
+
 		log.Printf("Token validated successfully for user %q on host %q", username, host)
 
 		// Create profile with token
@@ -296,6 +311,7 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("Failed to create profile: %v", err)
 			s.jsonError(w, fmt.Sprintf("Failed to create profile: %v", err), http.StatusInternalServerError)
+
 			return
 		}
 
@@ -307,10 +323,11 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 		})
 
 		// Return success
-		if r.Header.Get("HX-Request") == "true" {
+		if r.Header.Get("Hx-Request") == "true" {
 			// Redirect to profiles page
-			w.Header().Set("HX-Redirect", "/profiles")
+			w.Header().Set("Hx-Redirect", "/profiles")
 			w.WriteHeader(http.StatusOK)
+
 			return
 		}
 
@@ -319,6 +336,7 @@ func (s *Server) handleCreateProfile(w http.ResponseWriter, r *http.Request) {
 			Message: "Profile created successfully",
 			Data:    profile,
 		})
+
 		return
 	}
 
@@ -354,12 +372,15 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("Failed to check workspace existence: %v", err)
 			s.jsonError(w, fmt.Sprintf("Failed to check workspace: %v", err), http.StatusInternalServerError)
+
 			return
 		}
+
 		if !wsExists {
 			s.jsonError(w, fmt.Sprintf("Workspace %q not found", workspace), http.StatusBadRequest)
 			return
 		}
+
 		profile.Workspace = workspace
 	}
 
@@ -368,12 +389,15 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	if token != "" {
 		// Validate new token
 		ctx := r.Context()
+
 		valid, username, err := validateGitHubToken(ctx, token, profile.Host)
 		if err != nil {
 			log.Printf("Token validation error: %v", err)
 			s.jsonError(w, fmt.Sprintf("Token validation failed: %v", err), http.StatusBadRequest)
+
 			return
 		}
+
 		if !valid {
 			s.jsonError(w, "Invalid or expired token", http.StatusBadRequest)
 			return
@@ -384,6 +408,7 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("Token encryption failed: %v", err)
 			s.jsonError(w, fmt.Sprintf("Failed to encrypt token: %v", err), http.StatusInternalServerError)
+
 			return
 		}
 
@@ -399,6 +424,7 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	if err := s.profileService.SaveProfile(profile); err != nil {
 		log.Printf("Failed to save profile: %v", err)
 		s.jsonError(w, fmt.Sprintf("Failed to save profile: %v", err), http.StatusInternalServerError)
+
 		return
 	}
 
@@ -409,9 +435,10 @@ func (s *Server) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Return success
-	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/profiles")
+	if r.Header.Get("Hx-Request") == "true" {
+		w.Header().Set("Hx-Redirect", "/profiles")
 		w.WriteHeader(http.StatusOK)
+
 		return
 	}
 
@@ -441,7 +468,7 @@ func (s *Server) handleDeleteProfile(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Check if HTMX request
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		// Return empty response to remove the row
 		w.WriteHeader(http.StatusOK)
 		return
@@ -472,9 +499,10 @@ func (s *Server) handleSetActiveProfile(w http.ResponseWriter, r *http.Request) 
 	})
 
 	// Check if HTMX request - refresh the profile list
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		profiles, _ := s.profileService.ListProfiles()
 		s.renderPartial(w, "profile_list.html", profiles)
+
 		return
 	}
 
@@ -493,7 +521,7 @@ func (s *Server) handleListWorkspaces(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if HTMX request
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		s.renderPartial(w, "workspace_list.html", workspaces)
 		return
 	}
@@ -536,9 +564,10 @@ func (s *Server) handleCreateWorkspace(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Check if HTMX request
-	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/workspaces")
+	if r.Header.Get("Hx-Request") == "true" {
+		w.Header().Set("Hx-Redirect", "/workspaces")
 		w.WriteHeader(http.StatusOK)
+
 		return
 	}
 
@@ -568,7 +597,7 @@ func (s *Server) handleDeleteWorkspace(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Check if HTMX request
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -588,7 +617,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if HTMX request
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		s.renderPartial(w, "status.html", status)
 		return
 	}
@@ -606,6 +635,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 // jsonResponse writes a JSON response
 func (s *Server) jsonResponse(w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json")
+
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		log.Printf("JSON encode error: %v", err)
 	}

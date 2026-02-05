@@ -20,30 +20,39 @@ func TestGenerateStandaloneKey(t *testing.T) {
 		if key.Version != KeyVersion {
 			t.Errorf("key.Version = %d, want %d", key.Version, KeyVersion)
 		}
+
 		if key.InstanceID == "" {
 			t.Error("key.InstanceID is empty")
 		}
+
 		if key.Host != host {
 			t.Errorf("key.Host = %s, want %s", key.Host, host)
 		}
+
 		if key.Port != port {
 			t.Errorf("key.Port = %d, want %d", key.Port, port)
 		}
+
 		if key.APIKey == "" {
 			t.Error("key.APIKey is empty")
 		}
+
 		if key.RefreshToken == "" {
 			t.Error("key.RefreshToken is empty")
 		}
+
 		if key.EncryptionKeyHint == "" {
 			t.Error("key.EncryptionKeyHint is empty")
 		}
+
 		if key.CreatedAt.IsZero() {
 			t.Error("key.CreatedAt is zero")
 		}
+
 		if key.ExpiresAt.IsZero() {
 			t.Error("key.ExpiresAt is zero")
 		}
+
 		if len(key.Capabilities) == 0 {
 			t.Error("key.Capabilities is empty")
 		}
@@ -54,18 +63,23 @@ func TestGenerateStandaloneKey(t *testing.T) {
 		if !config.Enabled {
 			t.Error("config.Enabled is false")
 		}
+
 		if config.InstanceID != key.InstanceID {
 			t.Error("config.InstanceID doesn't match key")
 		}
+
 		if config.Port != port {
 			t.Errorf("config.Port = %d, want %d", config.Port, port)
 		}
+
 		if len(config.APIKeyHash) == 0 {
 			t.Error("config.APIKeyHash is empty")
 		}
+
 		if len(config.RefreshToken) == 0 {
 			t.Error("config.RefreshToken is empty")
 		}
+
 		if len(config.Salt) == 0 {
 			t.Error("config.Salt is empty")
 		}
@@ -107,9 +121,11 @@ func TestSerializeAndParseKey(t *testing.T) {
 	if parsed.InstanceID != key.InstanceID {
 		t.Errorf("parsed.InstanceID = %s, want %s", parsed.InstanceID, key.InstanceID)
 	}
+
 	if parsed.Host != key.Host {
 		t.Errorf("parsed.Host = %s, want %s", parsed.Host, key.Host)
 	}
+
 	if parsed.Port != key.Port {
 		t.Errorf("parsed.Port = %d, want %d", parsed.Port, key.Port)
 	}
@@ -138,6 +154,7 @@ func TestEncodeAndDecodeSharedKey(t *testing.T) {
 	if len(encoded) <= len(StandaloneKeyMagic)+1 {
 		t.Error("encoded key too short")
 	}
+
 	if encoded[:len(StandaloneKeyMagic)+1] != StandaloneKeyMagic+":" {
 		t.Errorf("encoded key missing magic prefix, got %s", encoded[:len(StandaloneKeyMagic)+1])
 	}
@@ -164,6 +181,7 @@ func TestDecodeSharedKeyFromJSON(t *testing.T) {
 
 	// Test decoding raw JSON
 	jsonData, _ := json.Marshal(key)
+
 	decoded, err := DecodeSharedKey(string(jsonData))
 	if err != nil {
 		t.Fatalf("DecodeSharedKey(json) error = %v", err)
@@ -287,9 +305,11 @@ func TestKeyHasCapability(t *testing.T) {
 	if !key.HasCapability(CapabilityProfiles) {
 		t.Error("HasCapability(profiles) = false, want true")
 	}
+
 	if !key.HasCapability(CapabilityWorkspaces) {
 		t.Error("HasCapability(workspaces) = false, want true")
 	}
+
 	if key.HasCapability(CapabilityRepos) {
 		t.Error("HasCapability(repos) = true, want false")
 	}
@@ -314,21 +334,27 @@ func TestCreateConnection(t *testing.T) {
 	if conn.Name != "home-server" {
 		t.Errorf("conn.Name = %s, want home-server", conn.Name)
 	}
+
 	if conn.InstanceID != key.InstanceID {
 		t.Errorf("conn.InstanceID = %s, want %s", conn.InstanceID, key.InstanceID)
 	}
+
 	if conn.Host != key.Host {
 		t.Errorf("conn.Host = %s, want %s", conn.Host, key.Host)
 	}
+
 	if len(conn.APIKeyEncrypted) == 0 {
 		t.Error("conn.APIKeyEncrypted is empty")
 	}
+
 	if len(conn.LocalPasswordHash) == 0 {
 		t.Error("conn.LocalPasswordHash is empty")
 	}
+
 	if len(conn.LocalSalt) == 0 {
 		t.Error("conn.LocalSalt is empty")
 	}
+
 	if conn.SyncStatus != StatusDisconnected {
 		t.Errorf("conn.SyncStatus = %s, want %s", conn.SyncStatus, StatusDisconnected)
 	}
@@ -353,9 +379,11 @@ func TestDecryptConnection(t *testing.T) {
 		if err != nil {
 			t.Fatalf("DecryptConnection() error = %v", err)
 		}
+
 		if len(apiKey) == 0 {
 			t.Error("apiKey is empty")
 		}
+
 		if len(refreshToken) == 0 {
 			t.Error("refreshToken is empty")
 		}

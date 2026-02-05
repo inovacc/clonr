@@ -16,6 +16,7 @@ func RequiredString(value, fieldName string) error {
 	if value == "" {
 		return status.Errorf(codes.InvalidArgument, "%s is required", fieldName)
 	}
+
 	return nil
 }
 
@@ -25,9 +26,11 @@ func RequiredURL(value string) error {
 	if value == "" {
 		return status.Error(codes.InvalidArgument, "url is required")
 	}
+
 	if _, err := url.Parse(value); err != nil {
 		return status.Errorf(codes.InvalidArgument, "invalid url: %v", err)
 	}
+
 	return nil
 }
 
@@ -37,6 +40,7 @@ func RequiredPath(value string) error {
 	if value == "" {
 		return status.Error(codes.InvalidArgument, "path is required")
 	}
+
 	return nil
 }
 
@@ -46,6 +50,7 @@ func RequiredName(value string) error {
 	if value == "" {
 		return status.Error(codes.InvalidArgument, "name is required")
 	}
+
 	return nil
 }
 
@@ -77,6 +82,7 @@ func NotNil(value any, fieldName string) error {
 	if value == nil {
 		return status.Errorf(codes.InvalidArgument, "%s is required", fieldName)
 	}
+
 	return nil
 }
 

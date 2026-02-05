@@ -46,10 +46,12 @@ func runMonitor(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open actions database: %w", err)
 	}
+
 	defer func() { _ = db.Close() }()
 
 	// Parse repo filter
 	var owner, repo string
+
 	if monitorRepo != "" {
 		parts := strings.Split(monitorRepo, "/")
 		if len(parts) == 2 {
@@ -68,6 +70,7 @@ func runMonitor(_ *cobra.Command, _ []string) error {
 	if len(records) == 0 {
 		_, _ = fmt.Fprintln(os.Stdout, "No push records found.")
 		_, _ = fmt.Fprintln(os.Stdout, dimStyle.Render("\nPush commits using 'clonr push' to enable actions monitoring."))
+
 		return nil
 	}
 
@@ -102,10 +105,12 @@ func displayPushRecord(db *actionsdb.DB, record *actionsdb.PushRecord) {
 	if len(runs) > 0 {
 		allComplete := true
 		hasFailure := false
+
 		for _, run := range runs {
 			if run.Status != "completed" {
 				allComplete = false
 			}
+
 			if run.Conclusion == "failure" {
 				hasFailure = true
 			}
@@ -170,6 +175,7 @@ func displayPushRecord(db *actionsdb.DB, record *actionsdb.PushRecord) {
 			}
 
 			duration := ""
+
 			if !run.StartedAt.IsZero() && !run.CompletedAt.IsZero() {
 				d := run.CompletedAt.Sub(run.StartedAt)
 				duration = fmt.Sprintf(" (%s)", formatShortDuration(d))

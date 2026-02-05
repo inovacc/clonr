@@ -50,6 +50,7 @@ func runStandaloneExtract(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("archive not found: %w", err)
 	}
+
 	if info.IsDir() {
 		return fmt.Errorf("%s is a directory, not an archive", archivePath)
 	}
@@ -80,12 +81,15 @@ func runStandaloneExtract(_ *cobra.Command, args []string) error {
 			if repo.URL != "" {
 				_, _ = fmt.Fprintf(os.Stdout, "    URL: %s\n", repo.URL)
 			}
+
 			_, _ = fmt.Fprintf(os.Stdout, "    Original path: %s\n", repo.Path)
 			_, _ = fmt.Fprintf(os.Stdout, "    Files: %d\n", repo.FileCount)
+
 			_, _ = fmt.Fprintf(os.Stdout, "    Size: %s\n", formatBytes(repo.Size))
 			if repo.LastCommit != "" {
 				_, _ = fmt.Fprintf(os.Stdout, "    Last commit: %s\n", repo.LastCommit)
 			}
+
 			_, _ = fmt.Fprintf(os.Stdout, "    Archived: %s\n", repo.ArchivedAt.Format(time.RFC3339))
 		}
 
@@ -96,6 +100,7 @@ func runStandaloneExtract(_ *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintf(os.Stderr, "Extracting archive to %s...\n", extractOutput)
 
 	startTime := time.Now()
+
 	manifest, err := standalone.ExtractRepoArchive(archivePath, extractOutput, password)
 	if err != nil {
 		return fmt.Errorf("failed to extract archive: %w", err)
@@ -109,6 +114,7 @@ func runStandaloneExtract(_ *cobra.Command, args []string) error {
 	_, _ = fmt.Fprintf(os.Stderr, "  Repositories: %d\n", len(manifest.Repositories))
 	_, _ = fmt.Fprintf(os.Stderr, "  Duration: %s\n", duration.Round(time.Millisecond))
 	_, _ = fmt.Fprintln(os.Stderr)
+
 	_, _ = fmt.Fprintln(os.Stderr, "Extracted repositories:")
 	for _, repo := range manifest.Repositories {
 		_, _ = fmt.Fprintf(os.Stderr, "  - %s\n", repo.Name)

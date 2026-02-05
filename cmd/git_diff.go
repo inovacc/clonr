@@ -62,8 +62,10 @@ func runGitDiff(cmd *cobra.Command, args []string) error {
 			if i+1 < len(args) {
 				opts.Path = args[i+1]
 			}
+
 			break
 		}
+
 		if opts.Commit == "" {
 			opts.Commit = arg
 		}
@@ -80,6 +82,7 @@ func runGitDiff(cmd *cobra.Command, args []string) error {
 		} else {
 			_, _ = fmt.Fprintln(os.Stdout, "No changes")
 		}
+
 		return nil
 	}
 

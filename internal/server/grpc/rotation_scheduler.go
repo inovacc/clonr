@@ -46,6 +46,7 @@ func (rs *RotationScheduler) Start() {
 	rs.running = true
 
 	rs.wg.Add(1)
+
 	go rs.run()
 
 	slog.Info("key rotation scheduler started",
@@ -56,10 +57,12 @@ func (rs *RotationScheduler) Start() {
 // Stop gracefully stops the rotation scheduler.
 func (rs *RotationScheduler) Stop() {
 	rs.mu.Lock()
+
 	if !rs.running {
 		rs.mu.Unlock()
 		return
 	}
+
 	rs.cancel()
 	rs.running = false
 	rs.mu.Unlock()

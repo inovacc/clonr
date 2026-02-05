@@ -58,6 +58,7 @@ func NewSTUNClient(servers ...string) *STUNClient {
 	if len(servers) == 0 {
 		servers = DefaultSTUNServers
 	}
+
 	return &STUNClient{
 		servers:  servers,
 		timeout:  5 * time.Second,
@@ -81,15 +82,19 @@ func (c *STUNClient) WithCacheTTL(d time.Duration) *STUNClient {
 func (c *STUNClient) DiscoverPublicIP(ctx context.Context) (*STUNResult, error) {
 	// Check cache first
 	c.mu.RLock()
+
 	if c.cache != nil && time.Since(c.cacheAt) < c.cacheTTL {
 		result := *c.cache
 		c.mu.RUnlock()
+
 		return &result, nil
 	}
+
 	c.mu.RUnlock()
 
 	// Try each STUN server
 	var lastErr error
+
 	for _, server := range c.servers {
 		result, err := c.querySTUNServer(ctx, server)
 		if err != nil {
@@ -109,6 +114,7 @@ func (c *STUNClient) DiscoverPublicIP(ctx context.Context) (*STUNResult, error) 
 	if lastErr != nil {
 		return nil, fmt.Errorf("all STUN servers failed, last error: %w", lastErr)
 	}
+
 	return nil, fmt.Errorf("no STUN servers available")
 }
 
@@ -129,6 +135,7 @@ func (c *STUNClient) querySTUNServer(ctx context.Context, server string) (*STUNR
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to STUN server %s: %w", server, err)
 	}
+
 	defer func() { _ = conn.Close() }()
 
 	// Get local address
@@ -151,6 +158,7 @@ func (c *STUNClient) querySTUNServer(ctx context.Context, server string) (*STUNR
 
 	// Read response
 	buf := make([]byte, 1500)
+
 	n, err := conn.Read(buf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read STUN response: %w", err)
@@ -160,6 +168,7 @@ func (c *STUNClient) querySTUNServer(ctx context.Context, server string) (*STUNR
 
 	// Parse response
 	response := new(stun.Message)
+
 	response.Raw = buf[:n]
 	if err := response.Decode(); err != nil {
 		return nil, fmt.Errorf("failed to decode STUN response: %w", err)
@@ -173,6 +182,7 @@ func (c *STUNClient) querySTUNServer(ctx context.Context, server string) (*STUNR
 		if err := mappedAddr.GetFrom(response); err != nil {
 			return nil, fmt.Errorf("no mapped address in STUN response: %w", err)
 		}
+
 		return &STUNResult{
 			PublicIP:   mappedAddr.IP,
 			PublicPort: mappedAddr.Port,

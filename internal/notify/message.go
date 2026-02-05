@@ -239,6 +239,7 @@ func formatCloneBlocks(event *Event) []Block {
 	}
 
 	blocks = append(blocks, formatContextBlock(event))
+
 	return blocks
 }
 
@@ -270,6 +271,7 @@ func formatPullBlocks(event *Event) []Block {
 	}
 
 	blocks = append(blocks, formatContextBlock(event))
+
 	return blocks
 }
 
@@ -313,6 +315,7 @@ func formatCommitBlocks(event *Event) []Block {
 	}
 
 	blocks = append(blocks, formatContextBlock(event))
+
 	return blocks
 }
 
@@ -357,6 +360,7 @@ func formatCIFailBlocks(event *Event) []Block {
 	}
 
 	blocks = append(blocks, formatContextBlock(event))
+
 	return blocks
 }
 
@@ -391,6 +395,7 @@ func formatCIPassBlocks(event *Event) []Block {
 	}
 
 	blocks = append(blocks, formatContextBlock(event))
+
 	return blocks
 }
 
@@ -432,6 +437,7 @@ func formatErrorBlocks(event *Event) []Block {
 	}
 
 	blocks = append(blocks, formatContextBlock(event))
+
 	return blocks
 }
 
@@ -440,6 +446,7 @@ func formatGenericText(event *Event) string {
 	if event.Repository != "" {
 		return fmt.Sprintf("[%s] %s", event.Repository, event.Type)
 	}
+
 	return fmt.Sprintf("[clonr] %s", event.Type)
 }
 
@@ -467,6 +474,7 @@ func formatGenericBlocks(event *Event) []Block {
 	}
 
 	blocks = append(blocks, formatContextBlock(event))
+
 	return blocks
 }
 
@@ -510,6 +518,7 @@ func toTitle(s string) string {
 			words[i] = strings.ToUpper(string(word[0])) + strings.ToLower(word[1:])
 		}
 	}
+
 	return strings.Join(words, " ")
 }
 
@@ -523,6 +532,7 @@ func truncate(s string, maxLen int) string {
 	if len(s) <= maxLen {
 		return s
 	}
+
 	return s[:maxLen-3] + "..."
 }
 

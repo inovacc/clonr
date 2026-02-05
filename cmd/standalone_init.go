@@ -98,8 +98,10 @@ func runStandaloneInit(_ *cobra.Command, _ []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to encode key: %w", err)
 		}
+
 		output = []byte(encoded)
 	}
+
 	if err != nil {
 		return fmt.Errorf("failed to serialize key: %w", err)
 	}
@@ -109,6 +111,7 @@ func runStandaloneInit(_ *cobra.Command, _ []string) error {
 		if err := os.WriteFile(standaloneInitOutput, output, 0600); err != nil {
 			return fmt.Errorf("failed to write key to file: %w", err)
 		}
+
 		_, _ = fmt.Fprintf(os.Stderr, "Standalone key written to: %s\n", standaloneInitOutput)
 	} else {
 		_, _ = fmt.Fprintln(os.Stdout, string(output))
@@ -138,5 +141,6 @@ func isOutputToFile() bool {
 	if err != nil {
 		return false
 	}
+
 	return (stat.Mode() & os.ModeCharDevice) == 0
 }

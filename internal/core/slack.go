@@ -218,6 +218,7 @@ func (m *SlackManager) GetSender() (notify.Sender, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to decrypt webhook URL: %w", err)
 		}
+
 		opts = append(opts, notify.WithWebhook(webhookURL))
 	}
 
@@ -227,6 +228,7 @@ func (m *SlackManager) GetSender() (notify.Sender, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to decrypt bot token: %w", err)
 		}
+
 		opts = append(opts, notify.WithBotToken(botToken))
 	}
 

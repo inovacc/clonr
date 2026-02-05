@@ -14,6 +14,7 @@ func derefString(s *string) string {
 	if s == nil {
 		return ""
 	}
+
 	return *s
 }
 
@@ -21,6 +22,7 @@ func derefInt64(i *int64) int64 {
 	if i == nil {
 		return 0
 	}
+
 	return *i
 }
 
@@ -32,6 +34,7 @@ func derefTime(t *time.Time) time.Time {
 	if t == nil {
 		return time.Time{}
 	}
+
 	return *t
 }
 

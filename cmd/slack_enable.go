@@ -66,6 +66,7 @@ func runSlackEnable(_ *cobra.Command, _ []string) error {
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout, "Slack notifications enabled.")
+
 	return nil
 }
 
@@ -96,5 +97,6 @@ func runSlackDisable(_ *cobra.Command, _ []string) error {
 
 	_, _ = fmt.Fprintln(os.Stdout, "Slack notifications disabled.")
 	_, _ = fmt.Fprintln(os.Stdout, "Re-enable with: clonr slack enable")
+
 	return nil
 }

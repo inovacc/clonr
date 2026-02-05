@@ -161,22 +161,26 @@ func (s *PendingSyncStore) Get(connectionName, dataType, name string) *SyncedDat
 // List returns all pending items for a connection.
 func (s *PendingSyncStore) List(connectionName string) []*SyncedData {
 	var result []*SyncedData
+
 	for _, item := range s.items {
 		if item.ConnectionName == connectionName {
 			result = append(result, item)
 		}
 	}
+
 	return result
 }
 
 // ListByState returns all items with a specific state.
 func (s *PendingSyncStore) ListByState(state SyncState) []*SyncedData {
 	var result []*SyncedData
+
 	for _, item := range s.items {
 		if item.State == state {
 			result = append(result, item)
 		}
 	}
+
 	return result
 }
 
@@ -189,13 +193,16 @@ func (s *PendingSyncStore) Remove(connectionName, dataType, name string) {
 // DecryptAll attempts to decrypt all pending items with the provided key.
 // Returns the number of successfully decrypted items and any errors.
 func (s *PendingSyncStore) DecryptAll(connectionName string, decryptionKey []byte) (int, []error) {
-	var decrypted int
-	var errors []error
+	var (
+		decrypted int
+		errors    []error
+	)
 
 	for key, item := range s.items {
 		if item.ConnectionName != connectionName {
 			continue
 		}
+
 		if item.State != SyncStateEncrypted {
 			continue
 		}
@@ -255,6 +262,7 @@ func (m *EncryptionKeyManager) VerifyKey(password string) bool {
 	if m.config == nil || !m.config.Enabled {
 		return false
 	}
+
 	return VerifyPassword(password, m.config.Salt, m.config.KeyHash)
 }
 
@@ -263,9 +271,11 @@ func (m *EncryptionKeyManager) DeriveKey(password string) ([]byte, error) {
 	if m.config == nil || !m.config.Enabled {
 		return nil, fmt.Errorf("encryption not configured")
 	}
+
 	if !m.VerifyKey(password) {
 		return nil, fmt.Errorf("invalid password")
 	}
+
 	return DeriveKeyArgon2(password, m.config.Salt), nil
 }
 
@@ -285,7 +295,9 @@ func (m *EncryptionKeyManager) LoadConfig(data []byte) error {
 	if err := json.Unmarshal(data, &config); err != nil {
 		return fmt.Errorf("failed to parse config: %w", err)
 	}
+
 	m.config = &config
+
 	return nil
 }
 
@@ -294,5 +306,6 @@ func (m *EncryptionKeyManager) SaveConfig() ([]byte, error) {
 	if m.config == nil {
 		return nil, fmt.Errorf("no configuration to save")
 	}
+
 	return json.Marshal(m.config)
 }

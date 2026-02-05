@@ -68,6 +68,7 @@ func (s *Server) handleGitHubOAuthStart(w http.ResponseWriter, r *http.Request) 
 		s.jsonError(w, "Failed to check profile existence", http.StatusInternalServerError)
 		return
 	}
+
 	if exists {
 		s.jsonError(w, "Profile already exists", http.StatusConflict)
 		return
@@ -79,6 +80,7 @@ func (s *Server) handleGitHubOAuthStart(w http.ResponseWriter, r *http.Request) 
 		s.jsonError(w, "Failed to check workspace existence", http.StatusInternalServerError)
 		return
 	}
+
 	if !wsExists {
 		s.jsonError(w, "Workspace not found", http.StatusBadRequest)
 		return
@@ -94,7 +96,9 @@ func (s *Server) handleGitHubOAuthStart(w http.ResponseWriter, r *http.Request) 
 
 	// Store session immediately so status endpoint can find it
 	oauthSessionMutex.Lock()
+
 	oauthSessions[name] = session
+
 	oauthSessionMutex.Unlock()
 
 	// Start OAuth flow in background
@@ -108,8 +112,10 @@ func (s *Server) handleGitHubOAuthStart(w http.ResponseWriter, r *http.Request) 
 		flow.OnDeviceCode(func(code, url string) {
 			log.Printf("OAuth device code received: %s, verify URL: %s", code, url)
 			oauthSessionMutex.Lock()
+
 			session.UserCode = code
 			session.VerifyURL = url
+
 			oauthSessionMutex.Unlock()
 		})
 
@@ -117,27 +123,35 @@ func (s *Server) handleGitHubOAuthStart(w http.ResponseWriter, r *http.Request) 
 		if err != nil {
 			log.Printf("OAuth flow failed for profile %q: %v", name, err)
 			oauthSessionMutex.Lock()
+
 			session.Error = err.Error()
+
 			oauthSessionMutex.Unlock()
+
 			return
 		}
 
 		oauthSessionMutex.Lock()
+
 		session.Completed = true
 		session.Result = &OAuthResult{
 			Token:    result.Token,
 			Username: result.Username,
 			Scopes:   result.Scopes,
 		}
+
 		oauthSessionMutex.Unlock()
 	}()
 
 	// Wait for device code (up to 3 seconds)
 	var sess *OAuthSession
-	for i := 0; i < 6; i++ {
+
+	for range 6 {
 		time.Sleep(500 * time.Millisecond)
 		oauthSessionMutex.RLock()
+
 		currSess, exists := oauthSessions[name]
+
 		oauthSessionMutex.RUnlock()
 
 		if !exists {
@@ -152,6 +166,7 @@ func (s *Server) handleGitHubOAuthStart(w http.ResponseWriter, r *http.Request) 
 				"status": "error",
 				"error":  sess.Error,
 			})
+
 			return
 		}
 
@@ -163,6 +178,7 @@ func (s *Server) handleGitHubOAuthStart(w http.ResponseWriter, r *http.Request) 
 				"verify_url": sess.VerifyURL,
 				"message":    "Enter the code in your browser",
 			})
+
 			return
 		}
 	}
@@ -178,6 +194,7 @@ func (s *Server) handleGitHubOAuthStart(w http.ResponseWriter, r *http.Request) 
 		oauthSessionMutex.Lock()
 		delete(oauthSessions, name)
 		oauthSessionMutex.Unlock()
+
 		return
 	}
 
@@ -196,7 +213,9 @@ func (s *Server) handleGitHubOAuthStatus(w http.ResponseWriter, r *http.Request)
 	}
 
 	oauthSessionMutex.RLock()
+
 	session, exists := oauthSessions[name]
+
 	oauthSessionMutex.RUnlock()
 
 	if !exists {
@@ -213,6 +232,7 @@ func (s *Server) handleGitHubOAuthStatus(w http.ResponseWriter, r *http.Request)
 		oauthSessionMutex.Lock()
 		delete(oauthSessions, name)
 		oauthSessionMutex.Unlock()
+
 		return
 	}
 
@@ -244,6 +264,7 @@ func (s *Server) handleGitHubOAuthStatus(w http.ResponseWriter, r *http.Request)
 			"username": result.Username,
 			"profile":  profile.Name,
 		})
+
 		return
 	}
 
@@ -318,7 +339,9 @@ func (s *Server) handleSlackOAuthStart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slackOAuthSessionMutex.Lock()
+
 	slackOAuthSessions[activeProfile.Name] = session
+
 	slackOAuthSessionMutex.Unlock()
 
 	// Return URL for browser redirect
@@ -403,11 +426,13 @@ func (s *Server) handleSlackStatus(w http.ResponseWriter, r *http.Request) {
 			"connected": false,
 			"error":     "No active profile",
 		}
-		if r.Header.Get("HX-Request") == "true" {
+		if r.Header.Get("Hx-Request") == "true" {
 			s.renderPartial(w, "slack_status.html", data)
 			return
 		}
+
 		s.jsonResponse(w, data)
+
 		return
 	}
 
@@ -419,10 +444,11 @@ func (s *Server) handleSlackStatus(w http.ResponseWriter, r *http.Request) {
 		data["channel"] = channelName
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		s.renderPartial(w, "slack_status.html", data)
 		return
 	}
+
 	s.jsonResponse(w, data)
 }
 
@@ -464,6 +490,7 @@ func (s *Server) handleSlackAdd(w http.ResponseWriter, r *http.Request) {
 			"detail": err.Error(),
 		})
 		s.jsonError(w, "Failed to add Slack channel", http.StatusInternalServerError)
+
 		return
 	}
 
@@ -472,12 +499,13 @@ func (s *Server) handleSlackAdd(w http.ResponseWriter, r *http.Request) {
 		"profile": activeProfile.Name,
 	})
 
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		s.renderPartial(w, "slack_status.html", map[string]any{
 			"connected": true,
 			"profile":   activeProfile.Name,
 			"channel":   channel.Name,
 		})
+
 		return
 	}
 
@@ -508,11 +536,12 @@ func (s *Server) handleSlackRemove(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		s.renderPartial(w, "slack_status.html", map[string]any{
 			"connected": false,
 			"profile":   activeProfile.Name,
 		})
+
 		return
 	}
 
@@ -532,6 +561,7 @@ func validateGitHubToken(ctx context.Context, token, host string) (bool, string,
 		uploadURL := fmt.Sprintf("https://%s/api/uploads/", host)
 
 		var err error
+
 		client, err = client.WithEnterpriseURLs(baseURL, uploadURL)
 		if err != nil {
 			return false, "", fmt.Errorf("failed to configure enterprise client: %w", err)
@@ -543,6 +573,7 @@ func validateGitHubToken(ctx context.Context, token, host string) (bool, string,
 		if resp != nil && resp.StatusCode == http.StatusUnauthorized {
 			return false, "", nil
 		}
+
 		return false, "", err
 	}
 
@@ -558,6 +589,7 @@ func (s *Server) handleSlackMessagesPage(w http.ResponseWriter, _ *http.Request)
 			"ActivePage": "slack",
 			"Connected":  false,
 		})
+
 		return
 	}
 
@@ -576,15 +608,17 @@ func (s *Server) handleSlackMessagesPage(w http.ResponseWriter, _ *http.Request)
 func (s *Server) handleSlackChannels(w http.ResponseWriter, r *http.Request) {
 	channels, err := s.slackService.ListChannels(r.Context())
 	if err != nil {
-		if r.Header.Get("HX-Request") == "true" {
+		if r.Header.Get("Hx-Request") == "true" {
 			s.renderPartial(w, "slack_channels.html", map[string]any{"error": err.Error()})
 			return
 		}
+
 		s.jsonError(w, err.Error(), http.StatusBadRequest)
+
 		return
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		s.renderPartial(w, "slack_channels.html", map[string]any{"channels": channels})
 		return
 	}
@@ -596,22 +630,27 @@ func (s *Server) handleSlackChannels(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleSlackMessages(w http.ResponseWriter, r *http.Request) {
 	channelID := r.URL.Query().Get("channel")
 	if channelID == "" {
-		if r.Header.Get("HX-Request") == "true" {
+		if r.Header.Get("Hx-Request") == "true" {
 			s.renderPartial(w, "slack_messages.html", map[string]any{"error": "Channel ID required"})
 			return
 		}
+
 		s.jsonError(w, "Channel ID required", http.StatusBadRequest)
+
 		return
 	}
 
 	cursor := r.URL.Query().Get("cursor")
+
 	result, err := s.slackService.GetChannelHistory(r.Context(), channelID, 50, cursor)
 	if err != nil {
-		if r.Header.Get("HX-Request") == "true" {
+		if r.Header.Get("Hx-Request") == "true" {
 			s.renderPartial(w, "slack_messages.html", map[string]any{"error": err.Error()})
 			return
 		}
+
 		s.jsonError(w, err.Error(), http.StatusInternalServerError)
+
 		return
 	}
 
@@ -658,13 +697,14 @@ func (s *Server) handleSlackMessages(w http.ResponseWriter, r *http.Request) {
 		messages = append(messages, msgData)
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		s.renderPartial(w, "slack_messages.html", map[string]any{
 			"messages":   messages,
 			"hasMore":    result.HasMore,
 			"nextCursor": result.NextCursor,
 			"channelID":  channelID,
 		})
+
 		return
 	}
 
@@ -679,21 +719,25 @@ func (s *Server) handleSlackMessages(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleSlackSearch(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 	if query == "" {
-		if r.Header.Get("HX-Request") == "true" {
+		if r.Header.Get("Hx-Request") == "true" {
 			s.renderPartial(w, "slack_messages.html", map[string]any{"error": "Search query required"})
 			return
 		}
+
 		s.jsonError(w, "Search query required", http.StatusBadRequest)
+
 		return
 	}
 
 	result, err := s.slackService.SearchMessages(r.Context(), query, 50)
 	if err != nil {
-		if r.Header.Get("HX-Request") == "true" {
+		if r.Header.Get("Hx-Request") == "true" {
 			s.renderPartial(w, "slack_messages.html", map[string]any{"error": err.Error()})
 			return
 		}
+
 		s.jsonError(w, err.Error(), http.StatusInternalServerError)
+
 		return
 	}
 
@@ -716,13 +760,14 @@ func (s *Server) handleSlackSearch(w http.ResponseWriter, r *http.Request) {
 		messages = append(messages, msgData)
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("Hx-Request") == "true" {
 		s.renderPartial(w, "slack_messages.html", map[string]any{
 			"messages": messages,
 			"isSearch": true,
 			"query":    query,
 			"total":    result.Total,
 		})
+
 		return
 	}
 
@@ -738,8 +783,10 @@ func getUserDisplayName(user *slack.User) string {
 	if user.Profile.DisplayName != "" {
 		return user.Profile.DisplayName
 	}
+
 	if user.RealName != "" {
 		return user.RealName
 	}
+
 	return user.Name
 }

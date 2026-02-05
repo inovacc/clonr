@@ -18,6 +18,7 @@ func setupTestRepo(t *testing.T) string {
 
 	// Initialize git repo
 	cmd := exec.Command("git", "init")
+
 	cmd.Dir = tmpDir
 	if err := cmd.Run(); err != nil {
 		os.RemoveAll(tmpDir)
@@ -26,6 +27,7 @@ func setupTestRepo(t *testing.T) string {
 
 	// Configure git user for commits
 	cmd = exec.Command("git", "config", "user.email", "test@test.com")
+
 	cmd.Dir = tmpDir
 	if err := cmd.Run(); err != nil {
 		os.RemoveAll(tmpDir)
@@ -33,6 +35,7 @@ func setupTestRepo(t *testing.T) string {
 	}
 
 	cmd = exec.Command("git", "config", "user.name", "Test User")
+
 	cmd.Dir = tmpDir
 	if err := cmd.Run(); err != nil {
 		os.RemoveAll(tmpDir)
@@ -47,6 +50,7 @@ func setupTestRepo(t *testing.T) string {
 	}
 
 	cmd = exec.Command("git", "add", ".")
+
 	cmd.Dir = tmpDir
 	if err := cmd.Run(); err != nil {
 		os.RemoveAll(tmpDir)
@@ -54,6 +58,7 @@ func setupTestRepo(t *testing.T) string {
 	}
 
 	cmd = exec.Command("git", "commit", "-m", "Initial commit")
+
 	cmd.Dir = tmpDir
 	if err := cmd.Run(); err != nil {
 		os.RemoveAll(tmpDir)
@@ -72,6 +77,7 @@ func TestRunGitStatus_NotGitRepo(t *testing.T) {
 
 	// Change to non-git directory
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(tmpDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -81,6 +87,7 @@ func TestRunGitStatus_NotGitRepo(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for non-git repository")
 	}
+
 	if err.Error() != "not a git repository" {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -91,6 +98,7 @@ func TestRunGitStatus_GitRepo(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -112,6 +120,7 @@ func TestRunGitStatus_ShortFormat(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -119,6 +128,7 @@ func TestRunGitStatus_ShortFormat(t *testing.T) {
 
 	gitStatusCmd.Flags().Set("short", "true")
 	gitStatusCmd.Flags().Set("porcelain", "false")
+
 	gitStatusCmd.Flags().Set("branch", "false")
 	defer gitStatusCmd.Flags().Set("short", "false")
 
@@ -133,6 +143,7 @@ func TestRunGitStatus_PorcelainFormat(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -140,6 +151,7 @@ func TestRunGitStatus_PorcelainFormat(t *testing.T) {
 
 	gitStatusCmd.Flags().Set("short", "false")
 	gitStatusCmd.Flags().Set("porcelain", "true")
+
 	gitStatusCmd.Flags().Set("branch", "false")
 	defer gitStatusCmd.Flags().Set("porcelain", "false")
 
@@ -157,6 +169,7 @@ func TestRunGitCommit_NotGitRepo(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(tmpDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -176,12 +189,14 @@ func TestRunGitCommit_NothingToCommit(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
 	defer os.Chdir(oldDir)
 
 	gitCommitCmd.Flags().Set("message", "test commit")
+
 	gitCommitCmd.Flags().Set("all", "false")
 	defer gitCommitCmd.Flags().Set("message", "")
 
@@ -197,6 +212,7 @@ func TestRunGitCommit_WithChanges(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -209,12 +225,14 @@ func TestRunGitCommit_WithChanges(t *testing.T) {
 	}
 
 	cmd := exec.Command("git", "add", "newfile.txt")
+
 	cmd.Dir = repoDir
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("failed to stage file: %v", err)
 	}
 
 	gitCommitCmd.Flags().Set("message", "add new file")
+
 	gitCommitCmd.Flags().Set("all", "false")
 	defer gitCommitCmd.Flags().Set("message", "")
 
@@ -232,6 +250,7 @@ func TestRunGitLog_NotGitRepo(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(tmpDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -248,6 +267,7 @@ func TestRunGitLog_GitRepo(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -269,12 +289,14 @@ func TestRunGitLog_Oneline(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
 	defer os.Chdir(oldDir)
 
 	gitLogCmd.Flags().Set("oneline", "true")
+
 	gitLogCmd.Flags().Set("json", "false")
 	defer gitLogCmd.Flags().Set("oneline", "false")
 
@@ -289,12 +311,14 @@ func TestRunGitLog_JSON(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
 	defer os.Chdir(oldDir)
 
 	gitLogCmd.Flags().Set("oneline", "false")
+
 	gitLogCmd.Flags().Set("json", "true")
 	defer gitLogCmd.Flags().Set("json", "false")
 
@@ -312,6 +336,7 @@ func TestRunGitDiff_NotGitRepo(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(tmpDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -328,6 +353,7 @@ func TestRunGitDiff_GitRepo(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -348,6 +374,7 @@ func TestRunGitDiff_Staged(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -370,6 +397,7 @@ func TestRunGitBranch_NotGitRepo(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(tmpDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -386,6 +414,7 @@ func TestRunGitBranch_ListBranches(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -408,6 +437,7 @@ func TestRunGitBranch_ListJSON(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -427,6 +457,7 @@ func TestRunGitBranch_CreateBranch(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -444,6 +475,7 @@ func TestRunGitBranch_CreateBranch(t *testing.T) {
 	// Verify branch was created
 	cmd := exec.Command("git", "branch", "--list", "test-branch")
 	cmd.Dir = repoDir
+
 	output, _ := cmd.Output()
 	if len(output) == 0 {
 		t.Error("branch was not created")
@@ -455,6 +487,7 @@ func TestRunGitBranch_DeleteBranch(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -462,6 +495,7 @@ func TestRunGitBranch_DeleteBranch(t *testing.T) {
 
 	// First create a branch
 	cmd := exec.Command("git", "branch", "delete-me")
+
 	cmd.Dir = repoDir
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("failed to create branch: %v", err)
@@ -481,6 +515,7 @@ func TestRunGitBranch_DeleteRequiresName(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -503,6 +538,7 @@ func TestRunGitPull_NotGitRepo(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(tmpDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}

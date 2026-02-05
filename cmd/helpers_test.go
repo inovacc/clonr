@@ -74,6 +74,7 @@ func TestExpandPath(t *testing.T) {
 				t.Errorf("expandPath(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
 				return
 			}
+
 			if !tt.wantErr && result == "" {
 				t.Errorf("expandPath(%q) returned empty string", tt.input)
 			}

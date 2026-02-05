@@ -294,6 +294,7 @@ func runPMSlackChannels(cmd *cobra.Command, _ []string) error {
 	if outputJSON {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(result.Channels)
 	}
 
@@ -379,6 +380,7 @@ func runPMSlackMessages(cmd *cobra.Command, _ []string) error {
 		if parseErr != nil {
 			return fmt.Errorf("invalid duration: %w", parseErr)
 		}
+
 		oldest := time.Now().Add(-duration)
 		opts.Oldest = slack.FormatTimestamp(oldest)
 	}
@@ -391,6 +393,7 @@ func runPMSlackMessages(cmd *cobra.Command, _ []string) error {
 
 	// Fetch user info for display names
 	userCache := make(map[string]string)
+
 	if !outputJSON {
 		for _, msg := range result.Messages {
 			if msg.User != "" {
@@ -412,6 +415,7 @@ func runPMSlackMessages(cmd *cobra.Command, _ []string) error {
 	if outputJSON {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(result.Messages)
 	}
 
@@ -456,6 +460,7 @@ func runPMSlackMessages(cmd *cobra.Command, _ []string) error {
 			for _, r := range msg.Reactions {
 				reactions = append(reactions, fmt.Sprintf(":%s: %d", r.Name, r.Count))
 			}
+
 			_, _ = fmt.Fprintf(os.Stdout, "│  %s\n", dimStyle.Render(strings.Join(reactions, "  ")))
 		}
 
@@ -528,6 +533,7 @@ func runPMSlackSearch(cmd *cobra.Command, args []string) error {
 	if outputJSON {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(result)
 	}
 
@@ -617,6 +623,7 @@ func runPMSlackThread(cmd *cobra.Command, _ []string) error {
 
 	// Fetch user info for display names
 	userCache := make(map[string]string)
+
 	if !outputJSON {
 		for _, msg := range result.Messages {
 			if msg.User != "" {
@@ -638,6 +645,7 @@ func runPMSlackThread(cmd *cobra.Command, _ []string) error {
 	if outputJSON {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(result.Messages)
 	}
 
@@ -717,6 +725,7 @@ func runPMSlackUsers(cmd *cobra.Command, _ []string) error {
 
 	// Filter out bots and deleted users for display
 	var activeUsers []slack.User
+
 	for _, u := range result.Users {
 		if !u.Deleted && !u.IsBot {
 			activeUsers = append(activeUsers, u)
@@ -727,6 +736,7 @@ func runPMSlackUsers(cmd *cobra.Command, _ []string) error {
 	if outputJSON {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(result.Users)
 	}
 
@@ -992,6 +1002,7 @@ func parseDuration(s string) (time.Duration, error) {
 		if err != nil {
 			return 0, err
 		}
+
 		return time.Duration(days) * 24 * time.Hour, nil
 	}
 
@@ -1000,6 +1011,7 @@ func parseDuration(s string) (time.Duration, error) {
 		if err != nil {
 			return 0, err
 		}
+
 		return time.Duration(weeks) * 7 * 24 * time.Hour, nil
 	}
 

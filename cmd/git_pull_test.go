@@ -12,6 +12,7 @@ func TestRunGitPull_GitRepo(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -31,6 +32,7 @@ func TestRunGitPull_WithRemoteArg(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -49,6 +51,7 @@ func TestRunGitPull_WithRemoteAndBranchArgs(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -73,6 +76,7 @@ func setupTestRepoWithRemote(t *testing.T) (repoDir, remoteDir string) {
 	}
 
 	cmd := exec.Command("git", "init", "--bare")
+
 	cmd.Dir = remoteDir
 	if err := cmd.Run(); err != nil {
 		os.RemoveAll(remoteDir)
@@ -87,6 +91,7 @@ func setupTestRepoWithRemote(t *testing.T) (repoDir, remoteDir string) {
 	}
 
 	cmd = exec.Command("git", "init")
+
 	cmd.Dir = repoDir
 	if err := cmd.Run(); err != nil {
 		os.RemoveAll(remoteDir)
@@ -101,6 +106,7 @@ func setupTestRepoWithRemote(t *testing.T) (repoDir, remoteDir string) {
 		{"remote", "add", "origin", remoteDir},
 	} {
 		cmd = exec.Command("git", args...)
+
 		cmd.Dir = repoDir
 		if err := cmd.Run(); err != nil {
 			os.RemoveAll(remoteDir)
@@ -123,6 +129,7 @@ func setupTestRepoWithRemote(t *testing.T) (repoDir, remoteDir string) {
 		{"push", "-u", "origin", "master"},
 	} {
 		cmd = exec.Command("git", args...)
+
 		cmd.Dir = repoDir
 		if err := cmd.Run(); err != nil {
 			// Push might fail if default branch is 'main' instead of 'master'
@@ -132,6 +139,7 @@ func setupTestRepoWithRemote(t *testing.T) (repoDir, remoteDir string) {
 				cmd.Dir = repoDir
 				_ = cmd.Run()
 				cmd = exec.Command("git", "push", "-u", "origin", "main")
+
 				cmd.Dir = repoDir
 				if err := cmd.Run(); err != nil {
 					t.Logf("push failed: %v", err)
@@ -149,6 +157,7 @@ func TestRunGitPull_WithLocalRemote(t *testing.T) {
 	defer os.RemoveAll(remoteDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}

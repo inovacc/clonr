@@ -94,6 +94,7 @@ func runStandaloneEncryptSetup(_ *cobra.Command, _ []string) error {
 
 	// Setup encryption
 	keyManager := standalone.NewEncryptionKeyManager()
+
 	config, err := keyManager.SetupKey(password)
 	if err != nil {
 		return fmt.Errorf("failed to setup encryption: %w", err)
@@ -127,6 +128,7 @@ func runStandaloneEncryptStatus(_ *cobra.Command, _ []string) error {
 		_, _ = fmt.Fprintln(os.Stdout, "Encryption: not configured")
 		_, _ = fmt.Fprintln(os.Stdout)
 		_, _ = fmt.Fprintln(os.Stdout, "To configure encryption, run: clonr standalone encrypt setup")
+
 		return nil
 	}
 

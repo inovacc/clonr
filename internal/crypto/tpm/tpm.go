@@ -113,6 +113,7 @@ func EncryptToken(token, profileName, host string) ([]byte, error) {
 			result := make([]byte, len(KSPrefix)+len(ciphertext))
 			copy(result, KSPrefix)
 			copy(result[len(KSPrefix):], ciphertext)
+
 			return result, nil
 		}
 		// Fall through to legacy encryption if keystore fails
@@ -171,6 +172,7 @@ func DecryptToken(ciphertext []byte, profileName, host string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("%w: %w", ErrDecryptionFailed, err)
 		}
+
 		return string(plaintext), nil
 	}
 

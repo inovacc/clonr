@@ -58,11 +58,13 @@ func runStandaloneConnect(_ *cobra.Command, args []string) error {
 
 	// Get the standalone key
 	var keyData string
+
 	if connectFile != "" {
 		data, err := os.ReadFile(connectFile)
 		if err != nil {
 			return fmt.Errorf("failed to read key file: %w", err)
 		}
+
 		keyData = strings.TrimSpace(string(data))
 	} else if len(args) > 0 {
 		keyData = args[0]
@@ -116,14 +118,18 @@ func runStandaloneConnect(_ *cobra.Command, args []string) error {
 
 	// Display the key prominently
 	_, _ = fmt.Fprintln(os.Stdout)
+
 	printBoxHeader("ENCRYPTION KEY")
+
 	_, _ = fmt.Fprintf(os.Stdout, "║%s║\n", centerString("", boxWidth-2))
 	_, _ = fmt.Fprintf(os.Stdout, "║%s║\n", centerString(displayKey, boxWidth-2))
 	_, _ = fmt.Fprintf(os.Stdout, "║%s║\n", centerString("", boxWidth-2))
 	_, _ = fmt.Fprintln(os.Stdout, "╠══════════════════════════════════════════════════════════════╣")
 	_, _ = fmt.Fprintln(os.Stdout, "║  Enter this key on the server to complete registration.     ║")
 	_, _ = fmt.Fprintln(os.Stdout, "║  Run on server: clonr standalone accept                     ║")
+
 	printBoxFooter()
+
 	_, _ = fmt.Fprintln(os.Stdout)
 
 	// Wait for user confirmation
@@ -133,6 +139,7 @@ func runStandaloneConnect(_ *cobra.Command, args []string) error {
 
 	// Get local password to encrypt stored credentials
 	_, _ = fmt.Fprintln(os.Stderr)
+
 	localPassword, err := readArchivePassword("Enter a local password to secure this connection: ")
 	if err != nil {
 		return fmt.Errorf("failed to read password: %w", err)
@@ -162,6 +169,7 @@ func runStandaloneConnect(_ *cobra.Command, args []string) error {
 	clientKey := handshake.GetFullKey()
 	localSalt, _ := standalone.GenerateSalt()
 	localDerivedKey := standalone.DeriveKeyArgon2(localPassword, localSalt)
+
 	encryptedClientKey, err := standalone.EncryptWithKey(clientKey, localDerivedKey)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt client key: %w", err)

@@ -19,10 +19,12 @@ type SQLiteWrapper struct {
 
 func initDB() (Store, error) {
 	path := filepath.Join(params.AppdataDir, "clonr.db")
+
 	store, err := sqlite.New(path)
 	if err != nil {
 		return nil, err
 	}
+
 	return &SQLiteWrapper{store: store}, nil
 }
 
@@ -55,10 +57,12 @@ func (w *SQLiteWrapper) GetAllRepos() ([]model.Repository, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	result := make([]model.Repository, len(repos))
 	for i, r := range repos {
 		result[i] = *r
 	}
+
 	return result, nil
 }
 
@@ -67,10 +71,12 @@ func (w *SQLiteWrapper) GetRepos(workspace string, favoritesOnly bool) ([]model.
 	if err != nil {
 		return nil, err
 	}
+
 	result := make([]model.Repository, len(repos))
 	for i, r := range repos {
 		result[i] = *r
 	}
+
 	return result, nil
 }
 
@@ -115,10 +121,12 @@ func (w *SQLiteWrapper) ListProfiles() ([]model.Profile, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	result := make([]model.Profile, len(profiles))
 	for i, p := range profiles {
 		result[i] = *p
 	}
+
 	return result, nil
 }
 
@@ -151,10 +159,12 @@ func (w *SQLiteWrapper) ListWorkspaces() ([]model.Workspace, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	result := make([]model.Workspace, len(workspaces))
 	for i, ws := range workspaces {
 		result[i] = *ws
 	}
+
 	return result, nil
 }
 
@@ -171,10 +181,12 @@ func (w *SQLiteWrapper) GetReposByWorkspace(workspace string) ([]string, error) 
 	if err != nil {
 		return nil, err
 	}
+
 	result := make([]string, len(repos))
 	for i, r := range repos {
 		result[i] = r.URL
 	}
+
 	return result, nil
 }
 
@@ -201,10 +213,12 @@ func (w *SQLiteWrapper) GetStandaloneClients() ([]standalone.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	result := make([]standalone.Client, len(clients))
 	for i, c := range clients {
 		result[i] = *c
 	}
+
 	return result, nil
 }
 
@@ -225,10 +239,12 @@ func (w *SQLiteWrapper) ListStandaloneConnections() ([]standalone.StandaloneConn
 	if err != nil {
 		return nil, err
 	}
+
 	result := make([]standalone.StandaloneConnection, len(conns))
 	for i, c := range conns {
 		result[i] = *c
 	}
+
 	return result, nil
 }
 
@@ -257,10 +273,12 @@ func (w *SQLiteWrapper) ListSyncedData(connectionName string) ([]standalone.Sync
 	if err != nil {
 		return nil, err
 	}
+
 	result := make([]standalone.SyncedData, len(data))
 	for i, d := range data {
 		result[i] = *d
 	}
+
 	return result, nil
 }
 
@@ -269,10 +287,12 @@ func (w *SQLiteWrapper) ListSyncedDataByState(state standalone.SyncState) ([]sta
 	if err != nil {
 		return nil, err
 	}
+
 	result := make([]standalone.SyncedData, len(data))
 	for i, d := range data {
 		result[i] = *d
 	}
+
 	return result, nil
 }
 
@@ -331,10 +351,12 @@ func (w *SQLiteWrapper) ListDockerProfiles() ([]model.DockerProfile, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	result := make([]model.DockerProfile, len(profiles))
 	for i, p := range profiles {
 		result[i] = *p
 	}
+
 	return result, nil
 }
 
@@ -353,9 +375,11 @@ func (w *SQLiteWrapper) GetSealedKey() (*SealedKeyData, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if sqliteKey == nil {
 		return nil, nil
 	}
+
 	return &SealedKeyData{
 		SealedData:   sqliteKey.SealedData,
 		Version:      sqliteKey.Version,

@@ -43,6 +43,7 @@ func runStandaloneStatus(_ *cobra.Command, _ []string) error {
 		_, _ = fmt.Fprintln(os.Stdout, "Standalone mode: disabled")
 		_, _ = fmt.Fprintln(os.Stdout)
 		_, _ = fmt.Fprintln(os.Stdout, "To enable standalone mode, run: clonr standalone init")
+
 		return nil
 	}
 
@@ -71,11 +72,13 @@ func runStandaloneStatus(_ *cobra.Command, _ []string) error {
 	if err == nil && len(clients) > 0 {
 		_, _ = fmt.Fprintln(os.Stdout)
 		_, _ = fmt.Fprintln(os.Stdout, "Connected clients:")
+
 		for _, client := range clients {
 			lastSeen := "never"
 			if !client.LastSeen.IsZero() {
 				lastSeen = time.Since(client.LastSeen).Round(time.Second).String() + " ago"
 			}
+
 			_, _ = fmt.Fprintf(os.Stdout, "  - %s (%s) - last seen: %s, syncs: %d\n",
 				client.Name, client.IPAddress, lastSeen, client.SyncCount)
 		}
@@ -96,8 +99,10 @@ func formatDuration(d time.Duration) string {
 	if days > 0 {
 		return fmt.Sprintf("%dd %dh", days, hours)
 	}
+
 	if hours > 0 {
 		return fmt.Sprintf("%dh %dm", hours, minutes)
 	}
+
 	return fmt.Sprintf("%dm", minutes)
 }

@@ -73,10 +73,12 @@ func (w *Worker) OnComplete(fn func(*WorkflowRun)) *Worker {
 // Start begins the monitoring worker
 func (w *Worker) Start(ctx context.Context) error {
 	w.mu.Lock()
+
 	if w.running {
 		w.mu.Unlock()
 		return fmt.Errorf("worker already running")
 	}
+
 	w.running = true
 	w.stopCh = make(chan struct{})
 	w.stoppedCh = make(chan struct{})
@@ -94,10 +96,12 @@ func (w *Worker) Start(ctx context.Context) error {
 // Stop stops the monitoring worker
 func (w *Worker) Stop() {
 	w.mu.Lock()
+
 	if !w.running {
 		w.mu.Unlock()
 		return
 	}
+
 	w.running = false
 	close(w.stopCh)
 	w.mu.Unlock()
@@ -111,6 +115,7 @@ func (w *Worker) Stop() {
 func (w *Worker) IsRunning() bool {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
+
 	return w.running
 }
 
@@ -181,6 +186,7 @@ func (w *Worker) processItem(ctx context.Context, item *QueueItem) error {
 	if token == "" {
 		item.Status = "failed"
 		item.Error = "no GitHub token available"
+
 		return w.db.UpdateQueueItem(item)
 	}
 
@@ -199,6 +205,7 @@ func (w *Worker) processItem(ctx context.Context, item *QueueItem) error {
 
 	// Save workflow runs
 	allComplete := true
+
 	for _, run := range runs {
 		workflowRun := w.convertRun(run, item.PushID, item.RepoOwner, item.RepoName)
 		if err := w.db.SaveWorkflowRun(workflowRun); err != nil {
@@ -226,6 +233,7 @@ func (w *Worker) processItem(ctx context.Context, item *QueueItem) error {
 		// All workflows complete
 		item.Status = "completed"
 		item.Error = ""
+
 		return w.db.UpdateQueueItem(item)
 	}
 
@@ -272,6 +280,7 @@ func (w *Worker) fetchAndSaveJobs(ctx context.Context, client *github.Client, ow
 		if job.StartedAt != nil {
 			wj.StartedAt = job.StartedAt.Time
 		}
+
 		if job.CompletedAt != nil {
 			wj.CompletedAt = job.CompletedAt.Time
 		}
@@ -314,9 +323,11 @@ func (w *Worker) convertRun(run *github.WorkflowRun, pushID int64, owner, repo s
 	if run.CreatedAt != nil {
 		wr.CreatedAt = run.CreatedAt.Time
 	}
+
 	if run.UpdatedAt != nil {
 		wr.UpdatedAt = run.UpdatedAt.Time
 	}
+
 	if run.RunStartedAt != nil {
 		wr.StartedAt = run.RunStartedAt.Time
 	}
@@ -365,12 +376,14 @@ func (w *Worker) updatePushMonitored(pushID int64) error {
 	if err != nil {
 		return err
 	}
+
 	if record == nil {
 		return nil
 	}
 
 	record.Monitored = true
 	record.LastCheck = time.Now()
+
 	return w.db.SavePushRecord(record)
 }
 
@@ -378,6 +391,7 @@ func (w *Worker) updatePushMonitored(pushID int64) error {
 func (w *Worker) createGitHubClient(ctx context.Context, token string) *github.Client {
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 	tc := oauth2.NewClient(ctx, ts)
+
 	return github.NewClient(tc)
 }
 
@@ -427,6 +441,7 @@ func (w *Worker) GetPushStatus(pushID int64) (*PushStatus, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if record == nil {
 		return nil, fmt.Errorf("push record not found")
 	}
@@ -446,11 +461,13 @@ func (w *Worker) GetPushStatus(pushID int64) (*PushStatus, error) {
 		status.OverallStatus = "pending"
 	} else {
 		status.OverallStatus = "success"
+
 		for _, run := range runs {
 			if run.Status != "completed" {
 				status.OverallStatus = "in_progress"
 				break
 			}
+
 			if run.Conclusion == "failure" {
 				status.OverallStatus = "failure"
 			} else if run.Conclusion == "cancelled" && status.OverallStatus == "success" {

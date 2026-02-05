@@ -60,5 +60,6 @@ func runSlackRemove(_ *cobra.Command, _ []string) error {
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout, "Slack integration removed.")
+
 	return nil
 }

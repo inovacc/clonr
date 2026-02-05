@@ -71,6 +71,7 @@ func TestFormatAge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pastTime := time.Now().Add(-tt.duration)
+
 			result := formatAge(pastTime)
 			if result != tt.expected {
 				t.Errorf("formatAge() = %q, want %q", result, tt.expected)
@@ -250,12 +251,15 @@ func TestGHFlags(t *testing.T) {
 		if flags.Token != "token123" {
 			t.Errorf("Token = %q, want %q", flags.Token, "token123")
 		}
+
 		if flags.Profile != "work" {
 			t.Errorf("Profile = %q, want %q", flags.Profile, "work")
 		}
+
 		if flags.Repo != "owner/repo" {
 			t.Errorf("Repo = %q, want %q", flags.Repo, "owner/repo")
 		}
+
 		if !flags.JSON {
 			t.Error("JSON should be true")
 		}
@@ -280,6 +284,7 @@ func TestExtractGHFlags(t *testing.T) {
 		testCmd.Flags().Set("profile", "test-profile")
 		testCmd.Flags().Set("repo", "owner/repo")
 		testCmd.Flags().Set("json", "true")
+
 		defer func() {
 			testCmd.Flags().Set("token", "")
 			testCmd.Flags().Set("profile", "")
@@ -292,12 +297,15 @@ func TestExtractGHFlags(t *testing.T) {
 		if flags.Token != "test-token" {
 			t.Errorf("Token = %q, want %q", flags.Token, "test-token")
 		}
+
 		if flags.Profile != "test-profile" {
 			t.Errorf("Profile = %q, want %q", flags.Profile, "test-profile")
 		}
+
 		if flags.Repo != "owner/repo" {
 			t.Errorf("Repo = %q, want %q", flags.Repo, "owner/repo")
 		}
+
 		if !flags.JSON {
 			t.Error("JSON should be true")
 		}

@@ -89,12 +89,14 @@ func templateFuncMap() template.FuncMap {
 			if t.IsZero() {
 				return "Never"
 			}
+
 			return t.Format("Jan 02, 2006 15:04")
 		},
 		"formatTimeAgo": func(t time.Time) string {
 			if t.IsZero() {
 				return "Never"
 			}
+
 			d := time.Since(t)
 			switch {
 			case d < time.Minute:
@@ -104,18 +106,21 @@ func templateFuncMap() template.FuncMap {
 				if m == 1 {
 					return "1 minute ago"
 				}
+
 				return fmt.Sprintf("%d minutes ago", m)
 			case d < 24*time.Hour:
 				h := int(d.Hours())
 				if h == 1 {
 					return "1 hour ago"
 				}
+
 				return fmt.Sprintf("%d hours ago", h)
 			case d < 7*24*time.Hour:
 				days := int(d.Hours() / 24)
 				if days == 1 {
 					return "1 day ago"
 				}
+
 				return fmt.Sprintf("%d days ago", days)
 			default:
 				return t.Format("Jan 02, 2006")
@@ -128,9 +133,11 @@ func templateFuncMap() template.FuncMap {
 			if len(s) <= maxLen {
 				return s
 			}
+
 			if maxLen <= 3 {
 				return s[:maxLen]
 			}
+
 			return s[:maxLen-3] + "..."
 		},
 	}
@@ -212,9 +219,11 @@ func (s *Server) Start(ctx context.Context) error {
 	// Open browser if configured
 	if s.config.OpenBrowser {
 		url := fmt.Sprintf("http://%s", addr)
+
 		go func() {
 			// Small delay to ensure server is ready
 			time.Sleep(100 * time.Millisecond)
+
 			if err := openBrowser(url); err != nil {
 				log.Printf("Failed to open browser: %v", err)
 				log.Printf("Open manually: %s", url)
@@ -247,6 +256,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	defer cancel()
 
 	log.Println("Shutting down web server...")
+
 	return s.httpServer.Shutdown(shutdownCtx)
 }
 
@@ -254,6 +264,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
+
 		next.ServeHTTP(w, r)
 		log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start))
 	})
@@ -285,6 +296,7 @@ func (s *Server) render(w http.ResponseWriter, templateName string, data any) {
 	if !ok {
 		log.Printf("Template not found: %s", templateName)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
 		return
 	}
 
@@ -303,6 +315,7 @@ func (s *Server) renderPartial(w http.ResponseWriter, templateName string, data 
 	if !ok {
 		log.Printf("Partials template not found")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
 		return
 	}
 

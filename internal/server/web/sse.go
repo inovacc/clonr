@@ -47,15 +47,18 @@ func (h *SSEHub) Run() {
 
 		case client := <-h.unregister:
 			h.mu.Lock()
+
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				close(client)
 			}
+
 			h.mu.Unlock()
 			log.Printf("SSE client disconnected (total: %d)", len(h.clients))
 
 		case event := <-h.broadcast:
 			h.mu.RLock()
+
 			for client := range h.clients {
 				select {
 				case client <- event:
@@ -63,6 +66,7 @@ func (h *SSEHub) Run() {
 					// Client buffer full, skip
 				}
 			}
+
 			h.mu.RUnlock()
 		}
 	}
@@ -81,6 +85,7 @@ func (h *SSEHub) Broadcast(event SSEEvent) {
 func (h *SSEHub) ClientCount() int {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
+
 	return len(h.clients)
 }
 
@@ -154,6 +159,7 @@ func (s *Server) sendSSEEvent(w http.ResponseWriter, flusher http.Flusher, event
 
 	_, _ = fmt.Fprintf(w, "event: %s\n", event.Type)
 	_, _ = fmt.Fprintf(w, "data: %s\n\n", data)
+
 	flusher.Flush()
 }
 
@@ -162,6 +168,7 @@ func (s *Server) BroadcastEvent(eventType string, message string, data any) {
 	if s.sseHub == nil {
 		return
 	}
+
 	s.sseHub.Broadcast(SSEEvent{
 		Type:    eventType,
 		Message: message,

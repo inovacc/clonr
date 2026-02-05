@@ -22,6 +22,7 @@ func NewDBKeyStore(s store.Store, keyType string) *DBKeyStore {
 	if keyType == "" {
 		keyType = "tpm"
 	}
+
 	return &DBKeyStore{
 		store:   s,
 		keyType: keyType,
@@ -42,6 +43,7 @@ func (d *DBKeyStore) Save(data *sealbox.SealedData) error {
 
 	// Check if we already have a sealed key to preserve created_at
 	existing, err := d.store.GetSealedKey()
+
 	var createdAt time.Time
 	if err == nil && existing != nil {
 		createdAt = existing.CreatedAt
@@ -66,6 +68,7 @@ func (d *DBKeyStore) Load() (*sealbox.SealedData, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if keyData == nil {
 		return nil, errors.New("no sealed key found")
 	}

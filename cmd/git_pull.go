@@ -55,9 +55,11 @@ func runGitPull(_ *cobra.Command, args []string) error {
 		if git.IsAuthRequired(err) {
 			return fmt.Errorf("authentication failed - check your profile token")
 		}
+
 		if git.IsConflict(err) {
 			return fmt.Errorf("merge conflict detected - resolve conflicts and commit")
 		}
+
 		return err
 	}
 

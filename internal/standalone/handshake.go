@@ -93,6 +93,7 @@ type ClientEncryptedData struct {
 // GenerateMachineInfo collects current machine information.
 func GenerateMachineInfo(clonrVersion string) MachineInfo {
 	hostname, _ := os.Hostname()
+
 	return MachineInfo{
 		Hostname:     hostname,
 		OS:           runtime.GOOS,
@@ -114,6 +115,7 @@ func GenerateChallengeToken() (string, error) {
 	if _, err := rand.Read(token); err != nil {
 		return "", fmt.Errorf("failed to generate challenge token: %w", err)
 	}
+
 	return hex.EncodeToString(token), nil
 }
 
@@ -131,6 +133,7 @@ func GenerateClientKey() (fullKey []byte, displayKey string, err error) {
 	if _, err := rand.Read(displayBytes); err != nil {
 		return nil, "", fmt.Errorf("failed to generate display key: %w", err)
 	}
+
 	displayKey = hex.EncodeToString(displayBytes)
 
 	// The full key is derived from display key + some fixed derivation
@@ -152,23 +155,28 @@ func FormatDisplayKey(key string) string {
 	}
 
 	var formatted string
+
 	for i, char := range key {
 		if i > 0 && i%4 == 0 {
 			formatted += "-"
 		}
+
 		formatted += string(char)
 	}
+
 	return formatted
 }
 
 // ParseDisplayKey removes formatting from a display key.
 func ParseDisplayKey(formatted string) string {
 	var result string
+
 	for _, char := range formatted {
 		if char != '-' && char != ' ' {
 			result += string(char)
 		}
 	}
+
 	return result
 }
 
@@ -273,6 +281,7 @@ func (s *ServerHandshake) ListPendingClients() []*ClientRegistration {
 	for _, reg := range s.pendingClients {
 		result = append(result, reg)
 	}
+
 	return result
 }
 

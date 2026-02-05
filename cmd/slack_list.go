@@ -72,6 +72,7 @@ func runSlackList(_ *cobra.Command, _ []string) error {
 		}
 
 		printEmptyResult("Slack integration", "clonr slack add --webhook <url>")
+
 		return nil
 	}
 
@@ -80,6 +81,7 @@ func runSlackList(_ *cobra.Command, _ []string) error {
 	if len(config.EncryptedWebhookURL) > 0 {
 		integrationType = "webhook"
 	}
+
 	if len(config.EncryptedBotToken) > 0 && config.BotEnabled {
 		integrationType = "bot"
 	}
@@ -106,6 +108,7 @@ func runSlackList(_ *cobra.Command, _ []string) error {
 
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(output)
 	}
 
@@ -143,6 +146,7 @@ func runSlackList(_ *cobra.Command, _ []string) error {
 		if len(enabledEvents) > 0 {
 			_, _ = fmt.Fprintf(os.Stdout, "  Enabled:  %s\n", strings.Join(enabledEvents, ", "))
 		}
+
 		if len(disabledEvents) > 0 {
 			_, _ = fmt.Fprintf(os.Stdout, "  Disabled: %s\n", strings.Join(disabledEvents, ", "))
 		}
@@ -155,5 +159,6 @@ func formatEnabled(enabled bool) string {
 	if enabled {
 		return "enabled"
 	}
+
 	return "disabled"
 }

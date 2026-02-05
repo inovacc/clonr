@@ -52,6 +52,7 @@ func runGitCommit(cmd *cobra.Command, _ []string) error {
 			_, _ = fmt.Fprintln(os.Stdout, "nothing to commit, working tree clean")
 			return nil
 		}
+
 		return err
 	}
 

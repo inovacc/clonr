@@ -12,13 +12,14 @@ func TestRunGitLog_WithLimitFlag(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
 	defer os.Chdir(oldDir)
 
 	// Create multiple commits
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		testFile := filepath.Join(repoDir, "file"+string(rune('0'+i))+".txt")
 		if err := os.WriteFile(testFile, []byte("content\n"), 0644); err != nil {
 			t.Fatalf("failed to create test file: %v", err)
@@ -35,6 +36,7 @@ func TestRunGitLog_WithLimitFlag(t *testing.T) {
 
 	gitLogCmd.Flags().Set("limit", "3")
 	gitLogCmd.Flags().Set("oneline", "false")
+
 	gitLogCmd.Flags().Set("json", "false")
 	defer gitLogCmd.Flags().Set("limit", "10")
 
@@ -49,12 +51,14 @@ func TestRunGitLog_WithAuthorFilter(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
 	defer os.Chdir(oldDir)
 
 	gitLogCmd.Flags().Set("author", "Test User")
+
 	gitLogCmd.Flags().Set("json", "false")
 	defer gitLogCmd.Flags().Set("author", "")
 
@@ -69,12 +73,14 @@ func TestRunGitLog_WithGrepFilter(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
 	defer os.Chdir(oldDir)
 
 	gitLogCmd.Flags().Set("grep", "Initial")
+
 	gitLogCmd.Flags().Set("json", "false")
 	defer gitLogCmd.Flags().Set("grep", "")
 
@@ -89,6 +95,7 @@ func TestRunGitLog_EmptyResult(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -96,6 +103,7 @@ func TestRunGitLog_EmptyResult(t *testing.T) {
 
 	// Search for non-existent author
 	gitLogCmd.Flags().Set("author", "NonExistentAuthor12345")
+
 	gitLogCmd.Flags().Set("json", "false")
 	defer gitLogCmd.Flags().Set("author", "")
 
@@ -110,6 +118,7 @@ func TestRunGitLog_OnelineEmptyResult(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -118,6 +127,7 @@ func TestRunGitLog_OnelineEmptyResult(t *testing.T) {
 	gitLogCmd.Flags().Set("oneline", "true")
 	gitLogCmd.Flags().Set("author", "NonExistentAuthor12345")
 	gitLogCmd.Flags().Set("json", "false")
+
 	defer func() {
 		gitLogCmd.Flags().Set("oneline", "false")
 		gitLogCmd.Flags().Set("author", "")
@@ -134,6 +144,7 @@ func TestRunGitLog_WithAllFlag(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -145,6 +156,7 @@ func TestRunGitLog_WithAllFlag(t *testing.T) {
 	_ = cmd.Run()
 
 	gitLogCmd.Flags().Set("all", "true")
+
 	gitLogCmd.Flags().Set("json", "false")
 	defer gitLogCmd.Flags().Set("all", "false")
 

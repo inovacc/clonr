@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"slices"
 	"time"
 
 	"github.com/btcsuite/btcutil/base58"
@@ -109,12 +110,15 @@ func ParseKey(data []byte) (*StandaloneKey, error) {
 	if key.InstanceID == "" {
 		return nil, fmt.Errorf("invalid key: missing instance_id")
 	}
+
 	if key.APIKey == "" {
 		return nil, fmt.Errorf("invalid key: missing api_key")
 	}
+
 	if key.Host == "" {
 		return nil, fmt.Errorf("invalid key: missing host")
 	}
+
 	if key.Port == 0 {
 		return nil, fmt.Errorf("invalid key: missing port")
 	}
@@ -128,7 +132,9 @@ func EncodeKeyForSharing(key *StandaloneKey) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	encoded := base58.Encode(data)
+
 	return fmt.Sprintf("%s:%s", StandaloneKeyMagic, encoded), nil
 }
 
@@ -139,6 +145,7 @@ func DecodeSharedKey(encoded string) (*StandaloneKey, error) {
 	if len(encoded) <= len(prefix) {
 		return nil, fmt.Errorf("invalid key format: too short")
 	}
+
 	if encoded[:len(prefix)] != prefix {
 		// Try parsing as raw JSON (for file-based import)
 		return ParseKey([]byte(encoded))
@@ -158,21 +165,27 @@ func ValidateKey(key *StandaloneKey) error {
 	if key.Version > KeyVersion {
 		return fmt.Errorf("key version %d is newer than supported version %d", key.Version, KeyVersion)
 	}
+
 	if key.InstanceID == "" {
 		return fmt.Errorf("missing instance_id")
 	}
+
 	if key.APIKey == "" {
 		return fmt.Errorf("missing api_key")
 	}
+
 	if key.Host == "" {
 		return fmt.Errorf("missing host")
 	}
+
 	if key.Port <= 0 || key.Port > 65535 {
 		return fmt.Errorf("invalid port: %d", key.Port)
 	}
+
 	if !key.ExpiresAt.IsZero() && time.Now().After(key.ExpiresAt) {
 		return fmt.Errorf("key has expired")
 	}
+
 	return nil
 }
 
@@ -183,12 +196,8 @@ func (k *StandaloneKey) IsExpired() bool {
 
 // HasCapability checks if the key has a specific capability.
 func (k *StandaloneKey) HasCapability(cap string) bool {
-	for _, c := range k.Capabilities {
-		if c == cap {
-			return true
-		}
-	}
-	return false
+
+	return slices.Contains(k.Capabilities, cap)
 }
 
 // GetLocalIP attempts to determine the local IP address.
@@ -199,9 +208,11 @@ func GetLocalIP() (string, error) {
 		// Fallback to interface enumeration
 		return getLocalIPFromInterfaces()
 	}
+
 	defer func() { _ = conn.Close() }()
 
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
 	return localAddr.IP.String(), nil
 }
 
@@ -225,6 +236,7 @@ func getLocalIPFromInterfaces() (string, error) {
 
 		for _, addr := range addrs {
 			var ip net.IP
+
 			switch v := addr.(type) {
 			case *net.IPNet:
 				ip = v.IP
@@ -286,6 +298,7 @@ func CreateConnection(name string, key *StandaloneKey, localPassword string) (*S
 
 	// Decode and encrypt API key locally
 	apiKeyBytes := base58.Decode(key.APIKey)
+
 	apiKeyEncrypted, err := EncryptWithKey(apiKeyBytes, localKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encrypt API key: %w", err)
@@ -293,12 +306,14 @@ func CreateConnection(name string, key *StandaloneKey, localPassword string) (*S
 
 	// Decode and encrypt refresh token locally
 	refreshTokenBytes := base58.Decode(key.RefreshToken)
+
 	refreshTokenEncrypted, err := EncryptWithKey(refreshTokenBytes, localKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encrypt refresh token: %w", err)
 	}
 
 	now := time.Now()
+
 	return &StandaloneConnection{
 		Name:                  name,
 		InstanceID:            key.InstanceID,

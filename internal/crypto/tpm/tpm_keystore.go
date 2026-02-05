@@ -34,6 +34,7 @@ func init() {
 func SetDBStore(s store.Store) {
 	dbStoreMu.Lock()
 	defer dbStoreMu.Unlock()
+
 	globalDBStore = s
 }
 
@@ -41,6 +42,7 @@ func SetDBStore(s store.Store) {
 func GetDBStore() store.Store {
 	dbStoreMu.RLock()
 	defer dbStoreMu.RUnlock()
+
 	return globalDBStore
 }
 
@@ -72,6 +74,7 @@ func NewSealedKeyStore() (*SealedKeyStore, error) {
 		if !sealbox.IsAvailable() {
 			keyType = "software"
 		}
+
 		return &SealedKeyStore{
 			dbStore: NewDBKeyStore(s, keyType),
 			useDB:   true,
@@ -92,6 +95,7 @@ func (s *SealedKeyStore) SaveSealedKey(data *sealbox.SealedData) error {
 	if s.useDB {
 		return s.dbStore.Save(data)
 	}
+
 	return s.fileStore.Save(data)
 }
 
@@ -100,6 +104,7 @@ func (s *SealedKeyStore) LoadSealedKey() (*sealbox.SealedData, error) {
 	if s.useDB {
 		return s.dbStore.Load()
 	}
+
 	return s.fileStore.Load()
 }
 
@@ -108,6 +113,7 @@ func (s *SealedKeyStore) HasSealedKey() bool {
 	if s.useDB {
 		return s.dbStore.Exists()
 	}
+
 	return s.fileStore.Exists()
 }
 
@@ -116,6 +122,7 @@ func (s *SealedKeyStore) DeleteSealedKey() error {
 	if s.useDB {
 		return s.dbStore.Delete()
 	}
+
 	return s.fileStore.Delete()
 }
 
@@ -124,6 +131,7 @@ func (s *SealedKeyStore) GetStorePath() string {
 	if s.useDB {
 		return s.dbStore.Path()
 	}
+
 	return s.fileStore.Path()
 }
 
@@ -133,6 +141,7 @@ func InitializeTPMKey() error {
 	if useDBStorage() {
 		return initializeTPMKeyWithDB()
 	}
+
 	return sealbox.Initialize(sealboxOpts()...)
 }
 
@@ -150,6 +159,7 @@ func initializeTPMKeyWithDB() error {
 	}
 
 	dbStore := NewDBKeyStore(GetDBStore(), "tpm")
+
 	return dbStore.Save(sealed)
 }
 
@@ -159,6 +169,7 @@ func ResetTPMKey() error {
 		dbStore := NewDBKeyStore(GetDBStore(), "tpm")
 		return dbStore.Delete()
 	}
+
 	return sealbox.Reset(sealboxOpts()...)
 }
 
@@ -168,6 +179,7 @@ func HasTPMKey() bool {
 		dbStore := NewDBKeyStore(GetDBStore(), "tpm")
 		return dbStore.Exists()
 	}
+
 	return sealbox.HasKey(sealboxOpts()...)
 }
 
@@ -176,6 +188,7 @@ func GetTPMKeyStorePath() (string, error) {
 	if useDBStorage() {
 		return "database://sealed_keys", nil
 	}
+
 	return sealbox.GetKeyStorePath(sealboxOpts()...)
 }
 
@@ -185,12 +198,14 @@ func GetTPMSealedMasterKey() ([]byte, error) {
 	if useDBStorage() {
 		return getTPMSealedMasterKeyFromDB()
 	}
+
 	return sealbox.GetSealedMasterKey(sealboxOpts()...)
 }
 
 // getTPMSealedMasterKeyFromDB retrieves and unseals the master key from database
 func getTPMSealedMasterKeyFromDB() ([]byte, error) {
 	dbStore := NewDBKeyStore(GetDBStore(), "tpm")
+
 	sealed, err := dbStore.Load()
 	if err != nil {
 		return nil, err

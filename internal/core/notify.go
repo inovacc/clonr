@@ -26,6 +26,7 @@ func NotifyPush(ctx context.Context, repoPath, remote, branch string) {
 	if sha, err := client.GetHead(ctx); err == nil {
 		event.Commit = sha
 	}
+
 	if msg, err := getCommitMessage(repoPath, "HEAD"); err == nil {
 		event.CommitMessage = msg
 	}
@@ -150,30 +151,36 @@ func NotifyError(ctx context.Context, repo, errorMsg string) {
 // getRemoteURLFromPath gets the remote URL for a repository.
 func getRemoteURLFromPath(repoPath, remote string) (string, error) {
 	cmd := exec.Command("git", "-C", repoPath, "remote", "get-url", remote)
+
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
+
 	return strings.TrimSpace(string(output)), nil
 }
 
 // getCommitMessage gets the commit message for a ref.
 func getCommitMessage(repoPath, ref string) (string, error) {
 	cmd := exec.Command("git", "-C", repoPath, "log", "-1", "--format=%s", ref)
+
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
+
 	return strings.TrimSpace(string(output)), nil
 }
 
 // getGitUser gets the current git user.
 func getGitUser() (string, error) {
 	cmd := exec.Command("git", "config", "--get", "user.name")
+
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
+
 	return strings.TrimSpace(string(output)), nil
 }
 

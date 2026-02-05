@@ -156,6 +156,7 @@ func (s *SlackSender) sendWebhook(ctx context.Context, msg *SlackMessage) error 
 	if err != nil {
 		return fmt.Errorf("failed to send webhook: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
@@ -185,6 +186,7 @@ func (s *SlackSender) sendBotAPI(ctx context.Context, msg *SlackMessage) error {
 	if err != nil {
 		return fmt.Errorf("failed to send message: %w", err)
 	}
+
 	defer func() { _ = resp.Body.Close() }()
 
 	var result struct {
@@ -292,6 +294,7 @@ func TestWebhook(ctx context.Context, webhookURL, channel string) error {
 		WithWebhook(webhookURL),
 		WithDefaultChannel(channel),
 	)
+
 	return sender.Test(ctx)
 }
 
@@ -301,5 +304,6 @@ func TestBotToken(ctx context.Context, botToken, channel string) error {
 		WithBotToken(botToken),
 		WithDefaultChannel(channel),
 	)
+
 	return sender.Test(ctx)
 }

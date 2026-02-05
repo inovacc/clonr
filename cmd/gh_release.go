@@ -158,6 +158,7 @@ func runReleaseCreate(cmd *cobra.Command, args []string) error {
 
 	// Parse arguments - first is tag, second is optional repo
 	var tag, repoArg string
+
 	for i, arg := range args {
 		if i == 0 {
 			tag = arg
@@ -176,6 +177,7 @@ func runReleaseCreate(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to read notes file: %w", err)
 		}
+
 		notes = string(content)
 	}
 

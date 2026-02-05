@@ -20,11 +20,13 @@ func (s *Store) GetStandaloneConfig() (*standalone.StandaloneConfig, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	row, err := s.queries.GetStandaloneConfig(ctx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
+
 		return nil, err
 	}
 
@@ -62,6 +64,7 @@ func (s *Store) SaveStandaloneConfig(config *standalone.StandaloneConfig) error 
 	if config.Enabled {
 		enabled = 1
 	}
+
 	isServer := int64(0)
 	if config.IsServer {
 		isServer = 1
@@ -85,6 +88,7 @@ func (s *Store) DeleteStandaloneConfig() error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.DeleteStandaloneConfig(ctx)
 }
 
@@ -97,6 +101,7 @@ func (s *Store) GetStandaloneClients() ([]*standalone.Client, error) {
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	rows, err := s.queries.ListStandaloneClients(ctx)
 	if err != nil {
 		return nil, err
@@ -117,6 +122,7 @@ func (s *Store) GetStandaloneClients() ([]*standalone.Client, error) {
 		}
 		clients = append(clients, client)
 	}
+
 	return clients, nil
 }
 
@@ -138,6 +144,7 @@ func (s *Store) DeleteStandaloneClient(id string) error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.DeleteStandaloneClient(ctx, id)
 }
 
@@ -150,11 +157,13 @@ func (s *Store) GetStandaloneConnection(name string) (*standalone.StandaloneConn
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	row, err := s.queries.GetStandaloneConnection(ctx, name)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("connection %q not found", name)
 		}
+
 		return nil, err
 	}
 
@@ -166,6 +175,7 @@ func (s *Store) ListStandaloneConnections() ([]*standalone.StandaloneConnection,
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	rows, err := s.queries.ListStandaloneConnections(ctx)
 	if err != nil {
 		return nil, err
@@ -175,6 +185,7 @@ func (s *Store) ListStandaloneConnections() ([]*standalone.StandaloneConnection,
 	for _, row := range rows {
 		connections = append(connections, sqlcConnectionToModel(row))
 	}
+
 	return connections, nil
 }
 
@@ -205,6 +216,7 @@ func (s *Store) SaveStandaloneConnection(conn *standalone.StandaloneConnection) 
 			SyncedItems:           &syncedItemsStr,
 			LastSync:              conn.LastSync,
 		})
+
 		return err
 	} else if err != nil {
 		return err
@@ -231,6 +243,7 @@ func (s *Store) DeleteStandaloneConnection(name string) error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.DeleteStandaloneConnection(ctx, name)
 }
 
@@ -243,11 +256,13 @@ func (s *Store) GetServerEncryptionConfig() (*standalone.ServerEncryptionConfig,
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	row, err := s.queries.GetServerEncryptionConfig(ctx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
+
 		return nil, err
 	}
 
@@ -290,6 +305,7 @@ func (s *Store) GetSyncedData(connectionName, dataType, name string) (*standalon
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	row, err := s.queries.GetSyncedData(ctx, sqlc.GetSyncedDataParams{
 		ConnectionName: connectionName,
 		DataType:       dataType,
@@ -299,6 +315,7 @@ func (s *Store) GetSyncedData(connectionName, dataType, name string) (*standalon
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("synced data not found")
 		}
+
 		return nil, err
 	}
 
@@ -310,6 +327,7 @@ func (s *Store) ListSyncedData(connectionName string) ([]*standalone.SyncedData,
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	rows, err := s.queries.ListSyncedDataByConnection(ctx, connectionName)
 	if err != nil {
 		return nil, err
@@ -319,6 +337,7 @@ func (s *Store) ListSyncedData(connectionName string) ([]*standalone.SyncedData,
 	for _, row := range rows {
 		data = append(data, sqlcSyncedDataToModel(row))
 	}
+
 	return data, nil
 }
 
@@ -328,6 +347,7 @@ func (s *Store) ListSyncedDataByState(state standalone.SyncState) ([]*standalone
 
 	ctx := newContext()
 	stateStr := string(state)
+
 	rows, err := s.queries.ListSyncedDataByState(ctx, &stateStr)
 	if err != nil {
 		return nil, err
@@ -337,6 +357,7 @@ func (s *Store) ListSyncedDataByState(state standalone.SyncState) ([]*standalone
 	for _, row := range rows {
 		data = append(data, sqlcSyncedDataToModel(row))
 	}
+
 	return data, nil
 }
 
@@ -346,6 +367,7 @@ func (s *Store) SaveSyncedData(data *standalone.SyncedData) error {
 
 	ctx := newContext()
 	stateStr := string(data.State)
+
 	return s.queries.UpsertSyncedData(ctx, sqlc.UpsertSyncedDataParams{
 		ID:             data.ID,
 		ConnectionName: data.ConnectionName,
@@ -364,6 +386,7 @@ func (s *Store) DeleteSyncedData(connectionName, dataType, name string) error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.DeleteSyncedData(ctx, sqlc.DeleteSyncedDataParams{
 		ConnectionName: connectionName,
 		DataType:       dataType,
@@ -400,11 +423,13 @@ func (s *Store) GetPendingRegistration(clientID string) (*standalone.ClientRegis
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	row, err := s.queries.GetPendingRegistration(ctx, clientID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("pending registration not found")
 		}
+
 		return nil, err
 	}
 
@@ -432,6 +457,7 @@ func (s *Store) ListPendingRegistrations() ([]*standalone.ClientRegistration, er
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	rows, err := s.queries.ListPendingRegistrations(ctx)
 	if err != nil {
 		return nil, err
@@ -456,6 +482,7 @@ func (s *Store) ListPendingRegistrations() ([]*standalone.ClientRegistration, er
 		}
 		regs = append(regs, reg)
 	}
+
 	return regs, nil
 }
 
@@ -464,6 +491,7 @@ func (s *Store) RemovePendingRegistration(clientID string) error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.DeletePendingRegistration(ctx, clientID)
 }
 
@@ -499,11 +527,13 @@ func (s *Store) GetRegisteredClient(clientID string) (*standalone.RegisteredClie
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	row, err := s.queries.GetRegisteredClient(ctx, clientID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("registered client not found")
 		}
+
 		return nil, err
 	}
 
@@ -515,6 +545,7 @@ func (s *Store) ListRegisteredClients() ([]*standalone.RegisteredClient, error) 
 	defer s.mu.RUnlock()
 
 	ctx := newContext()
+
 	rows, err := s.queries.ListRegisteredClients(ctx)
 	if err != nil {
 		return nil, err
@@ -524,6 +555,7 @@ func (s *Store) ListRegisteredClients() ([]*standalone.RegisteredClient, error) 
 	for _, row := range rows {
 		clients = append(clients, sqlcRegisteredClientToModel(row))
 	}
+
 	return clients, nil
 }
 
@@ -532,6 +564,7 @@ func (s *Store) DeleteRegisteredClient(clientID string) error {
 	defer s.mu.Unlock()
 
 	ctx := newContext()
+
 	return s.queries.DeleteRegisteredClient(ctx, clientID)
 }
 
@@ -542,5 +575,6 @@ func (s *Store) DeleteRegisteredClient(clientID string) error {
 func newContext() context.Context {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	_ = cancel // Will be collected by GC
+
 	return ctx
 }

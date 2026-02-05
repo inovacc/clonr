@@ -73,6 +73,7 @@ func CreateRepoArchive(outputPath string, repoPaths []string, opts ArchiveOption
 
 	// Create zip in memory buffer
 	var zipBuffer bytes.Buffer
+
 	zipWriter := zip.NewWriter(&zipBuffer)
 
 	// Set compression level
@@ -99,6 +100,7 @@ func CreateRepoArchive(outputPath string, repoPaths []string, opts ArchiveOption
 		if err != nil {
 			return nil, fmt.Errorf("failed to stat %s: %w", repoPath, err)
 		}
+
 		if !info.IsDir() {
 			return nil, fmt.Errorf("%s is not a directory", repoPath)
 		}
@@ -119,6 +121,7 @@ func CreateRepoArchive(outputPath string, repoPaths []string, opts ArchiveOption
 
 		// Walk the repository directory
 		fileCount := 0
+
 		err = filepath.Walk(repoPath, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
@@ -140,6 +143,7 @@ func CreateRepoArchive(outputPath string, repoPaths []string, opts ArchiveOption
 				if info.IsDir() {
 					return filepath.SkipDir
 				}
+
 				return nil
 			}
 
@@ -148,6 +152,7 @@ func CreateRepoArchive(outputPath string, repoPaths []string, opts ArchiveOption
 				if info.IsDir() {
 					return filepath.SkipDir
 				}
+
 				return nil
 			}
 
@@ -165,6 +170,7 @@ func CreateRepoArchive(outputPath string, repoPaths []string, opts ArchiveOption
 			if err != nil {
 				return err
 			}
+
 			header.Name = archiveFilePath
 			header.Method = zip.Deflate
 
@@ -178,6 +184,7 @@ func CreateRepoArchive(outputPath string, repoPaths []string, opts ArchiveOption
 			if err != nil {
 				return err
 			}
+
 			defer func() { _ = file.Close() }()
 
 			written, err := io.Copy(writer, file)
@@ -187,9 +194,9 @@ func CreateRepoArchive(outputPath string, repoPaths []string, opts ArchiveOption
 
 			totalSize += written
 			fileCount++
+
 			return nil
 		})
-
 		if err != nil {
 			return nil, fmt.Errorf("failed to archive %s: %w", repoPath, err)
 		}
@@ -211,6 +218,7 @@ func CreateRepoArchive(outputPath string, repoPaths []string, opts ArchiveOption
 	if err != nil {
 		return nil, fmt.Errorf("failed to create manifest entry: %w", err)
 	}
+
 	if _, err := manifestWriter.Write(manifestData); err != nil {
 		return nil, fmt.Errorf("failed to write manifest: %w", err)
 	}
@@ -236,15 +244,18 @@ func CreateRepoArchive(outputPath string, repoPaths []string, opts ArchiveOption
 	if err != nil {
 		return nil, fmt.Errorf("failed to create output file: %w", err)
 	}
+
 	defer func() { _ = outputFile.Close() }()
 
 	// Write header: magic (10) + version (1) + encrypted data
 	if _, err := outputFile.WriteString(ArchiveMagic); err != nil {
 		return nil, fmt.Errorf("failed to write magic: %w", err)
 	}
+
 	if _, err := outputFile.Write([]byte{byte(ArchiveVersion)}); err != nil {
 		return nil, fmt.Errorf("failed to write version: %w", err)
 	}
+
 	if _, err := outputFile.Write(encrypted); err != nil {
 		return nil, fmt.Errorf("failed to write encrypted data: %w", err)
 	}
@@ -264,6 +275,7 @@ func ExtractRepoArchive(archivePath, outputDir, password string) (*ArchiveManife
 	if len(data) < len(ArchiveMagic)+1 {
 		return nil, fmt.Errorf("invalid archive: file too small")
 	}
+
 	if string(data[:len(ArchiveMagic)]) != ArchiveMagic {
 		return nil, fmt.Errorf("invalid archive: missing magic header")
 	}
@@ -275,6 +287,7 @@ func ExtractRepoArchive(archivePath, outputDir, password string) (*ArchiveManife
 
 	// Decrypt
 	encryptedData := data[len(ArchiveMagic)+1:]
+
 	zipData, err := Decrypt(encryptedData, password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt archive (wrong password?): %w", err)
@@ -288,21 +301,26 @@ func ExtractRepoArchive(archivePath, outputDir, password string) (*ArchiveManife
 
 	// Find and read manifest
 	var manifest *ArchiveManifest
+
 	for _, f := range zipReader.File {
 		if f.Name == ManifestFileName {
 			rc, err := f.Open()
 			if err != nil {
 				return nil, fmt.Errorf("failed to open manifest: %w", err)
 			}
+
 			manifestData, err := io.ReadAll(rc)
 			_ = rc.Close()
+
 			if err != nil {
 				return nil, fmt.Errorf("failed to read manifest: %w", err)
 			}
+
 			manifest = &ArchiveManifest{}
 			if err := json.Unmarshal(manifestData, manifest); err != nil {
 				return nil, fmt.Errorf("failed to parse manifest: %w", err)
 			}
+
 			break
 		}
 	}
@@ -338,6 +356,7 @@ func ExtractRepoArchive(archivePath, outputDir, password string) (*ArchiveManife
 			if err := os.MkdirAll(destPath, f.Mode()); err != nil {
 				return nil, fmt.Errorf("failed to create directory %s: %w", destPath, err)
 			}
+
 			continue
 		}
 
@@ -361,6 +380,7 @@ func ExtractRepoArchive(archivePath, outputDir, password string) (*ArchiveManife
 		_, err = io.Copy(destFile, rc)
 		_ = rc.Close()
 		_ = destFile.Close()
+
 		if err != nil {
 			return nil, fmt.Errorf("failed to extract %s: %w", f.Name, err)
 		}
@@ -381,12 +401,14 @@ func ListArchiveContents(archivePath, password string) (*ArchiveManifest, error)
 	if len(data) < len(ArchiveMagic)+1 {
 		return nil, fmt.Errorf("invalid archive: file too small")
 	}
+
 	if string(data[:len(ArchiveMagic)]) != ArchiveMagic {
 		return nil, fmt.Errorf("invalid archive: missing magic header")
 	}
 
 	// Decrypt
 	encryptedData := data[len(ArchiveMagic)+1:]
+
 	zipData, err := Decrypt(encryptedData, password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt archive (wrong password?): %w", err)
@@ -405,15 +427,19 @@ func ListArchiveContents(archivePath, password string) (*ArchiveManifest, error)
 			if err != nil {
 				return nil, fmt.Errorf("failed to open manifest: %w", err)
 			}
+
 			manifestData, err := io.ReadAll(rc)
 			_ = rc.Close()
+
 			if err != nil {
 				return nil, fmt.Errorf("failed to read manifest: %w", err)
 			}
+
 			var manifest ArchiveManifest
 			if err := json.Unmarshal(manifestData, &manifest); err != nil {
 				return nil, fmt.Errorf("failed to parse manifest: %w", err)
 			}
+
 			return &manifest, nil
 		}
 	}
@@ -428,11 +454,12 @@ func shouldExclude(path string, patterns []string) bool {
 
 	for _, pattern := range patterns {
 		// Handle directory patterns
-		if strings.HasSuffix(pattern, "/**") {
-			prefix := strings.TrimSuffix(pattern, "/**")
+		if before, ok := strings.CutSuffix(pattern, "/**"); ok {
+			prefix := before
 			if path == prefix || strings.HasPrefix(path, prefix+"/") {
 				return true
 			}
+
 			continue
 		}
 
@@ -448,12 +475,14 @@ func shouldExclude(path string, patterns []string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
 // getGitRemoteURL returns the remote origin URL if available.
 func getGitRemoteURL(repoPath string) string {
 	configPath := filepath.Join(repoPath, ".git", "config")
+
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return ""
@@ -462,25 +491,30 @@ func getGitRemoteURL(repoPath string) string {
 	// Simple parser for git config
 	lines := strings.Split(string(data), "\n")
 	inOrigin := false
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "[remote \"origin\"]" {
 			inOrigin = true
 			continue
 		}
+
 		if inOrigin && strings.HasPrefix(line, "url = ") {
 			return strings.TrimPrefix(line, "url = ")
 		}
+
 		if inOrigin && strings.HasPrefix(line, "[") {
 			break
 		}
 	}
+
 	return ""
 }
 
 // getLastCommitHash returns the HEAD commit hash if available.
 func getLastCommitHash(repoPath string) string {
 	headPath := filepath.Join(repoPath, ".git", "HEAD")
+
 	data, err := os.ReadFile(headPath)
 	if err != nil {
 		return ""
@@ -494,12 +528,14 @@ func getLastCommitHash(repoPath string) string {
 	}
 
 	// Symbolic reference (ref: refs/heads/main)
-	if strings.HasPrefix(head, "ref: ") {
-		refPath := filepath.Join(repoPath, ".git", strings.TrimPrefix(head, "ref: "))
+	if after, ok := strings.CutPrefix(head, "ref: "); ok {
+		refPath := filepath.Join(repoPath, ".git", after)
+
 		refData, err := os.ReadFile(refPath)
 		if err != nil {
 			return ""
 		}
+
 		hash := strings.TrimSpace(string(refData))
 		if len(hash) >= 8 {
 			return hash[:8]

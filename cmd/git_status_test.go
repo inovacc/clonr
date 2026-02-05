@@ -12,6 +12,7 @@ func TestRunGitStatus_WithStagedChanges(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -24,6 +25,7 @@ func TestRunGitStatus_WithStagedChanges(t *testing.T) {
 	}
 
 	cmd := exec.Command("git", "add", "staged.txt")
+
 	cmd.Dir = repoDir
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("failed to stage file: %v", err)
@@ -44,6 +46,7 @@ func TestRunGitStatus_WithUnstagedChanges(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -70,6 +73,7 @@ func TestRunGitStatus_WithUntrackedFiles(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -96,6 +100,7 @@ func TestRunGitStatus_WithBranchFlag(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -103,6 +108,7 @@ func TestRunGitStatus_WithBranchFlag(t *testing.T) {
 
 	gitStatusCmd.Flags().Set("short", "false")
 	gitStatusCmd.Flags().Set("porcelain", "false")
+
 	gitStatusCmd.Flags().Set("branch", "true")
 	defer gitStatusCmd.Flags().Set("branch", "false")
 
@@ -117,6 +123,7 @@ func TestRunGitStatus_MixedChanges(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -127,6 +134,7 @@ func TestRunGitStatus_MixedChanges(t *testing.T) {
 	if err := os.WriteFile(stagedFile, []byte("staged\n"), 0644); err != nil {
 		t.Fatalf("failed to create staged file: %v", err)
 	}
+
 	cmd := exec.Command("git", "add", "staged.txt")
 	cmd.Dir = repoDir
 	_ = cmd.Run()
@@ -157,6 +165,7 @@ func TestRunGitStatus_ShortWithChanges(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -169,6 +178,7 @@ func TestRunGitStatus_ShortWithChanges(t *testing.T) {
 	}
 
 	gitStatusCmd.Flags().Set("short", "true")
+
 	gitStatusCmd.Flags().Set("porcelain", "false")
 	defer gitStatusCmd.Flags().Set("short", "false")
 

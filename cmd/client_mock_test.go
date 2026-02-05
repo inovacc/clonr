@@ -50,6 +50,7 @@ func NewMockClient() *MockClient {
 // SetActiveProfile implements ClientInterface.
 func (m *MockClient) SetActiveProfile(name string) error {
 	m.SetActiveProfileCalled = true
+
 	m.SetActiveProfileName = name
 	if m.SetActiveProfileErr != nil {
 		return m.SetActiveProfileErr
@@ -61,21 +62,25 @@ func (m *MockClient) SetActiveProfile(name string) error {
 			return nil
 		}
 	}
+
 	return nil
 }
 
 // GetProfile implements ClientInterface.
 func (m *MockClient) GetProfile(name string) (*model.Profile, error) {
 	m.GetProfileCalled = true
+
 	m.GetProfileName = name
 	if m.GetProfileErr != nil {
 		return nil, m.GetProfileErr
 	}
+
 	for i := range m.Profiles {
 		if m.Profiles[i].Name == name {
 			return &m.Profiles[i], nil
 		}
 	}
+
 	return nil, nil
 }
 
@@ -84,6 +89,7 @@ func (m *MockClient) GetActiveProfile() (*model.Profile, error) {
 	if m.GetActiveProfileErr != nil {
 		return nil, m.GetActiveProfileErr
 	}
+
 	return m.ActiveProfile, nil
 }
 
@@ -92,6 +98,7 @@ func (m *MockClient) ListProfiles() ([]model.Profile, error) {
 	if m.ListProfilesErr != nil {
 		return nil, m.ListProfilesErr
 	}
+
 	return m.Profiles, nil
 }
 
@@ -100,6 +107,7 @@ func (m *MockClient) ListWorkspaces() ([]model.Workspace, error) {
 	if m.ListWorkspacesErr != nil {
 		return nil, m.ListWorkspacesErr
 	}
+
 	return m.Workspaces, nil
 }
 
@@ -108,17 +116,21 @@ func (m *MockClient) GetActiveWorkspace() (*model.Workspace, error) {
 	if m.GetActiveWorkspaceErr != nil {
 		return nil, m.GetActiveWorkspaceErr
 	}
+
 	return m.ActiveWorkspace, nil
 }
 
 // SaveWorkspace implements ClientInterface.
 func (m *MockClient) SaveWorkspace(workspace *model.Workspace) error {
 	m.SaveWorkspaceCalled = true
+
 	m.SavedWorkspace = workspace
 	if m.SaveWorkspaceErr != nil {
 		return m.SaveWorkspaceErr
 	}
+
 	m.Workspaces = append(m.Workspaces, *workspace)
+
 	return nil
 }
 
@@ -127,6 +139,7 @@ func (m *MockClient) GetConfig() (*model.Config, error) {
 	if m.GetConfigErr != nil {
 		return nil, m.GetConfigErr
 	}
+
 	return m.Config, nil
 }
 
@@ -137,6 +150,7 @@ func withMockClient(mock *MockClient) func() {
 	clientFactory = func() (ClientInterface, error) {
 		return mock, nil
 	}
+
 	return func() {
 		clientFactory = original
 	}
@@ -148,6 +162,7 @@ func withMockClientError(err error) func() {
 	clientFactory = func() (ClientInterface, error) {
 		return nil, err
 	}
+
 	return func() {
 		clientFactory = original
 	}

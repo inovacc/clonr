@@ -12,6 +12,7 @@ func TestRunGitDiff_WithUnstagedChanges(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -39,6 +40,7 @@ func TestRunGitDiff_WithStagedChanges(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -51,6 +53,7 @@ func TestRunGitDiff_WithStagedChanges(t *testing.T) {
 	}
 
 	cmd := exec.Command("git", "add", "README.md")
+
 	cmd.Dir = repoDir
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("failed to stage file: %v", err)
@@ -70,6 +73,7 @@ func TestRunGitDiff_WithCachedFlag(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -99,6 +103,7 @@ func TestRunGitDiff_WithStatFlag(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -124,6 +129,7 @@ func TestRunGitDiff_WithNameOnlyFlag(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -149,6 +155,7 @@ func TestRunGitDiff_WithNameStatusFlag(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -174,6 +181,7 @@ func TestRunGitDiff_WithCommitArg(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -208,6 +216,7 @@ func TestRunGitDiff_WithPathArg(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}

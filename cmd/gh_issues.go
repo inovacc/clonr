@@ -265,6 +265,7 @@ func runIssuesClose(cmd *cobra.Command, args []string) error {
 
 	// Detect repository (skip first arg which is issue number)
 	repoArgs := args[1:]
+
 	owner, repo, err := detectRepo(repoArgs, flags.Repo, "Specify a repository with: clonr gh issues close <number> owner/repo")
 	if err != nil {
 		return err

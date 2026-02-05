@@ -183,9 +183,11 @@ func runGitPush(cmd *cobra.Command, args []string) error {
 		if git.IsAuthRequired(err) {
 			return fmt.Errorf("authentication failed - check your profile token")
 		}
+
 		if git.IsNoUpstream(err) {
 			return fmt.Errorf("no upstream branch configured - use -u to set upstream")
 		}
+
 		return err
 	}
 
@@ -198,12 +200,14 @@ func runGitPush(cmd *cobra.Command, args []string) error {
 
 	// Send push notification (async, non-blocking)
 	repoPath, _ := os.Getwd()
+
 	actualBranch := branch
 	if actualBranch == "" {
 		if b, err := client.CurrentBranch(ctx); err == nil {
 			actualBranch = b
 		}
 	}
+
 	go core.NotifyPush(ctx, repoPath, remote, actualBranch)
 
 	return nil
@@ -244,6 +248,7 @@ func enqueueGitPushForMonitoring(ctx context.Context, remote string) error {
 	if err != nil {
 		return err
 	}
+
 	defer func() { _ = db.Close() }()
 
 	record := &actionsdb.PushRecord{
@@ -273,5 +278,6 @@ func enqueueGitPushForMonitoring(ctx context.Context, remote string) error {
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout, dimStyle.Render("  Enqueued for GitHub Actions monitoring"))
+
 	return nil
 }

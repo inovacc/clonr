@@ -39,6 +39,7 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 	if _, err := rand.Read(b); err != nil {
 		return nil, fmt.Errorf("failed to generate random bytes: %w", err)
 	}
+
 	return b, nil
 }
 
@@ -75,10 +76,12 @@ func DeriveLocalStorageKey(localKey []byte, connectionID string) ([]byte, error)
 // deriveWithHKDF derives a key using HKDF-SHA256.
 func deriveWithHKDF(secret []byte, info, salt string) ([]byte, error) {
 	hkdfReader := hkdf.New(sha256.New, secret, []byte(salt), []byte(info))
+
 	key := make([]byte, keySize)
 	if _, err := hkdfReader.Read(key); err != nil {
 		return nil, fmt.Errorf("HKDF key derivation failed: %w", err)
 	}
+
 	return key, nil
 }
 
@@ -91,6 +94,7 @@ func Encrypt(plaintext []byte, password string) ([]byte, error) {
 	}
 
 	key := DeriveKeyPBKDF2(password, salt)
+
 	return encryptWithKey(plaintext, key, salt)
 }
 

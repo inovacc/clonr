@@ -24,6 +24,7 @@ func TestGenerateRandomBytes(t *testing.T) {
 				t.Errorf("GenerateRandomBytes() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+
 			if len(got) != tt.size {
 				t.Errorf("GenerateRandomBytes() got length = %d, want %d", len(got), tt.size)
 			}
@@ -33,6 +34,7 @@ func TestGenerateRandomBytes(t *testing.T) {
 	// Test randomness - two calls should produce different results
 	t.Run("randomness", func(t *testing.T) {
 		b1, _ := GenerateRandomBytes(32)
+
 		b2, _ := GenerateRandomBytes(32)
 		if bytes.Equal(b1, b2) {
 			t.Error("GenerateRandomBytes() produced identical results")

@@ -77,11 +77,13 @@ func DefaultICEConfig() ICEConfig {
 func NewICEAgent(config ICEConfig) (*ICEAgent, error) {
 	// Build URL list for ICE agent
 	var urls []*stun.URI
+
 	for _, server := range config.STUNServers {
 		u, err := stun.ParseURI(fmt.Sprintf("stun:%s", server))
 		if err != nil {
 			continue
 		}
+
 		urls = append(urls, u)
 	}
 
@@ -91,6 +93,7 @@ func NewICEAgent(config ICEConfig) (*ICEAgent, error) {
 		if err != nil {
 			continue
 		}
+
 		u.Username = turn.Username
 		u.Password = turn.Credential
 		urls = append(urls, u)
@@ -143,6 +146,7 @@ func (a *ICEAgent) GatherCandidates(ctx context.Context) (*ICECredentials, error
 
 	// Collect candidates with timeout
 	var candidates []ICECandidate
+
 	timeoutCtx, cancel := context.WithTimeout(ctx, a.config.Timeout)
 	defer cancel()
 
@@ -153,15 +157,18 @@ func (a *ICEAgent) GatherCandidates(ctx context.Context) (*ICECredentials, error
 				// Gathering complete
 				goto done
 			}
+
 			if c != nil {
 				candidate := a.candidateToICECandidate(*c)
 				candidates = append(candidates, candidate)
 
 				a.mu.Lock()
+
 				a.candidates = append(a.candidates, candidate)
 				if a.onCandidate != nil {
 					a.onCandidate(candidate)
 				}
+
 				a.mu.Unlock()
 			}
 		case <-timeoutCtx.Done():
@@ -172,6 +179,7 @@ func (a *ICEAgent) GatherCandidates(ctx context.Context) (*ICECredentials, error
 done:
 	// Get local credentials
 	ufrag, pwd, err := a.agent.GetLocalUserCredentials()
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get local credentials: %w", err)
 	}
@@ -216,6 +224,7 @@ func (a *ICEAgent) Connect(ctx context.Context, remote *ICECredentials) (net.Con
 		if err != nil {
 			continue // Skip invalid candidates
 		}
+
 		if err := a.agent.AddRemoteCandidate(candidate); err != nil {
 			continue
 		}
@@ -248,6 +257,7 @@ func (a *ICEAgent) Accept(ctx context.Context, remote *ICECredentials) (net.Conn
 		if err != nil {
 			continue
 		}
+
 		if err := a.agent.AddRemoteCandidate(candidate); err != nil {
 			continue
 		}
@@ -297,6 +307,7 @@ func (a *ICEAgent) iceCandidateToCandidate(c ICECandidate) (ice.Candidate, error
 			config.RelAddr = c.RelatedIP
 			config.RelPort = c.RelatedPort
 		}
+
 		return ice.NewCandidateServerReflexive(config)
 	case "prflx":
 		config := &ice.CandidatePeerReflexiveConfig{
@@ -311,6 +322,7 @@ func (a *ICEAgent) iceCandidateToCandidate(c ICECandidate) (ice.Candidate, error
 			config.RelAddr = c.RelatedIP
 			config.RelPort = c.RelatedPort
 		}
+
 		return ice.NewCandidatePeerReflexive(config)
 	case "relay":
 		config := &ice.CandidateRelayConfig{
@@ -325,6 +337,7 @@ func (a *ICEAgent) iceCandidateToCandidate(c ICECandidate) (ice.Candidate, error
 			config.RelAddr = c.RelatedIP
 			config.RelPort = c.RelatedPort
 		}
+
 		return ice.NewCandidateRelay(config)
 	default:
 		return nil, fmt.Errorf("unknown candidate type: %s", c.Type)
@@ -340,11 +353,13 @@ func (a *ICEAgent) Close() error {
 	if a.conn != nil {
 		err = a.conn.Close()
 	}
+
 	if a.agent != nil {
 		if closeErr := a.agent.Close(); closeErr != nil && err == nil {
 			err = closeErr
 		}
 	}
+
 	return err
 }
 
@@ -352,8 +367,10 @@ func (a *ICEAgent) Close() error {
 func (a *ICEAgent) GetLocalCandidates() []ICECandidate {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
+
 	result := make([]ICECandidate, len(a.candidates))
 	copy(result, a.candidates)
+
 	return result
 }
 
@@ -361,6 +378,7 @@ func (a *ICEAgent) GetLocalCandidates() []ICECandidate {
 func (a *ICEAgent) OnCandidate(fn func(ICECandidate)) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+
 	a.onCandidate = fn
 }
 
@@ -385,5 +403,6 @@ func ParseCredentials(data []byte) (*ICECredentials, error) {
 	if err := json.Unmarshal(data, &creds); err != nil {
 		return nil, fmt.Errorf("failed to parse ICE credentials: %w", err)
 	}
+
 	return &creds, nil
 }

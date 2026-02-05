@@ -492,6 +492,7 @@ func runProfileStatus(_ *cobra.Command, args []string) error {
 					_, _ = fmt.Fprintln(os.Stdout, "null")
 					return nil
 				}
+
 				_, _ = fmt.Fprintln(os.Stdout, "No default profile.")
 				_, _ = fmt.Fprintln(os.Stdout, "\nCreate a profile with: clonr profile add <name>")
 
@@ -507,6 +508,7 @@ func runProfileStatus(_ *cobra.Command, args []string) error {
 			_, _ = fmt.Fprintln(os.Stdout, "null")
 			return nil
 		}
+
 		_, _ = fmt.Fprintln(os.Stdout, "No profile found.")
 
 		return nil
@@ -534,6 +536,7 @@ func runProfileStatus(_ *cobra.Command, args []string) error {
 			if !meta.CreatedAt.IsZero() {
 				output.Encryption.CreatedAt = &meta.CreatedAt
 			}
+
 			if !meta.RotatedAt.IsZero() {
 				output.Encryption.RotatedAt = &meta.RotatedAt
 			}
@@ -541,6 +544,7 @@ func runProfileStatus(_ *cobra.Command, args []string) error {
 
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(output)
 	}
 
@@ -673,6 +677,7 @@ func runProfileRotate(_ *cobra.Command, args []string) error {
 		if errors.Is(err, core.ErrProfileNotFound) {
 			return fmt.Errorf("profile '%s' not found", name)
 		}
+
 		return fmt.Errorf("failed to get profile: %w", err)
 	}
 
@@ -739,8 +744,10 @@ func runProfileMigrate(cmd *cobra.Command, args []string) error {
 			if errors.Is(err, core.ErrProfileNotFound) {
 				return fmt.Errorf("profile '%s' not found", args[0])
 			}
+
 			return fmt.Errorf("failed to get profile: %w", err)
 		}
+
 		if profile != nil {
 			profiles = []model.Profile{*profile}
 		}
@@ -761,12 +768,14 @@ func runProfileMigrate(cmd *cobra.Command, args []string) error {
 		if len(profile.EncryptedToken) == 0 {
 			_, _ = fmt.Fprintf(os.Stdout, "  %s: skipped (no token)\n", profile.Name)
 			skipped++
+
 			continue
 		}
 
 		if tpm.IsDataKeystore(profile.EncryptedToken) {
 			_, _ = fmt.Fprintf(os.Stdout, "  %s: skipped (already using keystore)\n", profile.Name)
 			skipped++
+
 			continue
 		}
 
@@ -775,6 +784,7 @@ func runProfileMigrate(cmd *cobra.Command, args []string) error {
 			if dryRun {
 				_, _ = fmt.Fprintf(os.Stdout, "  %s: would migrate (OPEN: -> KS:)\n", profile.Name)
 				migrated++
+
 				continue
 			}
 
@@ -783,6 +793,7 @@ func runProfileMigrate(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "  %s: failed to read token: %v\n", profile.Name, err)
 				failed++
+
 				continue
 			}
 
@@ -791,6 +802,7 @@ func runProfileMigrate(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "  %s: failed to encrypt: %v\n", profile.Name, err)
 				failed++
+
 				continue
 			}
 
@@ -799,11 +811,13 @@ func runProfileMigrate(cmd *cobra.Command, args []string) error {
 			if err := pm.UpdateProfile(&profile); err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "  %s: failed to save: %v\n", profile.Name, err)
 				failed++
+
 				continue
 			}
 
 			_, _ = fmt.Fprintf(os.Stdout, "  %s: migrated (OPEN: -> KS:)\n", profile.Name)
 			migrated++
+
 			continue
 		}
 
@@ -812,6 +826,7 @@ func runProfileMigrate(cmd *cobra.Command, args []string) error {
 			if dryRun {
 				_, _ = fmt.Fprintf(os.Stdout, "  %s: would migrate (ENC: -> KS:)\n", profile.Name)
 				migrated++
+
 				continue
 			}
 
@@ -820,6 +835,7 @@ func runProfileMigrate(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "  %s: failed to decrypt (TPM required): %v\n", profile.Name, err)
 				failed++
+
 				continue
 			}
 
@@ -828,6 +844,7 @@ func runProfileMigrate(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "  %s: failed to encrypt: %v\n", profile.Name, err)
 				failed++
+
 				continue
 			}
 
@@ -836,11 +853,13 @@ func runProfileMigrate(cmd *cobra.Command, args []string) error {
 			if err := pm.UpdateProfile(&profile); err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "  %s: failed to save: %v\n", profile.Name, err)
 				failed++
+
 				continue
 			}
 
 			_, _ = fmt.Fprintf(os.Stdout, "  %s: migrated (ENC: -> KS:)\n", profile.Name)
 			migrated++
+
 			continue
 		}
 

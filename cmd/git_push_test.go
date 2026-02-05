@@ -14,12 +14,15 @@ func TestGitPushScanModel(t *testing.T) {
 		if !m.scanning {
 			t.Error("scanning should be true initially")
 		}
+
 		if m.done {
 			t.Error("done should be false initially")
 		}
+
 		if m.result != nil {
 			t.Error("result should be nil initially")
 		}
+
 		if m.err != nil {
 			t.Error("err should be nil initially")
 		}
@@ -95,12 +98,15 @@ func TestGitPushScanModel(t *testing.T) {
 		if !updated.done {
 			t.Error("done should be true after receiving done message")
 		}
+
 		if updated.scanning {
 			t.Error("scanning should be false after receiving done message")
 		}
+
 		if updated.result != result {
 			t.Error("result should be set")
 		}
+
 		if cmd == nil {
 			t.Error("should return quit command")
 		}

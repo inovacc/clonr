@@ -24,6 +24,7 @@ func EnsureDir(path string) error {
 	if err := os.MkdirAll(path, 0755); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", path, err)
 	}
+
 	return nil
 }
 
@@ -40,8 +41,10 @@ func ReadFile(path string) ([]byte, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
+
 		return nil, fmt.Errorf("failed to read file %s: %w", path, err)
 	}
+
 	return data, nil
 }
 
@@ -51,9 +54,11 @@ func WriteFile(path string, data []byte, perm os.FileMode) error {
 	if err := EnsureParentDir(path); err != nil {
 		return err
 	}
+
 	if err := os.WriteFile(path, data, perm); err != nil {
 		return fmt.Errorf("failed to write file %s: %w", path, err)
 	}
+
 	return nil
 }
 

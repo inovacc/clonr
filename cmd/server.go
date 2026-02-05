@@ -160,7 +160,9 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 
 	// Setup max runtime timer if enabled
 	var maxRuntimeTimer *time.Timer
+
 	maxRuntimeChan := make(chan struct{})
+
 	if serverMaxRuntime > 0 {
 		maxRuntimeTimer = time.AfterFunc(serverMaxRuntime, func() {
 			close(maxRuntimeChan)
@@ -189,6 +191,7 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 		}
 
 		var err error
+
 		webServer, err = web.New(webConfig, db)
 		if err != nil {
 			log.Printf("Warning: failed to create web server: %v", err)
@@ -198,6 +201,7 @@ func runServerStart(cmd *cobra.Command, args []string) error {
 					log.Printf("Web server error: %v", err)
 				}
 			}()
+
 			log.Printf("Web server starting on http://127.0.0.1:%d", serverWebPort)
 		}
 	}
@@ -415,6 +419,7 @@ func startActionsWorker() error {
 	}
 
 	log.Println("GitHub Actions monitoring worker started")
+
 	return nil
 }
 
@@ -460,6 +465,7 @@ func stopWebServer() {
 	if webServer != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
+
 		if err := webServer.Shutdown(ctx); err != nil {
 			log.Printf("Warning: failed to shutdown web server: %v", err)
 		} else {

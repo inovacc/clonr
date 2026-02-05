@@ -180,6 +180,7 @@ func runDockerProfileList(_ *cobra.Command, _ []string) error {
 		}
 
 		printEmptyResult("docker profiles", "clonr profile docker add <name>")
+
 		return nil
 	}
 
@@ -198,6 +199,7 @@ func runDockerProfileList(_ *cobra.Command, _ []string) error {
 
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
+
 		return enc.Encode(items)
 	}
 
@@ -257,6 +259,7 @@ func runDockerProfileRemove(_ *cobra.Command, args []string) error {
 	}
 
 	_, _ = fmt.Fprintf(os.Stdout, "Docker profile '%s' deleted.\n", name)
+
 	return nil
 }
 

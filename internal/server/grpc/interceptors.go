@@ -58,11 +58,14 @@ func contextCheckInterceptor() grpc.UnaryServerInterceptor {
 			if err == context.Canceled {
 				return nil, status.Error(codes.Canceled, "request canceled")
 			}
+
 			if err == context.DeadlineExceeded {
 				return nil, status.Error(codes.DeadlineExceeded, "request deadline exceeded")
 			}
+
 			return nil, status.Errorf(codes.Internal, "context error: %v", err)
 		}
+
 		return handler(ctx, req)
 	}
 }

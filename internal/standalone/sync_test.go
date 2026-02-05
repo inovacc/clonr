@@ -21,9 +21,11 @@ func TestEncryptForSync(t *testing.T) {
 	if synced.State != SyncStateEncrypted {
 		t.Errorf("State = %s, want %s", synced.State, SyncStateEncrypted)
 	}
+
 	if len(synced.EncryptedData) == 0 {
 		t.Error("EncryptedData is empty")
 	}
+
 	if synced.SyncedAt.IsZero() {
 		t.Error("SyncedAt is zero")
 	}
@@ -64,6 +66,7 @@ func TestDecryptSyncedData(t *testing.T) {
 
 func TestDecryptSyncedDataWrongKey(t *testing.T) {
 	key := make([]byte, keySize)
+
 	wrongKey := make([]byte, keySize)
 	for i := range wrongKey {
 		wrongKey[i] = byte(i + 1) // Different key
@@ -84,6 +87,7 @@ func TestDecryptAlreadyDecrypted(t *testing.T) {
 	}
 
 	key := make([]byte, keySize)
+
 	_, err := DecryptSyncedData(synced, key)
 	if err == nil {
 		t.Error("DecryptSyncedData() expected error for already decrypted data")
@@ -109,12 +113,15 @@ func TestCreateSyncPackage(t *testing.T) {
 	if pkg.Version != 1 {
 		t.Errorf("Version = %d, want 1", pkg.Version)
 	}
+
 	if pkg.InstanceID != "test-instance" {
 		t.Errorf("InstanceID = %s, want test-instance", pkg.InstanceID)
 	}
+
 	if len(pkg.Items) != 2 {
 		t.Errorf("Items count = %d, want 2", len(pkg.Items))
 	}
+
 	if pkg.EncryptionKey == "" {
 		t.Error("EncryptionKey hint is empty")
 	}
@@ -189,6 +196,7 @@ func TestPendingSyncStore(t *testing.T) {
 	// Test Remove
 	t.Run("Remove", func(t *testing.T) {
 		store.Remove("conn1", "profile", "profile1")
+
 		got := store.Get("conn1", "profile", "profile1")
 		if got != nil {
 			t.Error("Remove() did not remove item")
@@ -208,12 +216,15 @@ func TestEncryptionKeyManager(t *testing.T) {
 		if !config.Enabled {
 			t.Error("config.Enabled = false, want true")
 		}
+
 		if len(config.KeyHash) == 0 {
 			t.Error("config.KeyHash is empty")
 		}
+
 		if len(config.Salt) == 0 {
 			t.Error("config.Salt is empty")
 		}
+
 		if config.KeyHint == "" {
 			t.Error("config.KeyHint is empty")
 		}
@@ -249,6 +260,7 @@ func TestEncryptionKeyManager(t *testing.T) {
 		if err != nil {
 			t.Fatalf("DeriveKey() error = %v", err)
 		}
+
 		if len(key) != keySize {
 			t.Errorf("DeriveKey() key length = %d, want %d", len(key), keySize)
 		}
@@ -297,9 +309,11 @@ func TestSyncStates(t *testing.T) {
 	if SyncStateEncrypted != "encrypted" {
 		t.Errorf("SyncStateEncrypted = %s, want encrypted", SyncStateEncrypted)
 	}
+
 	if SyncStateDecrypted != "decrypted" {
 		t.Errorf("SyncStateDecrypted = %s, want decrypted", SyncStateDecrypted)
 	}
+
 	if SyncStatePending != "pending" {
 		t.Errorf("SyncStatePending = %s, want pending", SyncStatePending)
 	}

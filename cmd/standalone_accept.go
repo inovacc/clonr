@@ -89,6 +89,7 @@ func runStandaloneAccept(_ *cobra.Command, args []string) error {
 		}
 
 		_, _ = fmt.Fprintln(os.Stdout, "To accept a client: clonr standalone accept --client <id>")
+
 		return nil
 	}
 
@@ -103,6 +104,7 @@ func runStandaloneAccept(_ *cobra.Command, args []string) error {
 				break
 			}
 		}
+
 		if target == nil {
 			return fmt.Errorf("no pending client found with ID prefix: %s", acceptClientID)
 		}
@@ -118,11 +120,13 @@ func runStandaloneAccept(_ *cobra.Command, args []string) error {
 			_, _ = fmt.Fprintf(os.Stderr, "  %s - %s (%s)\n",
 				reg.ClientID[:8], reg.ClientName, reg.MachineInfo.Hostname)
 		}
+
 		return fmt.Errorf("specify --client to choose which client to accept")
 	}
 
 	// Display client info
 	_, _ = fmt.Fprintln(os.Stdout)
+
 	printBoxHeader("CLIENT REGISTRATION")
 	printBoxLine("Client ID", target.ClientID[:8])
 	printBoxLine("Name", truncateString(target.ClientName, 48))
@@ -130,6 +134,7 @@ func runStandaloneAccept(_ *cobra.Command, args []string) error {
 	printBoxLine("Platform", fmt.Sprintf("%s/%s", target.MachineInfo.OS, target.MachineInfo.Arch))
 	printBoxLine("Version", target.MachineInfo.ClonrVersion)
 	printBoxFooter()
+
 	_, _ = fmt.Fprintln(os.Stdout)
 
 	// Get the encryption key from user
@@ -139,10 +144,12 @@ func runStandaloneAccept(_ *cobra.Command, args []string) error {
 	} else {
 		_, _ = fmt.Fprint(os.Stderr, "Enter the encryption key displayed on the client: ")
 		reader := bufio.NewReader(os.Stdin)
+
 		input, err := reader.ReadString('\n')
 		if err != nil {
 			return fmt.Errorf("failed to read key: %w", err)
 		}
+
 		displayKey = strings.TrimSpace(input)
 	}
 
@@ -174,11 +181,13 @@ func runStandaloneAccept(_ *cobra.Command, args []string) error {
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout)
+
 	printBoxHeader("CLIENT REGISTERED")
 	printBoxLine("Client", registeredClient.ClientName)
 	printBoxLine("Key Hint", registeredClient.KeyHint)
 	printBoxLine("Status", registeredClient.Status)
 	printBoxFooter()
+
 	_, _ = fmt.Fprintln(os.Stdout)
 
 	_, _ = fmt.Fprintln(os.Stdout, "The client can now sync data with this instance.")

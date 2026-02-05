@@ -76,10 +76,12 @@ func runStandaloneDecrypt(_ *cobra.Command, _ []string) error {
 				_, _ = fmt.Fprintf(os.Stdout, "  - [%s] %s (synced: %s)\n",
 					item.DataType, item.Name, item.SyncedAt.Format("2006-01-02 15:04"))
 			}
+
 			_, _ = fmt.Fprintln(os.Stdout)
 		}
 
 		_, _ = fmt.Fprintln(os.Stdout, "To decrypt, run: clonr standalone decrypt --connection <name>")
+
 		return nil
 	}
 
@@ -89,8 +91,10 @@ func runStandaloneDecrypt(_ *cobra.Command, _ []string) error {
 	}
 
 	// Get items to decrypt
-	var toDecrypt []standalone.SyncedData
-	var err error
+	var (
+		toDecrypt []standalone.SyncedData
+		err       error
+	)
 
 	if decryptAll {
 		toDecrypt, err = db.ListSyncedDataByState(standalone.SyncStateEncrypted)
@@ -98,11 +102,13 @@ func runStandaloneDecrypt(_ *cobra.Command, _ []string) error {
 		toDecrypt, err = db.ListSyncedData(decryptConnection)
 		// Filter to only encrypted items
 		var filtered []standalone.SyncedData
+
 		for _, item := range toDecrypt {
 			if item.State == standalone.SyncStateEncrypted {
 				filtered = append(filtered, item)
 			}
 		}
+
 		toDecrypt = filtered
 	}
 
@@ -130,6 +136,7 @@ func runStandaloneDecrypt(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to process key: %w", err)
 	}
+
 	key := standalone.DeriveKeyArgon2(password, salt)
 
 	// Try to decrypt each item
@@ -143,6 +150,7 @@ func runStandaloneDecrypt(_ *cobra.Command, _ []string) error {
 		if decryptErr != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "  Failed: [%s] %s - %v\n", item.DataType, item.Name, decryptErr)
 			failed++
+
 			continue
 		}
 
@@ -151,6 +159,7 @@ func runStandaloneDecrypt(_ *cobra.Command, _ []string) error {
 		if saveErr := db.SaveSyncedData(&item); saveErr != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "  Warning: decrypted but failed to save [%s] %s: %v\n",
 				item.DataType, item.Name, saveErr)
+
 			continue
 		}
 

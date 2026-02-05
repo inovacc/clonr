@@ -13,11 +13,13 @@ func TestKeystoreEncryptDecrypt(t *testing.T) {
 	// Create temp directory for test keystore
 	tmpDir, err := os.MkdirTemp("", "clonr-keystore-test-*")
 	require.NoError(t, err)
+
 	defer os.RemoveAll(tmpDir)
 
 	// Override application directory for test
 	oldGetAppDir := getAppDirectory
 	getAppDirectory = func() (string, error) { return tmpDir, nil }
+
 	defer func() { getAppDirectory = oldGetAppDir }()
 
 	// Reset keystore singleton for test
@@ -85,10 +87,12 @@ func TestKeystoreEncryptDecrypt(t *testing.T) {
 func TestKeystoreProfileManagement(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "clonr-keystore-test-*")
 	require.NoError(t, err)
+
 	defer os.RemoveAll(tmpDir)
 
 	oldGetAppDir := getAppDirectory
 	getAppDirectory = func() (string, error) { return tmpDir, nil }
+
 	defer func() { getAppDirectory = oldGetAppDir }()
 
 	resetKeystoreForTest()
@@ -134,10 +138,12 @@ func TestKeystoreProfileManagement(t *testing.T) {
 func TestKeystoreKeyRotation(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "clonr-keystore-test-*")
 	require.NoError(t, err)
+
 	defer os.RemoveAll(tmpDir)
 
 	oldGetAppDir := getAppDirectory
 	getAppDirectory = func() (string, error) { return tmpDir, nil }
+
 	defer func() { getAppDirectory = oldGetAppDir }()
 
 	resetKeystoreForTest()
@@ -193,10 +199,12 @@ func TestKeystoreKeyRotation(t *testing.T) {
 func TestTokenEncryptionWithKeystore(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "clonr-keystore-test-*")
 	require.NoError(t, err)
+
 	defer os.RemoveAll(tmpDir)
 
 	oldGetAppDir := getAppDirectory
 	getAppDirectory = func() (string, error) { return tmpDir, nil }
+
 	defer func() { getAppDirectory = oldGetAppDir }()
 
 	resetKeystoreForTest()
@@ -265,6 +273,7 @@ func resetKeystoreForTest() {
 		_ = globalKeystore.Close()
 		globalKeystore = nil
 	}
+
 	keystoreErr = nil
 	keystoreOnce = sync.Once{}
 }

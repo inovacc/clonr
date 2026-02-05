@@ -51,6 +51,7 @@ func (m *Migrator) LoadMigrations() ([]Migration, error) {
 		if err != nil {
 			return err
 		}
+
 		if d.IsDir() {
 			return nil
 		}
@@ -62,6 +63,7 @@ func (m *Migrator) LoadMigrations() ([]Migration, error) {
 
 		// Parse filename: 001_description.up.sql or 001_description.down.sql
 		re := regexp.MustCompile(`^(\d+)_(.+)\.(up|down)\.sql$`)
+
 		matches := re.FindStringSubmatch(filename)
 		if len(matches) != 4 {
 			return nil
@@ -100,6 +102,7 @@ func (m *Migrator) LoadMigrations() ([]Migration, error) {
 	for _, mig := range migrations {
 		result = append(result, *mig)
 	}
+
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].Version < result[j].Version
 	})
@@ -111,6 +114,7 @@ func (m *Migrator) LoadMigrations() ([]Migration, error) {
 func (m *Migrator) CurrentVersion() (int, error) {
 	// Check if schema_migrations table exists
 	var tableName string
+
 	err := m.db.QueryRow(`
 		SELECT name FROM sqlite_master
 		WHERE type='table' AND name='schema_migrations'
@@ -118,12 +122,14 @@ func (m *Migrator) CurrentVersion() (int, error) {
 	if err == sql.ErrNoRows {
 		return 0, nil
 	}
+
 	if err != nil {
 		return 0, fmt.Errorf("checking schema_migrations table: %w", err)
 	}
 
 	// Get the latest version
 	var version int
+
 	err = m.db.QueryRow(`
 		SELECT COALESCE(MAX(version), 0) FROM schema_migrations
 	`).Scan(&version)
@@ -140,6 +146,7 @@ func (m *Migrator) AppliedMigrations() ([]MigrationRecord, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if currentVersion == 0 {
 		return nil, nil
 	}
@@ -155,11 +162,13 @@ func (m *Migrator) AppliedMigrations() ([]MigrationRecord, error) {
 	defer rows.Close()
 
 	var records []MigrationRecord
+
 	for rows.Next() {
 		var rec MigrationRecord
 		if err := rows.Scan(&rec.Version, &rec.AppliedAt, &rec.Description); err != nil {
 			return nil, fmt.Errorf("scanning migration record: %w", err)
 		}
+
 		records = append(records, rec)
 	}
 
@@ -213,6 +222,7 @@ func (m *Migrator) MigrateDown() error {
 
 	// Find the current migration
 	var currentMigration *Migration
+
 	for i := range migrations {
 		if migrations[i].Version == currentVersion {
 			currentMigration = &migrations[i]
@@ -258,9 +268,11 @@ func (m *Migrator) MigrateTo(targetVersion int) error {
 			if mig.Version <= currentVersion || mig.Version > targetVersion {
 				continue
 			}
+
 			if mig.UpSQL == "" {
 				return fmt.Errorf("migration %d has no up SQL", mig.Version)
 			}
+
 			if err := m.runMigration(mig.UpSQL); err != nil {
 				return fmt.Errorf("applying migration %d: %w", mig.Version, err)
 			}
@@ -278,9 +290,11 @@ func (m *Migrator) MigrateTo(targetVersion int) error {
 			if mig.Version <= targetVersion || mig.Version > currentVersion {
 				continue
 			}
+
 			if mig.DownSQL == "" {
 				return fmt.Errorf("migration %d has no down SQL", mig.Version)
 			}
+
 			if err := m.runMigration(mig.DownSQL); err != nil {
 				return fmt.Errorf("rolling back migration %d: %w", mig.Version, err)
 			}
@@ -296,6 +310,7 @@ func (m *Migrator) runMigration(sqlScript string) error {
 	if err != nil {
 		return fmt.Errorf("beginning transaction: %w", err)
 	}
+
 	defer func() {
 		if err != nil {
 			_ = tx.Rollback()
@@ -326,6 +341,7 @@ func (m *Migrator) PendingMigrations() ([]Migration, error) {
 	}
 
 	var pending []Migration
+
 	for _, mig := range migrations {
 		if mig.Version > currentVersion {
 			pending = append(pending, mig)

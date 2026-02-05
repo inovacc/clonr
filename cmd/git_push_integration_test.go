@@ -15,6 +15,7 @@ func TestRunGitPush_NotGitRepo(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(tmpDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -24,6 +25,7 @@ func TestRunGitPush_NotGitRepo(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for non-git repository")
 	}
+
 	if err.Error() != "not a git repository" {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -34,6 +36,7 @@ func TestRunGitPush_SkipLeaks(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -43,6 +46,7 @@ func TestRunGitPush_SkipLeaks(t *testing.T) {
 	gitPushCmd.Flags().Set("skip-leaks", "true")
 	gitPushCmd.Flags().Set("set-upstream", "false")
 	gitPushCmd.Flags().Set("force", "false")
+
 	gitPushCmd.Flags().Set("tags", "false")
 	defer gitPushCmd.Flags().Set("skip-leaks", "false")
 
@@ -59,6 +63,7 @@ func TestRunGitPush_WithRemoteArg(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -79,6 +84,7 @@ func TestRunGitPush_WithRemoteAndBranchArgs(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -99,6 +105,7 @@ func TestRunGitPush_WithTags(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -111,6 +118,7 @@ func TestRunGitPush_WithTags(t *testing.T) {
 
 	gitPushCmd.Flags().Set("skip-leaks", "true")
 	gitPushCmd.Flags().Set("tags", "true")
+
 	defer func() {
 		gitPushCmd.Flags().Set("skip-leaks", "false")
 		gitPushCmd.Flags().Set("tags", "false")
@@ -128,6 +136,7 @@ func TestRunGitPush_WithSetUpstream(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -135,6 +144,7 @@ func TestRunGitPush_WithSetUpstream(t *testing.T) {
 
 	gitPushCmd.Flags().Set("skip-leaks", "true")
 	gitPushCmd.Flags().Set("set-upstream", "true")
+
 	defer func() {
 		gitPushCmd.Flags().Set("skip-leaks", "false")
 		gitPushCmd.Flags().Set("set-upstream", "false")
@@ -153,6 +163,7 @@ func TestEnqueueGitPushForMonitoring(t *testing.T) {
 	defer os.RemoveAll(remoteDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}
@@ -173,6 +184,7 @@ func TestEnqueueGitPushForMonitoring_NoRemote(t *testing.T) {
 	defer os.RemoveAll(repoDir)
 
 	oldDir, _ := os.Getwd()
+
 	if err := os.Chdir(repoDir); err != nil {
 		t.Fatalf("failed to change directory: %v", err)
 	}

@@ -71,7 +71,9 @@ func runSlackAdd(_ *cobra.Command, _ []string) error {
 		if slackAddChannel != "" {
 			_, _ = fmt.Fprintf(os.Stdout, "Default channel: %s\n", slackAddChannel)
 		}
+
 		_, _ = fmt.Fprintln(os.Stdout, "\nTest with: clonr slack test")
+
 		return nil
 	}
 
@@ -87,6 +89,7 @@ func runSlackAdd(_ *cobra.Command, _ []string) error {
 		_, _ = fmt.Fprintln(os.Stdout, "Slack bot added successfully!")
 		_, _ = fmt.Fprintf(os.Stdout, "Default channel: %s\n", slackAddChannel)
 		_, _ = fmt.Fprintln(os.Stdout, "\nTest with: clonr slack test")
+
 		return nil
 	}
 

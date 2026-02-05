@@ -26,6 +26,7 @@ func promptConfirm(prompt string) bool {
 	_, _ = fmt.Fprint(os.Stdout, prompt)
 
 	var response string
+
 	_, _ = fmt.Scanln(&response)
 
 	return response == "y" || response == "Y"
@@ -43,6 +44,7 @@ func expandPath(path string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to get home directory: %w", err)
 		}
+
 		path = filepath.Join(home, path[1:])
 	}
 
@@ -68,7 +70,9 @@ func centerString(s string, width int) string {
 	if len(s) >= width {
 		return s
 	}
+
 	padding := (width - len(s)) / 2
+
 	return fmt.Sprintf("%*s%s%*s", padding, "", s, width-len(s)-padding, "")
 }
 
@@ -77,9 +81,11 @@ func truncateString(s string, maxLen int) string {
 	if len(s) <= maxLen {
 		return s
 	}
+
 	if maxLen <= 3 {
 		return s[:maxLen]
 	}
+
 	return s[:maxLen-3] + "..."
 }
 
@@ -96,11 +102,13 @@ func printBoxHeader(title string) {
 // printBoxLine prints a line inside an info box with label and value
 func printBoxLine(label, value string) {
 	content := fmt.Sprintf("  %s: %s", label, value)
+
 	padding := boxWidth - 2 - len(content)
 	if padding < 0 {
 		padding = 0
 		content = content[:boxWidth-2]
 	}
+
 	_, _ = fmt.Fprintf(os.Stdout, "║%s%*s║\n", content, padding, "")
 }
 
@@ -112,10 +120,12 @@ func printBoxFooter() {
 // printInfoBox prints a complete info box with title and key-value pairs
 func printInfoBox(title string, items map[string]string, order []string) {
 	printBoxHeader(title)
+
 	for _, key := range order {
 		if val, ok := items[key]; ok {
 			printBoxLine(key, val)
 		}
 	}
+
 	printBoxFooter()
 }
