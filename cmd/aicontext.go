@@ -82,6 +82,11 @@ var aiCategoryMap = map[string]string{
 	"branches": "Git Operations", "diff": "Git Operations",
 	"stats": "Git Operations", "status": "Git Operations",
 	"reauthor": "Git Operations", "snapshot": "Git Operations",
+	"pull": "Git Operations", "push": "Git Operations",
+	"commit": "Git Operations", "checkout": "Git Operations",
+	"merge": "Git Operations", "stash": "Git Operations",
+	"tag": "Git Operations", "scan": "Git Operations",
+	"git": "Git Operations",
 
 	// GitHub Integration
 	"gh": "GitHub Integration",
@@ -92,9 +97,13 @@ var aiCategoryMap = map[string]string{
 	// Project Management
 	"pm": "Project Management",
 
-	// Notifications
-	"slack": "Notifications", "gmail": "Notifications",
-	"teams": "Notifications", "outlook": "Notifications",
+	// Service Integrations (Email & Messaging)
+	"gmail":   "Service Integrations",
+	"teams":   "Service Integrations",
+	"outlook": "Service Integrations",
+
+	// Notifications (Outbound)
+	"slack": "Notifications",
 
 	// Configuration
 	"configure": "Configuration", "config": "Configuration",
@@ -102,25 +111,28 @@ var aiCategoryMap = map[string]string{
 
 	// Infrastructure
 	"server": "Infrastructure", "service": "Infrastructure",
-	"mirror": "Infrastructure",
+	"mirror": "Infrastructure", "standalone": "Infrastructure",
 
 	// Tooling
 	"cmdtree": "Tooling", "aicontext": "Tooling",
 	"version": "Tooling", "update": "Tooling",
 	"nerds": "Tooling", "repo": "Tooling",
+	"data": "Tooling", "workspace": "Tooling",
+	"monitor": "Tooling",
 }
 
 // aiCategoryDescriptions provides descriptions for each category
 var aiCategoryDescriptions = map[string]string{
 	"Repository Management": "Clone, organize, and manage Git repositories locally",
-	"Git Operations":        "Git-related operations like branching, diffing, and statistics",
+	"Git Operations":        "Git operations with profile auth: pull, push, commit, branch, merge, stash, tag, and secret scanning",
 	"GitHub Integration":    "GitHub API integration for issues, PRs, actions, and releases",
 	"Organization":          "Manage and mirror organization repositories",
-	"Project Management":    "Integrate with project management tools (Jira, ZenHub)",
-	"Notifications":         "Slack, Teams, Discord, Gmail notifications and messaging",
-	"Configuration":         "Configure clonr settings and profiles",
-	"Infrastructure":        "Server mode, services, and repository mirroring",
-	"Tooling":               "Development and introspection tools",
+	"Project Management":    "Integrate with project management tools (Jira, ZenHub, Slack reading)",
+	"Service Integrations":  "Email and messaging services: Gmail (with Drive/Calendar), Microsoft Teams, Outlook",
+	"Notifications":         "Outbound notifications to Slack (webhooks and bots)",
+	"Configuration":         "Configure clonr settings, profiles, and Docker registry auth",
+	"Infrastructure":        "Server mode, system services, standalone sync, and repository mirroring",
+	"Tooling":               "Development tools, data export/import, workspaces, and introspection",
 }
 
 // getAICategory returns the category for a command name
@@ -220,24 +232,30 @@ func buildAIContext(root *cobra.Command, opts AIContextOptions) AIContext {
 func buildAIOverview() AIOverview {
 	return AIOverview{
 		Name:        application.AppName,
-		Description: "A Git repository manager for developers who work with multiple repositories. Provides an interactive interface for cloning, organizing, and working with multiple repositories efficiently.",
+		Description: "A Git repository manager for developers who work with multiple repositories. Provides an interactive interface for cloning, organizing, and working with multiple repositories efficiently, with integrated service support for email, messaging, and project management.",
 		Principles: []string{
 			"Multi-repo first: Designed for managing many repositories",
 			"GitHub integration: Deep integration with GitHub API",
 			"Interactive: TUI interfaces for common operations",
 			"Profile support: Multiple configurations for different contexts",
+			"Service-centric: Each integration owns its auth and operations",
+			"Security first: TPM-backed encryption, secret scanning with gitleaks",
 			"Cross-platform: Linux, macOS, Windows support",
 		},
 		Features: []string{
 			"Clone and organize repositories with custom directory structure",
+			"Git operations with profile authentication (pull, push, commit, etc.)",
+			"Pre-push secret scanning with gitleaks integration",
 			"GitHub issues, PRs, actions, and releases management",
 			"Organization repository mirroring",
-			"Jira and ZenHub integration",
-			"Slack notifications and messaging",
-			"Git statistics and branch management",
-			"Profile-based configuration",
-			"Server mode with gRPC API",
-			"Auto-update support",
+			"Gmail integration with Drive links and calendar event extraction",
+			"Microsoft Teams integration (teams, channels, messages, chats)",
+			"Microsoft Outlook integration (folders, messages, search)",
+			"Jira and ZenHub project management integration",
+			"Slack notifications (outbound) and message reading (inbound)",
+			"Profile-based configuration with secure token storage",
+			"Server mode with gRPC API and web UI",
+			"Instance synchronization with standalone mode",
 		},
 	}
 }
@@ -245,15 +263,21 @@ func buildAIOverview() AIOverview {
 // buildAIArchitecture creates the architecture documentation
 func buildAIArchitecture() AIArchitecture {
 	return AIArchitecture{
-		Description: "Standard Go CLI architecture with Cobra commands and gRPC server support",
+		Description: "Unified client-server architecture with Cobra CLI, gRPC server, and web UI. Single binary provides both client commands and persistent server functionality.",
 		Structure: map[string]string{
-			"cmd/":      "Cobra CLI command definitions",
-			"internal/": "Internal packages (cloner, config, git)",
-			"pkg/":      "Public packages (database, profiles)",
-			"proto/":    "Protocol buffer definitions for gRPC",
-			"scripts/":  "Build and utility scripts",
-			"docs/":     "Documentation",
-			"main.go":   "Entry point calling cmd.Execute()",
+			"cmd/":             "Cobra CLI command definitions (gmail.go, teams.go, outlook.go, etc.)",
+			"internal/core/":   "Business logic (profile management, auth, encryption)",
+			"internal/gmail/":  "Gmail API client with OAuth, calendar, and Drive support",
+			"internal/microsoft/": "Microsoft Graph API client (Teams, Outlook)",
+			"internal/slack/":  "Slack API client with OAuth and message operations",
+			"internal/server/": "gRPC server and web UI handlers",
+			"internal/store/":  "Database abstraction (SQLite implementation)",
+			"internal/git/":    "Git client with credential helper pattern",
+			"internal/security/": "Secret scanning with gitleaks integration",
+			"api/proto/":       "Protocol buffer definitions for gRPC",
+			"scripts/":         "Build and utility scripts",
+			"docs/":            "Documentation and roadmap",
+			"main.go":          "Entry point calling cmd.Execute()",
 		},
 	}
 }
