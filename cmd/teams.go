@@ -14,49 +14,88 @@ import (
 )
 
 func init() {
-	profileCmd.AddCommand(profileTeamsCmd)
-	profileTeamsCmd.AddCommand(profileTeamsAddCmd)
-	profileTeamsCmd.AddCommand(profileTeamsRemoveCmd)
-	profileTeamsCmd.AddCommand(profileTeamsStatusCmd)
+	rootCmd.AddCommand(teamsCmd)
 
-	// Add flags
-	profileTeamsAddCmd.Flags().String("client-id", "", "Azure AD App Client ID")
-	profileTeamsAddCmd.Flags().String("client-secret", "", "Azure AD App Client Secret")
-	profileTeamsAddCmd.Flags().String("tenant-id", "common", "Azure AD Tenant ID (common, organizations, or specific tenant)")
-	profileTeamsAddCmd.Flags().StringP("token", "t", "", "Access token (skip OAuth flow)")
-	profileTeamsAddCmd.Flags().StringP("refresh-token", "r", "", "Refresh token for token rotation")
-	profileTeamsAddCmd.Flags().Int("port", 8340, "Local callback server port for OAuth")
-	profileTeamsAddCmd.Flags().String("scopes", "", "OAuth scopes (comma-separated)")
-	profileTeamsAddCmd.Flags().String("name", "teams", "Name for the Teams channel configuration")
+	// Authentication subcommands
+	teamsCmd.AddCommand(teamsAddCmd)
+	teamsCmd.AddCommand(teamsRemoveCmd)
+	teamsCmd.AddCommand(teamsStatusCmd)
 
-	profileTeamsRemoveCmd.Flags().BoolP("force", "f", false, "Skip confirmation")
-	profileTeamsStatusCmd.Flags().Bool("json", false, "Output as JSON")
+	// Operation subcommands
+	teamsCmd.AddCommand(teamsListCmd)
+	teamsCmd.AddCommand(teamsChannelsCmd)
+	teamsCmd.AddCommand(teamsMessagesCmd)
+	teamsCmd.AddCommand(teamsChatsCmd)
+
+	// Add command flags
+	teamsAddCmd.Flags().String("client-id", "", "Azure AD App Client ID")
+	teamsAddCmd.Flags().String("client-secret", "", "Azure AD App Client Secret")
+	teamsAddCmd.Flags().String("tenant-id", "common", "Azure AD Tenant ID (common, organizations, or specific tenant)")
+	teamsAddCmd.Flags().StringP("token", "t", "", "Access token (skip OAuth flow)")
+	teamsAddCmd.Flags().StringP("refresh-token", "r", "", "Refresh token for token rotation")
+	teamsAddCmd.Flags().Int("port", 8340, "Local callback server port for OAuth")
+	teamsAddCmd.Flags().String("scopes", "", "OAuth scopes (comma-separated)")
+	teamsAddCmd.Flags().String("name", "teams", "Name for the Teams channel configuration")
+
+	// Remove command flags
+	teamsRemoveCmd.Flags().BoolP("force", "f", false, "Skip confirmation")
+
+	// Status command flags
+	teamsStatusCmd.Flags().Bool("json", false, "Output as JSON")
+
+	// List command flags
+	teamsListCmd.Flags().Bool("json", false, "Output as JSON")
+
+	// Channels command flags
+	teamsChannelsCmd.Flags().Bool("json", false, "Output as JSON")
+
+	// Messages command flags
+	teamsMessagesCmd.Flags().IntP("limit", "n", 10, "Maximum number of messages")
+	teamsMessagesCmd.Flags().Bool("json", false, "Output as JSON")
+
+	// Chats command flags
+	teamsChatsCmd.Flags().IntP("limit", "n", 10, "Maximum number of chats")
+	teamsChatsCmd.Flags().Bool("json", false, "Output as JSON")
 }
 
-var profileTeamsCmd = &cobra.Command{
+var teamsCmd = &cobra.Command{
 	Use:   "teams",
-	Short: "Manage Microsoft Teams integration for the active profile",
-	Long: `Manage Microsoft Teams integration for the active profile.
+	Short: "Microsoft Teams integration and operations",
+	Long: `Microsoft Teams integration and operations for the active profile.
 
-Teams credentials are stored securely using the profile's encryption
-(TPM-backed when available).
-
-Available Commands:
+Authentication Commands:
   add          Add Teams integration via OAuth or access token
   remove       Remove Teams integration from profile
   status       Show Teams integration status
 
+Operation Commands:
+  list       List your teams
+  channels   List channels in a team
+  messages   List messages in a channel
+  chats      List your chats
+
 Examples:
-  clonr profile teams add --client-id <id> --client-secret <secret>
-  clonr profile teams add --token <access_token>
-  clonr profile teams status
-  clonr profile teams remove`,
+  # Setup
+  clonr teams add --client-id <id> --client-secret <secret>
+  clonr teams add --token <access_token>
+  clonr teams status
+  clonr teams remove
+
+  # Operations
+  clonr teams list
+  clonr teams channels <team-id>
+  clonr teams messages <team-id> <channel-id>
+  clonr teams chats`,
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()
 	},
 }
 
-var profileTeamsAddCmd = &cobra.Command{
+// ============================================================================
+// Authentication Commands
+// ============================================================================
+
+var teamsAddCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Add Microsoft Teams integration to the active profile",
 	Long: `Add Microsoft Teams integration to the active profile.
@@ -81,13 +120,13 @@ Prerequisites for OAuth:
      - User.Read
 
 Examples:
-  clonr profile teams add --client-id <id> --client-secret <secret>
-  clonr profile teams add --token <access_token>
-  AZURE_CLIENT_ID=xxx AZURE_CLIENT_SECRET=yyy clonr profile teams add`,
-	RunE: runProfileTeamsAdd,
+  clonr teams add --client-id <id> --client-secret <secret>
+  clonr teams add --token <access_token>
+  AZURE_CLIENT_ID=xxx AZURE_CLIENT_SECRET=yyy clonr teams add`,
+	RunE: runTeamsAdd,
 }
 
-var profileTeamsRemoveCmd = &cobra.Command{
+var teamsRemoveCmd = &cobra.Command{
 	Use:   "remove",
 	Short: "Remove Microsoft Teams integration from the active profile",
 	Long: `Remove Microsoft Teams integration from the active profile.
@@ -96,12 +135,12 @@ This removes the stored Teams credentials from the profile.
 Use --force to skip confirmation.
 
 Examples:
-  clonr profile teams remove
-  clonr profile teams remove --force`,
-	RunE: runProfileTeamsRemove,
+  clonr teams remove
+  clonr teams remove --force`,
+	RunE: runTeamsRemove,
 }
 
-var profileTeamsStatusCmd = &cobra.Command{
+var teamsStatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show Microsoft Teams integration status for the active profile",
 	Long: `Show Microsoft Teams integration status for the active profile.
@@ -109,12 +148,88 @@ var profileTeamsStatusCmd = &cobra.Command{
 Displays account information, connection status, and team memberships.
 
 Examples:
-  clonr profile teams status
-  clonr profile teams status --json`,
-	RunE: runProfileTeamsStatus,
+  clonr teams status
+  clonr teams status --json`,
+	RunE: runTeamsStatus,
 }
 
-func runProfileTeamsAdd(cmd *cobra.Command, _ []string) error {
+// ============================================================================
+// Operation Commands
+// ============================================================================
+
+var teamsListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List your teams",
+	RunE:  runTeamsList,
+}
+
+var teamsChannelsCmd = &cobra.Command{
+	Use:   "channels <team-id>",
+	Short: "List channels in a team",
+	Args:  cobra.ExactArgs(1),
+	RunE:  runTeamsChannels,
+}
+
+var teamsMessagesCmd = &cobra.Command{
+	Use:   "messages <team-id> <channel-id>",
+	Short: "List messages in a channel",
+	Args:  cobra.ExactArgs(2),
+	RunE:  runTeamsMessages,
+}
+
+var teamsChatsCmd = &cobra.Command{
+	Use:   "chats",
+	Short: "List your chats",
+	RunE:  runTeamsChats,
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+func teamsGetClient() (*microsoft.TeamsClient, error) {
+	pm, err := core.NewProfileManager()
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to server: %w", err)
+	}
+
+	profile, err := pm.GetActiveProfile()
+	if err != nil {
+		return nil, fmt.Errorf("no active profile")
+	}
+
+	channel, err := pm.GetNotifyChannelByType(profile.Name, model.ChannelTeams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Teams config: %w", err)
+	}
+
+	if channel == nil {
+		return nil, fmt.Errorf("no Teams integration configured; add with: clonr teams add")
+	}
+
+	config, err := pm.DecryptChannelConfig(profile.Name, channel)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt Teams config: %w", err)
+	}
+
+	accessToken := config["access_token"]
+	if accessToken == "" {
+		return nil, fmt.Errorf("no access token found in Teams config")
+	}
+
+	return microsoft.NewTeamsClient(accessToken, microsoft.TeamsClientOptions{
+		RefreshToken: config["refresh_token"],
+		ClientID:     config["client_id"],
+		ClientSecret: config["client_secret"],
+		TenantID:     config["tenant_id"],
+	}), nil
+}
+
+// ============================================================================
+// Authentication Command Implementations
+// ============================================================================
+
+func runTeamsAdd(cmd *cobra.Command, _ []string) error {
 	clientID, _ := cmd.Flags().GetString("client-id")
 	clientSecret, _ := cmd.Flags().GetString("client-secret")
 	tenantID, _ := cmd.Flags().GetString("tenant-id")
@@ -139,7 +254,7 @@ func runProfileTeamsAdd(cmd *cobra.Command, _ []string) error {
 
 	// If token provided directly, skip OAuth
 	if token != "" {
-		return addTeamsWithToken(pm, profile, token, refreshToken, tenantID, channelName)
+		return teamsAddWithToken(pm, profile, token, refreshToken, tenantID, channelName)
 	}
 
 	// Try environment variables if flags not provided
@@ -155,14 +270,14 @@ func runProfileTeamsAdd(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf(`azure AD Client ID and Client Secret are required for OAuth
 
 Provide them via flags:
-  clonr profile teams add --client-id <id> --client-secret <secret>
+  clonr teams add --client-id <id> --client-secret <secret>
 
 Or via environment variables:
   export AZURE_CLIENT_ID=<your-client-id>
   export AZURE_CLIENT_SECRET=<your-client-secret>
 
 Or provide an access token directly:
-  clonr profile teams add --token <access_token>
+  clonr teams add --token <access_token>
 
 To get OAuth credentials:
   1. Go to https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
@@ -174,6 +289,7 @@ To get OAuth credentials:
 
 	// Parse scopes if provided
 	var scopeList []string
+
 	if scopes != "" {
 		for s := range strings.SplitSeq(scopes, ",") {
 			trimmed := strings.TrimSpace(s)
@@ -253,14 +369,14 @@ To get OAuth credentials:
 	_, _ = fmt.Fprintln(os.Stdout, okStyle.Render(fmt.Sprintf("Microsoft Teams added to profile %q!", profile.Name)))
 	_, _ = fmt.Fprintln(os.Stdout, "")
 	_, _ = fmt.Fprintln(os.Stdout, "You can now use Teams commands:")
-	_, _ = fmt.Fprintln(os.Stdout, "  clonr pm teams list")
-	_, _ = fmt.Fprintln(os.Stdout, "  clonr pm teams channels <team-id>")
-	_, _ = fmt.Fprintln(os.Stdout, "  clonr pm teams messages <team-id> <channel-id>")
+	_, _ = fmt.Fprintln(os.Stdout, "  clonr teams list")
+	_, _ = fmt.Fprintln(os.Stdout, "  clonr teams channels <team-id>")
+	_, _ = fmt.Fprintln(os.Stdout, "  clonr teams messages <team-id> <channel-id>")
 
 	return nil
 }
 
-func addTeamsWithToken(pm *core.ProfileManager, profile *model.Profile, token, refreshToken, tenantID, channelName string) error {
+func teamsAddWithToken(pm *core.ProfileManager, profile *model.Profile, token, refreshToken, tenantID, channelName string) error {
 	_, _ = fmt.Fprintln(os.Stdout, dimStyle.Render("Validating access token..."))
 
 	// Get user profile to validate token
@@ -312,14 +428,14 @@ func addTeamsWithToken(pm *core.ProfileManager, profile *model.Profile, token, r
 	_, _ = fmt.Fprintln(os.Stdout, okStyle.Render(fmt.Sprintf("Microsoft Teams added to profile %q!", profile.Name)))
 	_, _ = fmt.Fprintln(os.Stdout, "")
 	_, _ = fmt.Fprintln(os.Stdout, "You can now use Teams commands:")
-	_, _ = fmt.Fprintln(os.Stdout, "  clonr pm teams list")
-	_, _ = fmt.Fprintln(os.Stdout, "  clonr pm teams channels <team-id>")
-	_, _ = fmt.Fprintln(os.Stdout, "  clonr pm teams messages <team-id> <channel-id>")
+	_, _ = fmt.Fprintln(os.Stdout, "  clonr teams list")
+	_, _ = fmt.Fprintln(os.Stdout, "  clonr teams channels <team-id>")
+	_, _ = fmt.Fprintln(os.Stdout, "  clonr teams messages <team-id> <channel-id>")
 
 	return nil
 }
 
-func runProfileTeamsRemove(cmd *cobra.Command, _ []string) error {
+func runTeamsRemove(cmd *cobra.Command, _ []string) error {
 	force, _ := cmd.Flags().GetBool("force")
 
 	pm, err := core.NewProfileManager()
@@ -361,7 +477,7 @@ func runProfileTeamsRemove(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func runProfileTeamsStatus(cmd *cobra.Command, _ []string) error {
+func runTeamsStatus(cmd *cobra.Command, _ []string) error {
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 
 	pm, err := core.NewProfileManager()
@@ -389,8 +505,8 @@ func runProfileTeamsStatus(cmd *cobra.Command, _ []string) error {
 		_, _ = fmt.Fprintf(os.Stdout, "No Teams integration configured for profile %q\n", profile.Name)
 		_, _ = fmt.Fprintln(os.Stdout, "")
 		_, _ = fmt.Fprintln(os.Stdout, "Add Teams with:")
-		_, _ = fmt.Fprintln(os.Stdout, "  clonr profile teams add --client-id <id> --client-secret <secret>")
-		_, _ = fmt.Fprintln(os.Stdout, "  clonr profile teams add --token <access_token>")
+		_, _ = fmt.Fprintln(os.Stdout, "  clonr teams add --client-id <id> --client-secret <secret>")
+		_, _ = fmt.Fprintln(os.Stdout, "  clonr teams add --token <access_token>")
 
 		return nil
 	}
@@ -454,6 +570,191 @@ func runProfileTeamsStatus(cmd *cobra.Command, _ []string) error {
 			_, _ = fmt.Fprintln(os.Stdout, okStyle.Render("Connection OK"))
 			_, _ = fmt.Fprintf(os.Stdout, "  Teams: %d\n", len(teams))
 		}
+	}
+
+	return nil
+}
+
+// ============================================================================
+// Operation Command Implementations
+// ============================================================================
+
+func runTeamsList(cmd *cobra.Command, _ []string) error {
+	jsonOutput, _ := cmd.Flags().GetBool("json")
+
+	client, err := teamsGetClient()
+	if err != nil {
+		return err
+	}
+
+	teams, err := client.GetMyTeams(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to list teams: %w", err)
+	}
+
+	if len(teams) == 0 {
+		_, _ = fmt.Fprintln(os.Stdout, "No teams found.")
+		return nil
+	}
+
+	if jsonOutput {
+		return outputJSON(teams)
+	}
+
+	_, _ = fmt.Fprintln(os.Stdout, "")
+	_, _ = fmt.Fprintf(os.Stdout, "Your Teams (%d):\n", len(teams))
+	_, _ = fmt.Fprintln(os.Stdout, "")
+
+	for _, team := range teams {
+		_, _ = fmt.Fprintf(os.Stdout, "  %s\n", team.DisplayName)
+		_, _ = fmt.Fprintf(os.Stdout, "  %s\n", dimStyle.Render("ID: "+team.ID))
+
+		if team.Description != "" {
+			desc := team.Description
+			if len(desc) > 60 {
+				desc = desc[:60] + "..."
+			}
+
+			_, _ = fmt.Fprintf(os.Stdout, "  %s\n", dimStyle.Render(desc))
+		}
+
+		_, _ = fmt.Fprintln(os.Stdout, "")
+	}
+
+	return nil
+}
+
+func runTeamsChannels(cmd *cobra.Command, args []string) error {
+	teamID := args[0]
+	jsonOutput, _ := cmd.Flags().GetBool("json")
+
+	client, err := teamsGetClient()
+	if err != nil {
+		return err
+	}
+
+	channels, err := client.GetTeamChannels(context.Background(), teamID)
+	if err != nil {
+		return fmt.Errorf("failed to list channels: %w", err)
+	}
+
+	if len(channels) == 0 {
+		_, _ = fmt.Fprintln(os.Stdout, "No channels found.")
+		return nil
+	}
+
+	if jsonOutput {
+		return outputJSON(channels)
+	}
+
+	_, _ = fmt.Fprintln(os.Stdout, "")
+	_, _ = fmt.Fprintf(os.Stdout, "Channels (%d):\n", len(channels))
+	_, _ = fmt.Fprintln(os.Stdout, "")
+
+	for _, ch := range channels {
+		_, _ = fmt.Fprintf(os.Stdout, "  #%s\n", ch.DisplayName)
+		_, _ = fmt.Fprintf(os.Stdout, "  %s\n", dimStyle.Render("ID: "+ch.ID))
+
+		if ch.Description != "" {
+			_, _ = fmt.Fprintf(os.Stdout, "  %s\n", dimStyle.Render(ch.Description))
+		}
+
+		_, _ = fmt.Fprintln(os.Stdout, "")
+	}
+
+	return nil
+}
+
+func runTeamsMessages(cmd *cobra.Command, args []string) error {
+	teamID := args[0]
+	channelID := args[1]
+	limit, _ := cmd.Flags().GetInt("limit")
+	jsonOutput, _ := cmd.Flags().GetBool("json")
+
+	client, err := teamsGetClient()
+	if err != nil {
+		return err
+	}
+
+	messages, err := client.GetChannelMessages(context.Background(), teamID, channelID, limit)
+	if err != nil {
+		return fmt.Errorf("failed to list messages: %w", err)
+	}
+
+	if len(messages) == 0 {
+		_, _ = fmt.Fprintln(os.Stdout, "No messages found.")
+		return nil
+	}
+
+	if jsonOutput {
+		return outputJSON(messages)
+	}
+
+	_, _ = fmt.Fprintln(os.Stdout, "")
+	_, _ = fmt.Fprintf(os.Stdout, "Messages (%d):\n", len(messages))
+	_, _ = fmt.Fprintln(os.Stdout, "")
+
+	for _, msg := range messages {
+		from := "Unknown"
+		if msg.From != nil && msg.From.User != nil {
+			from = msg.From.User.DisplayName
+		}
+
+		_, _ = fmt.Fprintf(os.Stdout, "  %s\n", dimStyle.Render(msg.ID))
+		_, _ = fmt.Fprintf(os.Stdout, "  From: %s\n", from)
+		_, _ = fmt.Fprintf(os.Stdout, "  Date: %s\n", msg.CreatedDateTime.Format(time.RFC1123))
+
+		if msg.Body != nil && msg.Body.Content != "" {
+			content := msg.Body.Content
+			if len(content) > 100 {
+				content = content[:100] + "..."
+			}
+
+			_, _ = fmt.Fprintf(os.Stdout, "  %s\n", content)
+		}
+
+		_, _ = fmt.Fprintln(os.Stdout, "")
+	}
+
+	return nil
+}
+
+func runTeamsChats(cmd *cobra.Command, _ []string) error {
+	limit, _ := cmd.Flags().GetInt("limit")
+	jsonOutput, _ := cmd.Flags().GetBool("json")
+
+	client, err := teamsGetClient()
+	if err != nil {
+		return err
+	}
+
+	chats, err := client.GetMyChats(context.Background(), limit)
+	if err != nil {
+		return fmt.Errorf("failed to list chats: %w", err)
+	}
+
+	if len(chats) == 0 {
+		_, _ = fmt.Fprintln(os.Stdout, "No chats found.")
+		return nil
+	}
+
+	if jsonOutput {
+		return outputJSON(chats)
+	}
+
+	_, _ = fmt.Fprintln(os.Stdout, "")
+	_, _ = fmt.Fprintf(os.Stdout, "Your Chats (%d):\n", len(chats))
+	_, _ = fmt.Fprintln(os.Stdout, "")
+
+	for _, chat := range chats {
+		topic := chat.Topic
+		if topic == "" {
+			topic = "(No topic)"
+		}
+
+		_, _ = fmt.Fprintf(os.Stdout, "  %s\n", topic)
+		_, _ = fmt.Fprintf(os.Stdout, "  %s  Type: %s\n", dimStyle.Render("ID: "+chat.ID), chat.ChatType)
+		_, _ = fmt.Fprintln(os.Stdout, "")
 	}
 
 	return nil
