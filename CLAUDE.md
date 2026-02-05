@@ -262,9 +262,9 @@ err = client.Push(ctx, "origin", "main", git.PushOptions{SetUpstream: true})
 - `Checkout`, `Merge`, `ListBranches` - Branch operations
 - `Status`, `CurrentBranch`, `IsRepository` - Repository info
 
-### Notification Channel Integrations
+### Service Integrations
 
-Clonr supports integrations with email and messaging services for notifications. Each integration stores OAuth tokens securely in the profile's notification channels.
+Clonr supports integrations with email and messaging services. Each service is a **top-level command** that owns both authentication and operations. OAuth tokens are stored securely using TPM-backed encryption when available.
 
 #### Gmail Integration
 
@@ -392,6 +392,44 @@ newToken, err := microsoft.RefreshAccessToken(ctx, microsoft.OAuthConfig{...}, r
 profile, err := microsoft.GetUserProfile(ctx, accessToken)
 ```
 
+#### Slack Integration
+
+`internal/slack/` provides Slack API client for workspace messaging:
+
+- **OAuth2 Flow**: Uses Slack OAuth2 with device flow
+- **Scopes**: `channels:read`, `channels:history`, `chat:write`, `users:read`, `search:read`
+- **Storage**: Tokens stored encrypted in profile's notification channels
+
+**Key Functions:**
+```go
+// Create Slack client
+client := slack.NewClient(accessToken, slack.ClientOptions{
+    RefreshToken: refreshToken,
+    ClientID:     clientID,
+    ClientSecret: clientSecret,
+})
+
+// List channels
+channels, err := client.ListChannels(ctx, slack.ListChannelsOptions{
+    ExcludeArchived: true,
+    Types:           "public_channel,private_channel",
+})
+
+// Get messages
+messages, err := client.GetChannelHistory(ctx, channelID, slack.HistoryOptions{
+    Limit: 20,
+})
+
+// Search messages
+results, err := client.SearchMessages(ctx, "query", 10)
+
+// Get thread replies
+replies, err := client.GetThreadReplies(ctx, channelID, threadTS)
+
+// List users
+users, err := client.ListUsers(ctx)
+```
+
 ### Security Scanning (Gitleaks Integration)
 
 `internal/security/leaks.go` integrates [gitleaks](https://github.com/zricethezav/gitleaks) for secret detection:
@@ -449,12 +487,10 @@ clonr/
 │   ├── checkout.go                   # Git checkout branches
 │   ├── merge.go                      # Git merge branches
 │   ├── scan.go                       # Manual secret scanning
-│   ├── profile_gmail.go              # Gmail profile commands (add/remove/status)
-│   ├── profile_teams.go              # Teams profile commands (add/remove/status)
-│   ├── profile_outlook.go            # Outlook profile commands (add/remove/status)
-│   ├── pm_gmail.go                   # Gmail operations (messages, read, search, attachments)
-│   ├── pm_teams.go                   # Teams operations (list, channels, messages, chats)
-│   ├── pm_outlook.go                 # Outlook operations (folders, messages, read, search)
+│   ├── gmail.go                      # Gmail integration (add, remove, status, messages, search, attachments)
+│   ├── teams.go                      # Teams integration (add, remove, status, list, channels, messages, chats)
+│   ├── outlook.go                    # Outlook integration (add, remove, status, folders, messages, search)
+│   ├── slack.go                      # Slack integration (add, remove, status, accounts, channels, messages, search, notify)
 ├── docs/                             # Project documentation
 │   ├── GRPC_IMPLEMENTATION_GUIDE.md  # gRPC implementation details
 │   ├── ROADMAP.md                    # Project roadmap
@@ -490,13 +526,17 @@ clonr/
 │   │   ├── oauth.go                  # Azure AD OAuth2 (shared)
 │   │   ├── teams.go                  # Teams API client
 │   │   └── outlook.go                # Outlook/Mail API client
+│   ├── slack/                        # Slack API client
+│   │   ├── client.go                 # Channels, messages, users, search
+│   │   └── oauth.go                  # Slack OAuth2 device flow
 │   ├── mapper/                       # Shared type conversions
 │   │   └── grpc.go                   # Proto ↔ Model conversions (shared by server/client)
 │   ├── security/                     # Security scanning (gitleaks)
 │   │   └── leaks.go                  # Secret detection in commits/files
 │   ├── database/                     # Database abstraction (server-side)
 │   ├── model/                        # Data models (Repository, Config, Profile, NotifyChannel)
-│   │   └── notify.go                 # Channel types: Slack, Discord, Teams, Gmail, Outlook
+│   │   ├── notify.go                 # Channel types: Slack, Discord, Teams, Gmail, Outlook
+│   │   └── slack.go                  # SlackAccount model for multi-account support
 │   ├── server/grpc/                  # gRPC server implementation
 │   │   ├── server.go                 # Server setup with interceptor chain
 │   │   ├── serverinfo.go             # Server info file & PID checking
@@ -890,6 +930,43 @@ clonr clone https://github.com/user/repo
 clonr configure
 ```
 
+### Repository Listing
+
+The `list` command supports multiple output modes:
+
+```sh
+# Interactive TUI mode (default)
+clonr list
+
+# Table view with formatted columns
+clonr list --table                   # Or -t
+clonr list --table --stats           # Include commit statistics
+clonr list --table --workspace dev   # Filter by workspace
+
+# JSON output
+clonr list --json
+clonr list --json --stats            # JSON with statistics
+
+# Sorting options
+clonr list --sort name               # Alphabetical by URL
+clonr list --sort cloned             # By clone date (newest first)
+clonr list --sort updated            # By last update date
+clonr list --sort commits            # By total commit count
+clonr list --sort recent             # By recent commits (30 days)
+clonr list --sort changes            # By total changes (+/-)
+
+# Filtering
+clonr list --favorites               # Show only favorites
+clonr list --workspace personal      # Filter by workspace
+clonr list --workspaces              # Browse by workspace (interactive)
+```
+
+**Table View Features:**
+- Dynamic column widths based on content
+- Path shortening with `~` for home directory
+- Compact stats display (e.g., `45c 3r +1200/-500`)
+- Workspace and favorite indicators
+
 ### Git Commands with Profile Authentication
 
 Clonr provides git commands that automatically use profile authentication:
@@ -961,58 +1038,90 @@ clonr profile remove github
 - Direct token validation with GitHub API
 - Same secure storage (keyring or encrypted file)
 
-### Notification Channel Commands
+### Service Integration Commands
+
+Each service integration is a top-level command that owns both authentication and operations.
 
 #### Gmail Commands
 
 ```sh
 # Configure Gmail integration
-clonr profile gmail add              # Add Gmail with OAuth device flow
-clonr profile gmail status           # Show Gmail configuration
-clonr profile gmail remove           # Remove Gmail integration
+clonr gmail add                      # Add Gmail with OAuth device flow
+clonr gmail status                   # Show Gmail configuration
+clonr gmail remove                   # Remove Gmail integration
 
 # Read emails
-clonr pm gmail profile               # Show Gmail profile info
-clonr pm gmail labels                # List all labels
-clonr pm gmail messages              # List recent messages (default: 10)
-clonr pm gmail messages -n 20        # List 20 messages
-clonr pm gmail messages -l INBOX     # List messages in INBOX
-clonr pm gmail read <message-id>     # Read a specific message
-clonr pm gmail read <id> --html      # Read message HTML body
-clonr pm gmail search "from:boss"    # Search messages
-clonr pm gmail attachments <id>      # List attachments in a message
-clonr pm gmail download <msg-id> <attach-id> -o file.pdf  # Download attachment
+clonr gmail profile                  # Show Gmail profile info
+clonr gmail labels                   # List all labels
+clonr gmail messages                 # List recent messages (default: 10)
+clonr gmail messages -n 20           # List 20 messages
+clonr gmail messages -l INBOX        # List messages in INBOX
+clonr gmail read <message-id>        # Read a specific message
+clonr gmail read <id> --html         # Read message HTML body
+clonr gmail search "from:boss"       # Search messages
+clonr gmail attachments <id>         # List attachments in a message
+clonr gmail download <msg-id> <attach-id> -o file.pdf  # Download attachment
 ```
 
 #### Microsoft Teams Commands
 
 ```sh
 # Configure Teams integration
-clonr profile teams add              # Add Teams with OAuth device flow
-clonr profile teams status           # Show Teams configuration
-clonr profile teams remove           # Remove Teams integration
+clonr teams add                      # Add Teams with OAuth device flow
+clonr teams status                   # Show Teams configuration
+clonr teams remove                   # Remove Teams integration
 
 # Teams operations
-clonr pm teams list                  # List your teams
-clonr pm teams channels <team-id>    # List channels in a team
-clonr pm teams messages <team> <channel>  # List channel messages
-clonr pm teams chats                 # List your chats
+clonr teams list                     # List your teams
+clonr teams channels <team-id>       # List channels in a team
+clonr teams messages <team> <channel>  # List channel messages
+clonr teams chats                    # List your chats
 ```
 
 #### Microsoft Outlook Commands
 
 ```sh
 # Configure Outlook integration
-clonr profile outlook add            # Add Outlook with OAuth device flow
-clonr profile outlook status         # Show Outlook configuration
-clonr profile outlook remove         # Remove Outlook integration
+clonr outlook add                    # Add Outlook with OAuth device flow
+clonr outlook status                 # Show Outlook configuration
+clonr outlook remove                 # Remove Outlook integration
 
 # Read emails
-clonr pm outlook folders             # List mail folders
-clonr pm outlook messages            # List inbox messages
-clonr pm outlook messages -f sentitems  # List sent items
-clonr pm outlook read <message-id>   # Read a specific message
-clonr pm outlook search "project"    # Search messages
+clonr outlook folders                # List mail folders
+clonr outlook messages               # List inbox messages
+clonr outlook messages -f sentitems  # List sent items
+clonr outlook read <message-id>      # Read a specific message
+clonr outlook search "project"       # Search messages
+```
+
+#### Slack Commands
+
+```sh
+# Configure Slack integration
+clonr slack add                      # Add Slack with OAuth device flow
+clonr slack status                   # Show Slack configuration
+clonr slack remove                   # Remove Slack integration
+clonr slack accounts                 # List all Slack accounts
+
+# Channel operations
+clonr slack channels                 # List channels in workspace
+clonr slack channels --all           # Include archived channels
+
+# Message operations
+clonr slack messages <channel>       # List messages in a channel
+clonr slack messages <channel> -n 20 # List 20 messages
+clonr slack search "query"           # Search messages
+clonr slack thread <channel> <ts>    # View thread replies
+
+# User operations
+clonr slack users                    # List workspace users
+clonr slack users --online           # Show only online users
+
+# Notifications
+clonr slack notify enable            # Enable Slack notifications
+clonr slack notify disable           # Disable Slack notifications
+clonr slack notify status            # Show notification settings
+clonr slack notify test              # Send test notification
 ```
 
 ### TPM 2.0 Key Management (Automatic)
