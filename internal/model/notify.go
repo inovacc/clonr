@@ -11,6 +11,7 @@ const (
 	ChannelDiscord ChannelType = "discord"
 	ChannelEmail   ChannelType = "email"
 	ChannelGmail   ChannelType = "gmail"
+	ChannelOutlook ChannelType = "outlook"
 	ChannelWebhook ChannelType = "webhook"
 )
 
@@ -28,10 +29,11 @@ type NotifyChannel struct {
 
 	// Config contains type-specific configuration (all encrypted with profile)
 	// For Slack: webhook_url, bot_token, default_channel
-	// For Teams: webhook_url, connector_token
+	// For Teams: access_token, refresh_token, client_id, client_secret, tenant_id, user_email
 	// For Discord: webhook_url, bot_token, default_channel
 	// For Email: provider, host, port, username, password, api_key, from, to
 	// For Gmail: access_token, refresh_token, email, client_id, client_secret
+	// For Outlook: access_token, refresh_token, client_id, client_secret, tenant_id, user_email
 	// For Webhook: url, method, headers, hmac_secret, template
 	Config map[string]string `json:"config"`
 

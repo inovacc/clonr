@@ -94,6 +94,7 @@ var aiCategoryMap = map[string]string{
 
 	// Notifications
 	"slack": "Notifications", "gmail": "Notifications",
+	"teams": "Notifications", "outlook": "Notifications",
 
 	// Configuration
 	"configure": "Configuration", "config": "Configuration",
