@@ -22,6 +22,7 @@ func init() {
 	profileSlackAddCmd.Flags().String("client-id", "", "Slack App Client ID")
 	profileSlackAddCmd.Flags().String("client-secret", "", "Slack App Client Secret")
 	profileSlackAddCmd.Flags().StringP("token", "t", "", "Bot token (skip OAuth flow)")
+	profileSlackAddCmd.Flags().StringP("refresh-token", "r", "", "Refresh token for token rotation")
 	profileSlackAddCmd.Flags().StringP("channel", "c", "#general", "Default channel for notifications")
 	profileSlackAddCmd.Flags().Int("port", 8338, "Local callback server port for OAuth")
 	profileSlackAddCmd.Flags().String("scopes", "", "OAuth scopes (comma-separated)")
@@ -113,6 +114,7 @@ func runProfileSlackAdd(cmd *cobra.Command, _ []string) error {
 	clientID, _ := cmd.Flags().GetString("client-id")
 	clientSecret, _ := cmd.Flags().GetString("client-secret")
 	token, _ := cmd.Flags().GetString("token")
+	refreshToken, _ := cmd.Flags().GetString("refresh-token")
 	channel, _ := cmd.Flags().GetString("channel")
 	port, _ := cmd.Flags().GetInt("port")
 	scopes, _ := cmd.Flags().GetString("scopes")
@@ -133,7 +135,7 @@ func runProfileSlackAdd(cmd *cobra.Command, _ []string) error {
 
 	// If token provided directly, skip OAuth
 	if token != "" {
-		return addSlackWithToken(pm, profile, token, channel, channelName)
+		return addSlackWithToken(pm, profile, token, refreshToken, channel, channelName)
 	}
 
 	// Try environment variables if flags not provided
@@ -232,7 +234,7 @@ Also configure OAuth redirect URL:
 	return nil
 }
 
-func addSlackWithToken(pm *core.ProfileManager, profile *model.Profile, token, channel, channelName string) error {
+func addSlackWithToken(pm *core.ProfileManager, profile *model.Profile, token, refreshToken, channel, channelName string) error {
 	_, _ = fmt.Fprintln(os.Stdout, dimStyle.Render("Validating bot token..."))
 
 	// Create a temporary client to validate the token
@@ -251,17 +253,24 @@ func addSlackWithToken(pm *core.ProfileManager, profile *model.Profile, token, c
 	_, _ = fmt.Fprintln(os.Stdout, "")
 
 	// Create NotifyChannel for Slack
+	config := map[string]string{
+		"bot_token":       token,
+		"default_channel": channel,
+		"workspace_id":    authResult.TeamID,
+		"workspace_name":  authResult.Team,
+		"bot_user_id":     authResult.UserID,
+	}
+
+	// Add refresh token if provided
+	if refreshToken != "" {
+		config["refresh_token"] = refreshToken
+	}
+
 	notifyChannel := &model.NotifyChannel{
-		ID:   channelName,
-		Type: model.ChannelSlack,
-		Name: fmt.Sprintf("Slack - %s", authResult.Team),
-		Config: map[string]string{
-			"bot_token":       token,
-			"default_channel": channel,
-			"workspace_id":    authResult.TeamID,
-			"workspace_name":  authResult.Team,
-			"bot_user_id":     authResult.UserID,
-		},
+		ID:        channelName,
+		Type:      model.ChannelSlack,
+		Name:      fmt.Sprintf("Slack - %s", authResult.Team),
+		Config:    config,
 		Enabled:   true,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),

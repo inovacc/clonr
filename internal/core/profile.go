@@ -433,7 +433,7 @@ func (pm *ProfileManager) DecryptChannelConfig(profileName string, channel *mode
 func isSensitiveKey(key string) bool {
 	sensitiveKeys := []string{
 		"token", "secret", "password", "api_key", "webhook_url",
-		"bot_token", "client_secret", "hmac_secret",
+		"bot_token", "client_secret", "hmac_secret", "refresh_token",
 	}
 
 	for _, k := range sensitiveKeys {
