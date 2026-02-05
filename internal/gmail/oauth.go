@@ -20,6 +20,7 @@ const (
 var DefaultScopes = []string{
 	"https://www.googleapis.com/auth/gmail.readonly",
 	"https://www.googleapis.com/auth/userinfo.email",
+	"https://www.googleapis.com/auth/drive.readonly",
 }
 
 // OAuthConfig configures the OAuth flow.

@@ -262,6 +262,136 @@ err = client.Push(ctx, "origin", "main", git.PushOptions{SetUpstream: true})
 - `Checkout`, `Merge`, `ListBranches` - Branch operations
 - `Status`, `CurrentBranch`, `IsRepository` - Repository info
 
+### Notification Channel Integrations
+
+Clonr supports integrations with email and messaging services for notifications. Each integration stores OAuth tokens securely in the profile's notification channels.
+
+#### Gmail Integration
+
+`internal/gmail/` provides Gmail API client for reading emails:
+
+- **OAuth2 Flow**: Uses Google OAuth2 with device flow
+- **Scopes**: `gmail.readonly`, `userinfo.email`, `userinfo.profile`
+- **Storage**: Tokens stored encrypted in profile's notification channels
+
+**Files:**
+- `internal/gmail/client.go` - Gmail API client (messages, labels, attachments)
+- `internal/gmail/oauth.go` - Google OAuth2 device flow
+
+**Key Functions:**
+```go
+// Create Gmail client
+client := gmail.NewClient(accessToken, gmail.ClientOptions{
+    RefreshToken: refreshToken,
+    ClientID:     clientID,
+    ClientSecret: clientSecret,
+})
+
+// Get user profile
+profile, err := client.GetProfile(ctx)
+
+// List messages
+resp, err := client.ListMessages(ctx, gmail.ListMessagesOptions{
+    MaxResults: 10,
+    Query:      "is:unread",
+    LabelIDs:   []string{"INBOX"},
+})
+
+// Get full message
+msg, err := client.GetMessage(ctx, messageID, "full")
+
+// Extract body
+plainText := client.GetMessageBody(msg)
+htmlBody := client.GetMessageHTMLBody(msg)
+
+// Attachments
+attachments := client.GetMessageAttachments(msg)
+data, err := client.GetAttachment(ctx, messageID, attachmentID)
+```
+
+#### Microsoft Teams Integration
+
+`internal/microsoft/teams.go` provides Microsoft Teams API client:
+
+- **OAuth2 Flow**: Uses Azure AD OAuth2 with device flow
+- **Scopes**: `Team.ReadBasic.All`, `Channel.ReadBasic.All`, `ChannelMessage.Read.All`, `Chat.Read`, `User.Read`
+- **API**: Microsoft Graph API v1.0
+
+**Key Functions:**
+```go
+// Create Teams client
+client := microsoft.NewTeamsClient(accessToken, microsoft.TeamsClientOptions{
+    RefreshToken: refreshToken,
+    ClientID:     clientID,
+    TenantID:     tenantID,
+})
+
+// List teams
+teams, err := client.GetMyTeams(ctx)
+
+// List channels
+channels, err := client.GetTeamChannels(ctx, teamID)
+
+// Get channel messages
+messages, err := client.GetChannelMessages(ctx, teamID, channelID, top)
+
+// List chats
+chats, err := client.GetMyChats(ctx)
+```
+
+#### Microsoft Outlook Integration
+
+`internal/microsoft/outlook.go` provides Outlook/Mail API client:
+
+- **OAuth2 Flow**: Uses Azure AD OAuth2 with device flow (shared with Teams)
+- **Scopes**: `Mail.Read`, `Mail.ReadBasic`, `User.Read`
+- **API**: Microsoft Graph API v1.0
+
+**Key Functions:**
+```go
+// Create Outlook client
+client := microsoft.NewOutlookClient(accessToken, microsoft.OutlookClientOptions{
+    RefreshToken: refreshToken,
+    ClientID:     clientID,
+    TenantID:     tenantID,
+})
+
+// List mail folders
+folders, err := client.GetMailFolders(ctx)
+
+// List messages
+messages, err := client.ListMessages(ctx, microsoft.ListMailMessagesOptions{
+    Top:      10,
+    FolderID: "inbox",
+    Filter:   "isRead eq false",
+})
+
+// Get specific message
+msg, err := client.GetMessage(ctx, messageID)
+
+// Search messages
+results, err := client.SearchMessages(ctx, "project update", 10)
+```
+
+#### Shared Microsoft OAuth Module
+
+`internal/microsoft/oauth.go` provides shared OAuth2 for Azure AD:
+
+```go
+// Run OAuth device flow
+result, err := microsoft.RunOAuthFlow(ctx, microsoft.OAuthConfig{
+    ClientID: clientID,
+    TenantID: tenantID,  // "common" for multi-tenant
+    Scopes:   microsoft.DefaultTeamsScopes,
+})
+
+// Refresh access token
+newToken, err := microsoft.RefreshAccessToken(ctx, microsoft.OAuthConfig{...}, refreshToken)
+
+// Get user profile
+profile, err := microsoft.GetUserProfile(ctx, accessToken)
+```
+
 ### Security Scanning (Gitleaks Integration)
 
 `internal/security/leaks.go` integrates [gitleaks](https://github.com/zricethezav/gitleaks) for secret detection:
@@ -319,6 +449,12 @@ clonr/
 │   ├── checkout.go                   # Git checkout branches
 │   ├── merge.go                      # Git merge branches
 │   ├── scan.go                       # Manual secret scanning
+│   ├── profile_gmail.go              # Gmail profile commands (add/remove/status)
+│   ├── profile_teams.go              # Teams profile commands (add/remove/status)
+│   ├── profile_outlook.go            # Outlook profile commands (add/remove/status)
+│   ├── pm_gmail.go                   # Gmail operations (messages, read, search, attachments)
+│   ├── pm_teams.go                   # Teams operations (list, channels, messages, chats)
+│   ├── pm_outlook.go                 # Outlook operations (folders, messages, read, search)
 ├── docs/                             # Project documentation
 │   ├── GRPC_IMPLEMENTATION_GUIDE.md  # gRPC implementation details
 │   ├── ROADMAP.md                    # Project roadmap
@@ -347,12 +483,20 @@ clonr/
 │   │   └── file.go                   # FileExists, EnsureDir, WriteFileSecure
 │   ├── git/                          # Git client with credential helper
 │   │   └── client.go                 # Centralized git operations (gh CLI pattern)
+│   ├── gmail/                        # Gmail API client
+│   │   ├── client.go                 # Messages, labels, attachments
+│   │   └── oauth.go                  # Google OAuth2 device flow
+│   ├── microsoft/                    # Microsoft Graph API clients
+│   │   ├── oauth.go                  # Azure AD OAuth2 (shared)
+│   │   ├── teams.go                  # Teams API client
+│   │   └── outlook.go                # Outlook/Mail API client
 │   ├── mapper/                       # Shared type conversions
 │   │   └── grpc.go                   # Proto ↔ Model conversions (shared by server/client)
 │   ├── security/                     # Security scanning (gitleaks)
 │   │   └── leaks.go                  # Secret detection in commits/files
 │   ├── database/                     # Database abstraction (server-side)
-│   ├── model/                        # Data models (Repository, Config, Profile)
+│   ├── model/                        # Data models (Repository, Config, Profile, NotifyChannel)
+│   │   └── notify.go                 # Channel types: Slack, Discord, Teams, Gmail, Outlook
 │   ├── server/grpc/                  # gRPC server implementation
 │   │   ├── server.go                 # Server setup with interceptor chain
 │   │   ├── serverinfo.go             # Server info file & PID checking
@@ -816,6 +960,60 @@ clonr profile remove github
 - Skip OAuth flow for CI/CD environments
 - Direct token validation with GitHub API
 - Same secure storage (keyring or encrypted file)
+
+### Notification Channel Commands
+
+#### Gmail Commands
+
+```sh
+# Configure Gmail integration
+clonr profile gmail add              # Add Gmail with OAuth device flow
+clonr profile gmail status           # Show Gmail configuration
+clonr profile gmail remove           # Remove Gmail integration
+
+# Read emails
+clonr pm gmail profile               # Show Gmail profile info
+clonr pm gmail labels                # List all labels
+clonr pm gmail messages              # List recent messages (default: 10)
+clonr pm gmail messages -n 20        # List 20 messages
+clonr pm gmail messages -l INBOX     # List messages in INBOX
+clonr pm gmail read <message-id>     # Read a specific message
+clonr pm gmail read <id> --html      # Read message HTML body
+clonr pm gmail search "from:boss"    # Search messages
+clonr pm gmail attachments <id>      # List attachments in a message
+clonr pm gmail download <msg-id> <attach-id> -o file.pdf  # Download attachment
+```
+
+#### Microsoft Teams Commands
+
+```sh
+# Configure Teams integration
+clonr profile teams add              # Add Teams with OAuth device flow
+clonr profile teams status           # Show Teams configuration
+clonr profile teams remove           # Remove Teams integration
+
+# Teams operations
+clonr pm teams list                  # List your teams
+clonr pm teams channels <team-id>    # List channels in a team
+clonr pm teams messages <team> <channel>  # List channel messages
+clonr pm teams chats                 # List your chats
+```
+
+#### Microsoft Outlook Commands
+
+```sh
+# Configure Outlook integration
+clonr profile outlook add            # Add Outlook with OAuth device flow
+clonr profile outlook status         # Show Outlook configuration
+clonr profile outlook remove         # Remove Outlook integration
+
+# Read emails
+clonr pm outlook folders             # List mail folders
+clonr pm outlook messages            # List inbox messages
+clonr pm outlook messages -f sentitems  # List sent items
+clonr pm outlook read <message-id>   # Read a specific message
+clonr pm outlook search "project"    # Search messages
+```
 
 ### TPM 2.0 Key Management (Automatic)
 
